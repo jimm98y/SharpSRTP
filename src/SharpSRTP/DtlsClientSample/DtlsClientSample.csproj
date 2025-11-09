@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="tls\credentials\x509-server-rsa-sign.pem" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\DtlsServerSample\CertificateUtils.cs" Link="CertificateUtils.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="tls\credentials\x509-ca-rsa.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="tls\credentials\x509-server-rsa-sign.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+  </ItemGroup>
+
+</Project>
