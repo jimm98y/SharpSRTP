@@ -18,11 +18,11 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsServer : DefaultTlsServer
     {
-        internal DtlsServer() : this(new BcTlsCrypto())
+        public DtlsServer() : this(new BcTlsCrypto())
         {
         }
 
-        internal DtlsServer(TlsCrypto crypto) : base(crypto)
+        public DtlsServer(TlsCrypto crypto) : base(crypto)
         {
         }
 

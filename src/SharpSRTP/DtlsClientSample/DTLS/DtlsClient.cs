@@ -12,11 +12,11 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsClient : DefaultTlsClient
     {
-        internal TlsSession m_session;
+        private TlsSession m_session;
 
         private int m_handshakeTimeoutMillis = 0;
 
-        internal DtlsClient(TlsSession session) : base(new BcTlsCrypto())
+        public DtlsClient(TlsSession session) : base(new BcTlsCrypto())
         {
             this.m_session = session;
         }
