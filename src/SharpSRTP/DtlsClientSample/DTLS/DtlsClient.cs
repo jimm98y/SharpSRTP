@@ -34,8 +34,7 @@ namespace SharpSRTP.DTLS
             Exception cause)
         {
             TextWriter output = (alertLevel == AlertLevel.fatal) ? Console.Error : Console.Out;
-            output.WriteLine("DTLS client raised alert: " + AlertLevel.GetText(alertLevel)
-                + ", " + AlertDescription.GetText(alertDescription));
+            output.WriteLine("DTLS client raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
             if (message != null)
             {
                 output.WriteLine("> " + message);
@@ -49,8 +48,7 @@ namespace SharpSRTP.DTLS
         public override void NotifyAlertReceived(short alertLevel, short alertDescription)
         {
             TextWriter output = (alertLevel == AlertLevel.fatal) ? Console.Error : Console.Out;
-            output.WriteLine("DTLS client received alert: " + AlertLevel.GetText(alertLevel)
-                + ", " + AlertDescription.GetText(alertDescription));
+            output.WriteLine("DTLS client received alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
         }
 
         public override void NotifyServerVersion(ProtocolVersion serverVersion)
@@ -150,8 +148,7 @@ namespace SharpSRTP.DTLS
                 {
                     X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
                     // TODO Create fingerprint based on certificate signature algorithm digest
-                    Console.WriteLine("    fingerprint:SHA-256 " + CertificateUtils.Fingerprint(entry) + " ("
-                        + entry.Subject + ")");
+                    Console.WriteLine("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
                 }
 
                 bool isEmpty = serverCertificate == null || serverCertificate.Certificate == null

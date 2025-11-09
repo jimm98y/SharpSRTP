@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\DtlsServerSample\CertificateUtils.cs" Link="CertificateUtils.cs" />
-    <Compile Include="..\DtlsServerSample\UdpDatagramTransport.cs" Link="UdpDatagramTransport.cs" />
+    <Compile Include="..\DtlsServerSample\DTLS\DtlsCertificateUtils.cs" Link="DTLS\DtlsCertificateUtils.cs" />
+    <Compile Include="..\DtlsServerSample\DTLS\UdpDatagramTransport.cs" Link="DTLS\UdpDatagramTransport.cs" />
   </ItemGroup>
 
   <ItemGroup>

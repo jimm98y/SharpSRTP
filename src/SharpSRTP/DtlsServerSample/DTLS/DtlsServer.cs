@@ -29,8 +29,8 @@ namespace SharpSRTP.DTLS
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)
         {
             TextWriter output = (alertLevel == AlertLevel.fatal) ? Console.Error : Console.Out;
-            output.WriteLine("DTLS server raised alert: " + AlertLevel.GetText(alertLevel)
-                + ", " + AlertDescription.GetText(alertDescription));
+            output.WriteLine("DTLS server raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
+            
             if (message != null)
             {
                 output.WriteLine("> " + message);
@@ -84,8 +84,7 @@ namespace SharpSRTP.DTLS
             {
                 X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
                 // TODO Create fingerprint based on certificate signature algorithm digest
-                Console.WriteLine("    fingerprint:SHA-256 " + CertificateUtils.Fingerprint(entry) + " ("
-                    + entry.Subject + ")");
+                Console.WriteLine("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
             }
 
             bool isEmpty = (clientCertificate == null || clientCertificate.IsEmpty);
@@ -101,8 +100,7 @@ namespace SharpSRTP.DTLS
                 "x509-client-rsa_pss_256.pem", "x509-client-rsa_pss_384.pem", "x509-client-rsa_pss_512.pem",
                 "x509-client-rsa.pem" };
 
-            TlsCertificate[] certPath = TlsTestUtilities.GetTrustedCertPath(m_context.Crypto, chain[0],
-                trustedCertResources);
+            TlsCertificate[] certPath = TlsTestUtilities.GetTrustedCertPath(m_context.Crypto, chain[0], trustedCertResources);
 
             if (null == certPath)
                 throw new TlsFatalAlert(AlertDescription.bad_certificate);
@@ -178,7 +176,7 @@ namespace SharpSRTP.DTLS
                 }
             }
 
-            var clientCertificate = CertificateUtils.GenerateServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30));
+            var clientCertificate = DtlsCertificateUtils.GenerateServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30));
             Certificate certificate = null;
             AsymmetricKeyParameter privateKey = null;
             using (var pem = new PemReader(new StringReader(clientCertificate.certificate)))

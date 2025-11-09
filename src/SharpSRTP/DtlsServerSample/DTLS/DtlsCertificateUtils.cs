@@ -15,7 +15,7 @@ using System.Text;
 
 namespace SharpSRTP.DTLS
 {
-    public class CertificateUtils
+    public class DtlsCertificateUtils
     {
         public static (string certificate, string key) GenerateServerCertificate(
             string name,
