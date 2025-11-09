@@ -1,13 +1,12 @@
-﻿using DtlsSample;
-using Org.BouncyCastle.Tls;
-using Org.BouncyCastle.Tls.Tests;
+﻿using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Utilities;
+using SharpSRTP.DTLS;
 
 internal class Program
 {
     private static void Main(string[] args)
     {
-        MockDtlsClient client = new MockDtlsClient(null);
+        DtlsClient client = new DtlsClient(null);
         DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
 
         UdpDatagramTransport clientTransport = new UdpDatagramTransport();

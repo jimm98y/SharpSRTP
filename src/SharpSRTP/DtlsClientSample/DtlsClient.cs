@@ -1,22 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using DtlsSample;
-using Org.BouncyCastle.Asn1.X509;
+﻿using Org.BouncyCastle.Asn1.X509;
+using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using Org.BouncyCastle.Utilities;
 using Org.BouncyCastle.Utilities.Encoders;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
-namespace Org.BouncyCastle.Tls.Tests
+namespace SharpSRTP.DTLS
 {
-    internal class MockDtlsClient : DefaultTlsClient
+    public class DtlsClient : DefaultTlsClient
     {
         internal TlsSession m_session;
 
         private int m_handshakeTimeoutMillis = 0;
 
-        internal MockDtlsClient(TlsSession session) : base(new BcTlsCrypto())
+        internal DtlsClient(TlsSession session) : base(new BcTlsCrypto())
         {
             this.m_session = session;
         }

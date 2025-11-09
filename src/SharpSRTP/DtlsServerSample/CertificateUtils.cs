@@ -7,15 +7,15 @@ using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Org.BouncyCastle.Utilities.Encoders;
 
-namespace DtlsSample
+namespace SharpSRTP.DTLS
 {
-    internal class CertificateUtils
+    public class CertificateUtils
     {
         public static (string certificate, string key) GenerateServerCertificate(
             string name,

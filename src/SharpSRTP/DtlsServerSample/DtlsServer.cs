@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using DtlsSample;
-using Org.BouncyCastle.Asn1.Pkcs;
+﻿using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Asn1.X9;
@@ -10,19 +6,23 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using Org.BouncyCastle.Utilities.Encoders;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
-namespace Org.BouncyCastle.Tls.Tests
+namespace SharpSRTP.DTLS
 {
-    public class MockDtlsServer : DefaultTlsServer
+    public class DtlsServer : DefaultTlsServer
     {
-        internal MockDtlsServer() : this(new BcTlsCrypto())
+        internal DtlsServer() : this(new BcTlsCrypto())
         {
         }
 
-        internal MockDtlsServer(TlsCrypto crypto) : base(crypto)
+        internal DtlsServer(TlsCrypto crypto) : base(crypto)
         {
         }
 
@@ -44,8 +44,7 @@ namespace Org.BouncyCastle.Tls.Tests
         public override void NotifyAlertReceived(short alertLevel, short alertDescription)
         {
             TextWriter output = (alertLevel == AlertLevel.fatal) ? Console.Error : Console.Out;
-            output.WriteLine("DTLS server received alert: " + AlertLevel.GetText(alertLevel)
-                + ", " + AlertDescription.GetText(alertDescription));
+            output.WriteLine("DTLS server received alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
         }
 
         public override ProtocolVersion GetServerVersion()
