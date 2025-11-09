@@ -1,5 +1,4 @@
-﻿
-using DtlsClientSample;
+﻿using DtlsSample;
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Tests;
 using Org.BouncyCastle.Utilities;

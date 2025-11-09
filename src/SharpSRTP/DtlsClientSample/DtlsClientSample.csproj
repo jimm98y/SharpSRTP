@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Compile Include="..\DtlsServerSample\CertificateUtils.cs" Link="CertificateUtils.cs" />
+    <Compile Include="..\DtlsServerSample\UdpDatagramTransport.cs" Link="UdpDatagramTransport.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -6,12 +6,12 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 using Org.BouncyCastle.Asn1;
-using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.OpenSsl;
-using System.Security.Cryptography.X509Certificates;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using Org.BouncyCastle.Utilities.Encoders;
 
 namespace DtlsSample
 {
@@ -101,69 +101,27 @@ namespace DtlsSample
             return (strCertificate, strKey);
         }
 
-        public static X509Certificate2 LoadCertificateFromPEM(string pem)
+        public static string Fingerprint(X509CertificateStructure c)
         {
-            using (var textReader = new StringReader(pem))
+            byte[] der = c.GetEncoded();
+            byte[] hash = Sha256DigestOf(der);
+            byte[] hexBytes = Hex.Encode(hash);
+            string hex = Encoding.ASCII.GetString(hexBytes).ToUpperInvariant();
+
+            StringBuilder fp = new StringBuilder();
+            int i = 0;
+            fp.Append(hex.Substring(i, 2));
+            while ((i += 2) < hex.Length)
             {
-                using (Org.BouncyCastle.OpenSsl.PemReader reader = new Org.BouncyCastle.OpenSsl.PemReader(textReader))
-                {
-                    Org.BouncyCastle.Utilities.IO.Pem.PemObject read;
-                    Org.BouncyCastle.X509.X509Certificate certificate = null;
-                    AsymmetricKeyParameter privateKey = null;
-
-                    while ((read = reader.ReadPemObject()) != null)
-                    {
-                        switch (read.Type)
-                        {
-                            case "CERTIFICATE":
-                                {
-                                    certificate = new Org.BouncyCastle.X509.X509Certificate(read.Content);
-                                }
-                                break;
-
-                            case "PRIVATE KEY":
-                                {
-                                    privateKey = Org.BouncyCastle.Security.PrivateKeyFactory.CreateKey(read.Content);
-                                }
-                                break;
-
-                            default:
-                                throw new NotSupportedException(read.Type);
-                        }
-                    }
-
-                    if (certificate == null || privateKey == null)
-                    {
-                        throw new Exception("Unable to load certificate with the private key from the PEM!");
-                    }
-
-                    return GetX509CertificateWithPrivateKey(certificate, privateKey);
-                }
+                fp.Append(':');
+                fp.Append(hex.Substring(i, 2));
             }
+            return fp.ToString();
         }
 
-        private static X509Certificate2 GetX509CertificateWithPrivateKey(Org.BouncyCastle.X509.X509Certificate bouncyCastleCert, AsymmetricKeyParameter privateKey)
+        public static byte[] Sha256DigestOf(byte[] input)
         {
-            // this workaround is needed to fill in the Private Key in the X509Certificate2
-            string alias = bouncyCastleCert.SubjectDN.ToString();
-            Pkcs12Store store = new Pkcs12StoreBuilder().Build();
-
-            X509CertificateEntry certEntry = new X509CertificateEntry(bouncyCastleCert);
-            store.SetCertificateEntry(alias, certEntry);
-
-            AsymmetricKeyEntry keyEntry = new AsymmetricKeyEntry(privateKey);
-            store.SetKeyEntry(alias, keyEntry, new X509CertificateEntry[] { certEntry });
-
-            byte[] certificateData;
-            string password = Guid.NewGuid().ToString();
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                store.Save(memoryStream, password.ToCharArray(), new SecureRandom());
-                memoryStream.Flush();
-                certificateData = memoryStream.ToArray();
-            }
-
-            return new X509Certificate2(certificateData, password, X509KeyStorageFlags.Exportable);
+            return DigestUtilities.CalculateDigest("SHA256", input);
         }
     }
 }

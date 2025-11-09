@@ -16,21 +16,17 @@ using Org.BouncyCastle.Utilities.Encoders;
 
 namespace Org.BouncyCastle.Tls.Tests
 {
-    public class MockDtlsServer
-        : DefaultTlsServer
+    public class MockDtlsServer : DefaultTlsServer
     {
-        internal MockDtlsServer()
-            : this(new BcTlsCrypto())
+        internal MockDtlsServer() : this(new BcTlsCrypto())
         {
         }
 
-        internal MockDtlsServer(TlsCrypto crypto)
-            : base(crypto)
+        internal MockDtlsServer(TlsCrypto crypto) : base(crypto)
         {
         }
 
-        public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message,
-            Exception cause)
+        public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)
         {
             TextWriter output = (alertLevel == AlertLevel.fatal) ? Console.Error : Console.Out;
             output.WriteLine("DTLS server raised alert: " + AlertLevel.GetText(alertLevel)
@@ -73,9 +69,6 @@ namespace Org.BouncyCastle.Tls.Tests
             }
 
             var certificateAuthorities = new List<X509Name>();
-            //certificateAuthorities.Add(TlsTestUtilities.LoadBcCertificateResource("x509-ca-dsa.pem").Subject);
-            //certificateAuthorities.Add(TlsTestUtilities.LoadBcCertificateResource("x509-ca-ecdsa.pem").Subject);
-            //certificateAuthorities.Add(TlsTestUtilities.LoadBcCertificateResource("x509-ca-rsa.pem").Subject);
 
             // All the CA certificates are currently configured with this subject
             certificateAuthorities.Add(new X509Name("CN=BouncyCastle TLS Test CA"));
@@ -92,7 +85,7 @@ namespace Org.BouncyCastle.Tls.Tests
             {
                 X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
                 // TODO Create fingerprint based on certificate signature algorithm digest
-                Console.WriteLine("    fingerprint:SHA-256 " + TlsTestUtilities.Fingerprint(entry) + " ("
+                Console.WriteLine("    fingerprint:SHA-256 " + CertificateUtils.Fingerprint(entry) + " ("
                     + entry.Subject + ")");
             }
 
@@ -101,6 +94,8 @@ namespace Org.BouncyCastle.Tls.Tests
             if (isEmpty)
                 return;
 
+            // TODO review
+            /*
             string[] trustedCertResources = new string[]{ "x509-client-dsa.pem", "x509-client-ecdh.pem",
                 "x509-client-ecdsa.pem", "x509-client-ed25519.pem", "x509-client-ed448.pem",
                 "x509-client-ml_dsa_44.pem", "x509-client-ml_dsa_65.pem", "x509-client-ml_dsa_87.pem",
@@ -114,6 +109,7 @@ namespace Org.BouncyCastle.Tls.Tests
                 throw new TlsFatalAlert(AlertDescription.bad_certificate);
 
             TlsUtilities.CheckPeerSigAlgs(m_context, certPath);
+            */
         }
 
         public override void NotifyHandshakeComplete()
@@ -159,8 +155,9 @@ namespace Org.BouncyCastle.Tls.Tests
 
         protected override TlsCredentialedDecryptor GetRsaEncryptionCredentials()
         {
-            return TlsTestUtilities.LoadEncryptionCredentials(m_context,
-                new string[] { "x509-server-rsa-enc.pem", "x509-ca-rsa.pem" }, "x509-server-key-rsa-enc.pem");
+            //return TlsTestUtilities.LoadEncryptionCredentials(m_context,
+            //    new string[] { "x509-server-rsa-enc.pem", "x509-ca-rsa.pem" }, "x509-server-key-rsa-enc.pem");
+            return base.GetRsaEncryptionCredentials();
         }
 
         protected override TlsCredentialedSigner GetRsaSignerCredentials()
@@ -169,6 +166,7 @@ namespace Org.BouncyCastle.Tls.Tests
 
             //return TlsTestUtilities.LoadSignerCredentialsServer(m_context, clientSigAlgs, SignatureAlgorithm.rsa);
 
+            // TODO: Review this
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
 
             foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)

@@ -3,7 +3,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 
-namespace DtlsServerSample
+namespace DtlsSample
 {
     public class UdpDatagramTransport : DatagramTransport
     {
@@ -20,7 +20,7 @@ namespace DtlsServerSample
 
         public virtual void Connect(string endpoint)
         {
-            this._udpClient.Connect(IPEndPoint.Parse(endpoint));
+            _remote = IPEndPoint.Parse(endpoint);
         }
 
         public virtual void Listen(string endpoint)
