@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 
-using Org.BouncyCastle.Utilities;
-
 namespace Org.BouncyCastle.Tls.Tests
 {
     public class MockDatagramAssociation

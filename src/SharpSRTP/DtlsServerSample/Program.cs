@@ -2,15 +2,13 @@
 using DtlsSample;
 using DtlsServerSample;
 using Org.BouncyCastle.Tls;
-using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Tests;
 using System;
-using System.Text;
 using System.Threading;
 
-var serverCertificate = CertificateUtils.GenerateServerCertificate("test", "us", "us", "locality", "organization", "organizationUnit", "aaa@aaa.com", DateTime.UtcNow, DateTime.UtcNow.AddYears(10));
-
-
+var serverCertificate = CertificateUtils.GenerateServerCertificate(
+    "WebRTC", 
+    DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30)); 
 
 MockDtlsServer server = new MockDtlsServer();
 DtlsServerProtocol serverProtocol = new DtlsServerProtocol();

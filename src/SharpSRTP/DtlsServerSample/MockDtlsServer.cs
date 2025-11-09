@@ -1,8 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-
+using DtlsSample;
+using Org.BouncyCastle.Asn1.Pkcs;
+using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.X509;
+using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using Org.BouncyCastle.Utilities.Encoders;
@@ -159,7 +166,64 @@ namespace Org.BouncyCastle.Tls.Tests
         protected override TlsCredentialedSigner GetRsaSignerCredentials()
         {
             var clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
-            return TlsTestUtilities.LoadSignerCredentialsServer(m_context, clientSigAlgs, SignatureAlgorithm.rsa);
+
+            //return TlsTestUtilities.LoadSignerCredentialsServer(m_context, clientSigAlgs, SignatureAlgorithm.rsa);
+
+            SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
+
+            foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
+            {
+                if (alg.Signature == SignatureAlgorithm.rsa)
+                {
+                    // Just grab the first one we find
+                    signatureAndHashAlgorithm = alg;
+                    break;
+                }
+            }
+
+            var clientCertificate = CertificateUtils.GenerateServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30));
+            Certificate certificate = null;
+            AsymmetricKeyParameter privateKey = null;
+            using (var pem = new PemReader(new StringReader(clientCertificate.certificate)))
+            {
+                var pemCertificate = pem.ReadPemObject();
+                if (pemCertificate.Type.EndsWith("CERTIFICATE"))
+                {
+                    var tlsCertificate = m_context.Crypto.CreateCertificate(pemCertificate.Content);
+                    certificate = new Certificate(new TlsCertificate[] { tlsCertificate });
+                }
+            }
+            using (var pem = new PemReader(new StringReader(clientCertificate.key)))
+            {
+                var pemPrivateKey = pem.ReadPemObject();
+                if (pemPrivateKey.Type.EndsWith("PRIVATE KEY"))
+                {
+                    if (pemPrivateKey.Type.Equals("PRIVATE KEY"))
+                    {
+                        privateKey = PrivateKeyFactory.CreateKey(pemPrivateKey.Content);
+                    }
+                    if (pemPrivateKey.Type.Equals("ENCRYPTED PRIVATE KEY"))
+                    {
+                        throw new NotSupportedException("Encrypted PKCS#8 keys not supported");
+                    }
+                    if (pemPrivateKey.Type.Equals("RSA PRIVATE KEY"))
+                    {
+                        RsaPrivateKeyStructure rsa = RsaPrivateKeyStructure.GetInstance(pemPrivateKey.Content);
+                        privateKey = new RsaPrivateCrtKeyParameters(rsa.Modulus, rsa.PublicExponent,
+                            rsa.PrivateExponent, rsa.Prime1, rsa.Prime2, rsa.Exponent1,
+                            rsa.Exponent2, rsa.Coefficient);
+                    }
+                    if (pemPrivateKey.Type.Equals("EC PRIVATE KEY"))
+                    {
+                        ECPrivateKeyStructure pKey = ECPrivateKeyStructure.GetInstance(pemPrivateKey.Content);
+                        AlgorithmIdentifier algId = new AlgorithmIdentifier(X9ObjectIdentifiers.IdECPublicKey, pKey.Parameters);
+                        PrivateKeyInfo privInfo = new PrivateKeyInfo(algId, pKey);
+                        privateKey = PrivateKeyFactory.CreateKey(privInfo);
+                    }
+                }
+            }
+
+            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, privateKey, certificate, signatureAndHashAlgorithm);
         }
 
         protected virtual string ToHexString(byte[] data)

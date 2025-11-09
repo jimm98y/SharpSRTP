@@ -171,13 +171,14 @@ namespace Org.BouncyCastle.Tls.Tests
                 if (isEmpty)
                     throw new TlsFatalAlert(AlertDescription.bad_certificate);
 
-                string[] trustedCertResources = new string[]{ "x509-server-rsa-sign.pem" };
+                //string[] trustedCertResources = new string[]{ "x509-server-rsa-sign.pem" };
 
-                TlsCertificate[] certPath = TlsTestUtilities.GetTrustedCertPath(m_context.Crypto, chain[0],
-                    trustedCertResources);
+                // TODO: certificate chain validation
+                TlsCertificate[] certPath = chain;
+                    // TlsTestUtilities.GetTrustedCertPath(m_context.Crypto, chain[0], trustedCertResources);
 
-                if (null == certPath)
-                    throw new TlsFatalAlert(AlertDescription.bad_certificate);
+                //if (null == certPath)
+                //    throw new TlsFatalAlert(AlertDescription.bad_certificate);
 
                 TlsUtilities.CheckPeerSigAlgs(m_context, certPath);
             }
@@ -188,6 +189,9 @@ namespace Org.BouncyCastle.Tls.Tests
                 if (certificateTypes == null || !Arrays.Contains(certificateTypes, ClientCertificateType.rsa_sign))
                     return null;
 
+                return null;
+
+                /*
                 SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
 
                 foreach (SignatureAndHashAlgorithm alg in certificateRequest.SupportedSignatureAlgorithms)
@@ -199,9 +203,6 @@ namespace Org.BouncyCastle.Tls.Tests
                         break;
                     }
                 }
-
-                return null;
-
                 var clientCertificate = CertificateUtils.GenerateClientCertificate("test", "us", "us", "locality", "organization", "organizationUnit", "aaa@aaa.com", DateTime.UtcNow, DateTime.UtcNow.AddYears(10));
                 Certificate certificate = null;
                 AsymmetricKeyParameter privateKey = null;
@@ -245,6 +246,7 @@ namespace Org.BouncyCastle.Tls.Tests
                 }
 
                 return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, privateKey, certificate, signatureAndHashAlgorithm);
+                */
             }
         }
     }

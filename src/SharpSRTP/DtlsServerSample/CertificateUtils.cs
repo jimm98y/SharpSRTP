@@ -19,12 +19,6 @@ namespace DtlsSample
     {
         public static (string certificate, string key) GenerateServerCertificate(
             string name,
-            string country,
-            string state,
-            string locality,
-            string organisation,
-            string organisationUnit,
-            string email,
             DateTime notBefore,
             DateTime notAfter,
             bool exClientAuth = true,
@@ -48,24 +42,12 @@ namespace DtlsSample
 
             var nameOids = new List<DerObjectIdentifier>
             {
-                X509Name.CN,
-                X509Name.O,
-                X509Name.OU,
-                X509Name.ST,
-                X509Name.C,
-                X509Name.L,
-                X509Name.E
+                X509Name.CN
             };
 
             var nameValues = new Dictionary<DerObjectIdentifier, string>()
             {
-                { X509Name.CN, name },
-                { X509Name.O, organisation },
-                { X509Name.OU, organisationUnit },
-                { X509Name.ST, state },
-                { X509Name.C, country },
-                { X509Name.L, locality },
-                { X509Name.E, email }
+                { X509Name.CN, name }
             };
 
             var subjectDN = new X509Name(nameOids, nameValues);
@@ -81,108 +63,6 @@ namespace DtlsSample
                 certificateGenerator.AddExtension(X509Extensions.KeyUsage, false, keyUsage.ToAsn1Object());
 
                 var extendedKeyUsage = new ExtendedKeyUsage(new[] { KeyPurposeID.id_kp_serverAuth });
-                certificateGenerator.AddExtension(X509Extensions.ExtendedKeyUsage, true, extendedKeyUsage.ToAsn1Object());
-            }
-
-            byte[] serial = new byte[20];
-            random.NextBytes(serial);
-            serial[0] = 1;
-            certificateGenerator.SetSerialNumber(new Org.BouncyCastle.Math.BigInteger(serial));
-
-            var certificate = certificateGenerator.Generate(signatureFactory);
-            var privateKey = issuerKeyPair.Private;
-            var pkcs8 = new Pkcs8Generator(privateKey);
-
-            string strCertificate = "";
-            string strKey = "";
-
-            using (var textWriter = new StringWriter())
-            {
-                using (PemWriter pemWriter = new PemWriter(textWriter))
-                {
-                    pemWriter.WriteObject(certificate);
-                }
-
-                strCertificate = textWriter.ToString();
-            }
-
-            using (var textWriter = new StringWriter())
-            {
-                using (PemWriter pemWriter = new PemWriter(textWriter))
-                {
-                    pemWriter.WriteObject(pkcs8);
-                }
-
-                strKey = textWriter.ToString();
-            }
-
-            return (strCertificate, strKey);
-        }
-
-        public static (string certificate, string key) GenerateClientCertificate(
-            string name,
-            string country,
-            string state,
-            string locality,
-            string organisation,
-            string organisationUnit,
-            string email,
-            DateTime notBefore,
-            DateTime notAfter,
-            bool exClientAuth = true,
-            int keyStrength = 2048,
-            string signatureAlgorithm = "SHA256WITHRSA")
-        {
-            var randomGenerator = new CryptoApiRandomGenerator();
-            var random = new SecureRandom(randomGenerator);
-
-            var keyGenerationParameters = new KeyGenerationParameters(random, keyStrength);
-            var keyPairGenerator = new RsaKeyPairGenerator();
-            keyPairGenerator.Init(keyGenerationParameters);
-
-            AsymmetricCipherKeyPair subjectKeyPair = keyPairGenerator.GenerateKeyPair();
-            AsymmetricCipherKeyPair issuerKeyPair = subjectKeyPair;
-            ISignatureFactory signatureFactory = new Asn1SignatureFactory(signatureAlgorithm, issuerKeyPair.Private, random);
-
-            var certificateGenerator = new X509V3CertificateGenerator();
-            certificateGenerator.SetNotBefore(notBefore);
-            certificateGenerator.SetNotAfter(notAfter);
-
-            var nameOids = new List<DerObjectIdentifier>
-            {
-                X509Name.CN,
-                X509Name.O,
-                X509Name.OU,
-                X509Name.ST,
-                X509Name.C,
-                X509Name.L,
-                X509Name.E
-            };
-
-            var nameValues = new Dictionary<DerObjectIdentifier, string>()
-            {
-                { X509Name.CN, name },
-                { X509Name.O, organisation },
-                { X509Name.OU, organisationUnit },
-                { X509Name.ST, state },
-                { X509Name.C, country },
-                { X509Name.L, locality },
-                { X509Name.E, email }
-            };
-
-            var subjectDN = new X509Name(nameOids, nameValues);
-            var issuerDN = subjectDN;
-
-            certificateGenerator.SetIssuerDN(issuerDN);
-            certificateGenerator.SetSubjectDN(subjectDN);
-            certificateGenerator.SetPublicKey(issuerKeyPair.Public);
-
-            if (exClientAuth)
-            {
-                var keyUsage = new KeyUsage(KeyUsage.DigitalSignature);
-                certificateGenerator.AddExtension(X509Extensions.KeyUsage, false, keyUsage.ToAsn1Object());
-
-                var extendedKeyUsage = new ExtendedKeyUsage(new[] { KeyPurposeID.id_kp_clientAuth });
                 certificateGenerator.AddExtension(X509Extensions.ExtendedKeyUsage, true, extendedKeyUsage.ToAsn1Object());
             }
 
