@@ -1,11 +1,13 @@
 ﻿using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using SharpSRTP.DTLS;
+using SharpSRTP.SRTP;
 using System;
 using System.Text;
 using System.Threading;
 
-DtlsServer server = new DtlsServer();
+//DtlsServer server = new DtlsServer();
+SrtpServer server = new SrtpServer(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80);
 DtlsServerProtocol serverProtocol = new DtlsServerProtocol();
 
 UdpDatagramTransport serverTransport = new UdpDatagramTransport();
