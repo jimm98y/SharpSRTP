@@ -1,31 +1,32 @@
 ﻿using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Utilities;
 using SharpSRTP.DTLS;
+using SharpSRTP.SRTP;
 
-internal class Program
+SrtpKeyGenerator keyGenerator = new SrtpKeyGenerator(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80);
+DtlsClient client = new DtlsClient(null);
+client.HandshakeCompleted += (sender, e) =>
 {
-    private static void Main(string[] args)
-    {
-        DtlsClient client = new DtlsClient(null);
-        DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
+    keyGenerator.Generate(e.SecurityParameters);
+};
 
-        UdpDatagramTransport clientTransport = new UdpDatagramTransport();
-        clientTransport.Connect("127.0.0.1:8888");
+DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
 
-        DtlsTransport dtlsClient = clientProtocol.Connect(client, clientTransport);
+UdpDatagramTransport clientTransport = new UdpDatagramTransport();
+clientTransport.Connect("127.0.0.1:8888");
 
-        for (int i = 1; i <= 10; ++i)
-        {
-            byte[] data = new byte[i];
-            Arrays.Fill(data, (byte)i);
-            dtlsClient.Send(data, 0, data.Length);
-        }
+DtlsTransport dtlsClient = clientProtocol.Connect(client, clientTransport);
 
-        byte[] buf = new byte[dtlsClient.GetReceiveLimit()];
-        while (dtlsClient.Receive(buf, 0, buf.Length, 100) >= 0)
-        {
-        }
-
-        dtlsClient.Close();
-    }
+for (int i = 1; i <= 10; ++i)
+{
+    byte[] data = new byte[i];
+    Arrays.Fill(data, (byte)i);
+    dtlsClient.Send(data, 0, data.Length);
 }
+
+byte[] buf = new byte[dtlsClient.GetReceiveLimit()];
+while (dtlsClient.Receive(buf, 0, buf.Length, 100) >= 0)
+{
+}
+
+dtlsClient.Close();

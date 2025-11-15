@@ -1,12 +1,12 @@
 ﻿using Org.BouncyCastle.Tls;
-using SharpSRTP.DTLS;
+using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpSRTP.SRTP
 {
-    public class SrtpServer : DtlsServer
+    public class SrtpKeyGenerator
     {
         private readonly int _protectionProfile;
 
@@ -22,7 +22,7 @@ namespace SharpSRTP.SRTP
         public byte[] ServerWriteMasterKey { get { return _server_write_SRTP_master_key; } }
         public byte[] ServerWriteMasterSalt { get { return _server_write_SRTP_master_salt; } }
 
-        static SrtpServer()
+        static SrtpKeyGenerator()
         {
             _protectionProfiles = new Dictionary<int, SrtpProtectionProfile>()
             {
@@ -34,7 +34,7 @@ namespace SharpSRTP.SRTP
             };
         }
 
-        public SrtpServer(int profile)
+        public SrtpKeyGenerator(int profile)
         {
             _protectionProfile = profile;
 
@@ -47,9 +47,8 @@ namespace SharpSRTP.SRTP
             _server_write_SRTP_master_salt = new byte[cipherSaltLen];
         }
 
-        public override void NotifyHandshakeComplete()
+        public void Generate(SecurityParameters dtlsSecurityParameters)
         {
-            base.NotifyHandshakeComplete();
 
             // SRTP key derivation as described here https://datatracker.ietf.org/doc/html/rfc5764
             var srtpSecurityParams = _protectionProfiles[_protectionProfile];
@@ -58,7 +57,6 @@ namespace SharpSRTP.SRTP
             int shared_secret_length = 2 * (srtpSecurityParams.CipherKeyLength + srtpSecurityParams.CipherSaltLength); // in bits
 
             // EXTRACTOR-dtls_srtp https://datatracker.ietf.org/doc/html/rfc5705
-            var dtlsSecurityParameters = m_context.SecurityParameters;
 
             // TODO: If context is provided, it computes:
             /*
@@ -89,10 +87,10 @@ namespace SharpSRTP.SRTP
             Buffer.BlockCopy(shared_secret, _client_write_SRTP_master_key.Length + _server_write_SRTP_master_key.Length, _client_write_SRTP_master_salt, 0, _client_write_SRTP_master_salt.Length);
             Buffer.BlockCopy(shared_secret, _client_write_SRTP_master_key.Length + _server_write_SRTP_master_key.Length + _client_write_SRTP_master_salt.Length, _server_write_SRTP_master_salt, 0, _server_write_SRTP_master_salt.Length);
 
-            Console.WriteLine("Server 'client_write_SRTP_master_key': " + ToHexString(_client_write_SRTP_master_key));
-            Console.WriteLine("Server 'server_write_SRTP_master_key': " + ToHexString(_server_write_SRTP_master_key));
-            Console.WriteLine("Server 'client_write_SRTP_master_salt': " + ToHexString(_client_write_SRTP_master_salt));
-            Console.WriteLine("Server 'server_write_SRTP_master_salt': " + ToHexString(_server_write_SRTP_master_salt));
+            Console.WriteLine("Server 'client_write_SRTP_master_key': " + Hex.ToHexString(_client_write_SRTP_master_key));
+            Console.WriteLine("Server 'server_write_SRTP_master_key': " + Hex.ToHexString(_server_write_SRTP_master_key));
+            Console.WriteLine("Server 'client_write_SRTP_master_salt': " + Hex.ToHexString(_client_write_SRTP_master_salt));
+            Console.WriteLine("Server 'server_write_SRTP_master_salt': " + Hex.ToHexString(_server_write_SRTP_master_salt));
         }
     }
 }

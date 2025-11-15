@@ -9,11 +9,18 @@
 
   <ItemGroup>
     <Compile Include="..\DtlsServerSample\DTLS\DtlsCertificateUtils.cs" Link="DTLS\DtlsCertificateUtils.cs" />
+    <Compile Include="..\DtlsServerSample\DTLS\DtlsHandshakeCompletedEventArgs.cs" Link="DTLS\DtlsHandshakeCompletedEventArgs.cs" />
     <Compile Include="..\DtlsServerSample\DTLS\UdpDatagramTransport.cs" Link="DTLS\UdpDatagramTransport.cs" />
+    <Compile Include="..\DtlsServerSample\SRTP\SrtpKeyGenerator.cs" Link="SRTP\SrtpKeyGenerator.cs" />
+    <Compile Include="..\DtlsServerSample\SRTP\SrtpProtectionProfile.cs" Link="SRTP\SrtpProtectionProfile.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="SRTP\" />
   </ItemGroup>
 
 </Project>

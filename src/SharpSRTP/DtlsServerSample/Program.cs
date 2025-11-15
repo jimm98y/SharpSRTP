@@ -6,8 +6,13 @@ using System;
 using System.Text;
 using System.Threading;
 
-//DtlsServer server = new DtlsServer();
-SrtpServer server = new SrtpServer(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80);
+SrtpKeyGenerator keyGenerator = new SrtpKeyGenerator(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80);
+DtlsServer server = new DtlsServer();
+server.HandshakeCompleted += (sender, e) =>
+{
+    keyGenerator.Generate(e.SecurityParameters);
+};
+
 DtlsServerProtocol serverProtocol = new DtlsServerProtocol();
 
 UdpDatagramTransport serverTransport = new UdpDatagramTransport();

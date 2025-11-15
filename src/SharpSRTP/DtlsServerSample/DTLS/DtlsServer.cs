@@ -18,6 +18,8 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsServer : DefaultTlsServer
     {
+        public event EventHandler<DtlsHandshakeCompletedEventArgs> HandshakeCompleted;
+
         public DtlsServer() : this(new BcTlsCrypto())
         {
         }
@@ -124,6 +126,8 @@ namespace SharpSRTP.DTLS
 
             byte[] tlsUnique = m_context.ExportChannelBinding(ChannelBinding.tls_unique);
             Console.WriteLine("Server 'tls-unique': " + ToHexString(tlsUnique));
+
+            HandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
 
         public override void ProcessClientExtensions(IDictionary<int, byte[]> clientExtensions)

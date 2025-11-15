@@ -12,6 +12,8 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsClient : DefaultTlsClient
     {
+        public event EventHandler<DtlsHandshakeCompletedEventArgs> HandshakeCompleted;
+
         private TlsSession m_session;
 
         private int m_handshakeTimeoutMillis = 0;
@@ -102,6 +104,8 @@ namespace SharpSRTP.DTLS
                 byte[] tlsUnique = m_context.ExportChannelBinding(ChannelBinding.tls_unique);
                 Console.WriteLine("Client 'tls-unique': " + ToHexString(tlsUnique));
             }
+
+            HandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
 
         public override IDictionary<int, byte[]> GetClientExtensions()
