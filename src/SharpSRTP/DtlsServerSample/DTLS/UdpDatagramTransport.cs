@@ -11,21 +11,18 @@ namespace SharpSRTP.DTLS
 
         private UdpClient _udpClient = null;
         private IPEndPoint _remote;
+        public IPEndPoint RemoteEndPoint => _remote;
 
-        public UdpDatagramTransport(int mtu = 1472)
+        public UdpDatagramTransport(string localEndpoint, string remoteEndpoint, int mtu = 1472)
         {
             this._mtu = mtu;
-            this._udpClient = new UdpClient();
-        }
+            if (string.IsNullOrEmpty(localEndpoint))
+                this._udpClient = new UdpClient();
+            else
+                this._udpClient = new UdpClient(IPEndPoint.Parse(localEndpoint));
 
-        public virtual void Connect(string endpoint)
-        {
-            _remote = IPEndPoint.Parse(endpoint);
-        }
-
-        public virtual void Listen(string endpoint)
-        {
-            this._udpClient = new UdpClient(IPEndPoint.Parse(endpoint));
+            if (!string.IsNullOrEmpty(remoteEndpoint))
+                _remote = IPEndPoint.Parse(remoteEndpoint);
         }
 
         public virtual int GetReceiveLimit()

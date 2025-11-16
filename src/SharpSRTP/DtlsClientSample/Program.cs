@@ -11,9 +11,7 @@ client.HandshakeCompleted += (sender, e) =>
 };
 
 DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
-
-UdpDatagramTransport clientTransport = new UdpDatagramTransport();
-clientTransport.Connect("127.0.0.1:8888");
+UdpDatagramTransport clientTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
 
 DtlsTransport dtlsClient = clientProtocol.Connect(client, clientTransport);
 

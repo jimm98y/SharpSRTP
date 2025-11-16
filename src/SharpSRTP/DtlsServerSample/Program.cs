@@ -3,8 +3,9 @@ using Org.BouncyCastle.Tls.Crypto;
 using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
 using System;
+using System.Net;
 using System.Text;
-using System.Threading;
+using System.Threading.Tasks;
 
 SrtpKeyGenerator keyGenerator = new SrtpKeyGenerator(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80);
 DtlsServer server = new DtlsServer();
@@ -14,89 +15,60 @@ server.HandshakeCompleted += (sender, e) =>
 };
 
 DtlsServerProtocol serverProtocol = new DtlsServerProtocol();
+UdpDatagramTransport serverTransport = new UdpDatagramTransport("127.0.0.1:8888", null);
 
-UdpDatagramTransport serverTransport = new UdpDatagramTransport();
-serverTransport.Listen("127.0.0.1:8888");
+bool isShutdown = false;
 
-ServerTask serverTask = new ServerTask(serverProtocol, server, serverTransport);
-Thread serverThread = new Thread(serverTask.Run);
-serverThread.Start();
-
-internal class ServerTask
+try
 {
-    private readonly DtlsServerProtocol m_serverProtocol;
-    private readonly TlsServer m_server;
-    private readonly DatagramTransport m_serverTransport;
-    private volatile bool m_isShutdown = false;
+    TlsCrypto serverCrypto = server.Crypto;
 
-    internal ServerTask(DtlsServerProtocol serverProtocol, TlsServer server, DatagramTransport serverTransport)
-    {
-        m_serverProtocol = serverProtocol;
-        m_server = server;
-        m_serverTransport = serverTransport;
-    }
+    // Use DtlsVerifier to require a HelloVerifyRequest cookie exchange before accepting
+    DtlsVerifier verifier = new DtlsVerifier(serverCrypto);
 
-    public void Run()
+    int receiveLimit = serverTransport.GetReceiveLimit();
+    byte[] buf = new byte[serverTransport.GetReceiveLimit()];
+
+    while (!isShutdown)
     {
-        try
+        DtlsRequest request = null;
+
+        do
         {
-            TlsCrypto serverCrypto = m_server.Crypto;
+            if (isShutdown)
+                return;
 
-            DtlsRequest request = null;
-
-            // Use DtlsVerifier to require a HelloVerifyRequest cookie exchange before accepting
+            int length = serverTransport.Receive(buf, 0, receiveLimit, 100);
+            if (length > 0)
             {
-                DtlsVerifier verifier = new DtlsVerifier(serverCrypto);
-
-                // NOTE: Test value only - would typically be the client IP address
-                byte[] clientID = Encoding.UTF8.GetBytes("MockDtlsClient");
-
-                int receiveLimit = m_serverTransport.GetReceiveLimit();
-                int dummyOffset = serverCrypto.SecureRandom.Next(16) + 1;
-                byte[] buf = new byte[dummyOffset + m_serverTransport.GetReceiveLimit()];
-
-                do
-                {
-                    if (m_isShutdown)
-                        return;
-
-                    int length = m_serverTransport.Receive(buf, dummyOffset, receiveLimit, 100);
-                    if (length > 0)
-                    {
-                        request = verifier.VerifyRequest(clientID, buf, dummyOffset, length, m_serverTransport);
-                    }
-                }
-                while (request == null);
+                byte[] clientID = Encoding.UTF8.GetBytes(serverTransport.RemoteEndPoint.ToString());
+                request = verifier.VerifyRequest(clientID, buf, 0, length, serverTransport);
             }
+        }
+        while (request == null);
 
+        var clientTransport = new UdpDatagramTransport(null, serverTransport.RemoteEndPoint.ToString());
+        var session = Task.Run(() =>
+        {
             // NOTE: A real server would handle each DtlsRequest in a new task/thread and continue accepting
+            DtlsTransport dtlsTransport = serverProtocol.Accept(server, clientTransport, request);
+            byte[] bbuf = new byte[dtlsTransport.GetReceiveLimit()];
+            while (!isShutdown)
             {
-                DtlsTransport dtlsTransport = m_serverProtocol.Accept(m_server, m_serverTransport, request);
-                byte[] buf = new byte[dtlsTransport.GetReceiveLimit()];
-                while (!m_isShutdown)
+                int length = dtlsTransport.Receive(bbuf, 0, bbuf.Length, 100);
+                if (length >= 0)
                 {
-                    int length = dtlsTransport.Receive(buf, 0, buf.Length, 100);
-                    if (length >= 0)
-                    {
-                        dtlsTransport.Send(buf, 0, length);
-                    }
+                    dtlsTransport.Send(bbuf, 0, length);
                 }
-                dtlsTransport.Close();
             }
-        }
-        catch (Exception e)
-        {
-            Console.Error.WriteLine(e);
-            Console.Error.Flush();
-        }
-    }
 
-    internal void Shutdown(Thread serverThread)
-    {
-        if (!m_isShutdown)
-        {
-            m_isShutdown = true;
-            serverThread.Join();
+            dtlsTransport.Close();
         }
+        );
     }
+}
+catch (Exception e)
+{
+    Console.Error.WriteLine(e);
+    Console.Error.Flush();
 }
