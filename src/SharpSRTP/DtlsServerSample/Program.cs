@@ -3,7 +3,6 @@ using Org.BouncyCastle.Tls.Crypto;
 using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
 using System;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,7 +10,7 @@ SrtpKeyGenerator keyGenerator = new SrtpKeyGenerator(Org.BouncyCastle.Tls.SrtpPr
 DtlsServer server = new DtlsServer();
 server.HandshakeCompleted += (sender, e) =>
 {
-    keyGenerator.Generate(e.SecurityParameters);
+    keyGenerator.GenerateMasterKeys(e.SecurityParameters);
 };
 
 DtlsServerProtocol serverProtocol = new DtlsServerProtocol();

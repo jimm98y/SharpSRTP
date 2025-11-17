@@ -7,7 +7,7 @@ SrtpKeyGenerator keyGenerator = new SrtpKeyGenerator(Org.BouncyCastle.Tls.SrtpPr
 DtlsClient client = new DtlsClient(null);
 client.HandshakeCompleted += (sender, e) =>
 {
-    keyGenerator.Generate(e.SecurityParameters);
+    keyGenerator.GenerateMasterKeys(e.SecurityParameters);
 };
 
 DtlsClientProtocol clientProtocol = new DtlsClientProtocol();

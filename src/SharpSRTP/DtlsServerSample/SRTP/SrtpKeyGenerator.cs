@@ -47,7 +47,7 @@ namespace SharpSRTP.SRTP
             _server_write_SRTP_master_salt = new byte[cipherSaltLen];
         }
 
-        public void Generate(SecurityParameters dtlsSecurityParameters)
+        public void GenerateMasterKeys(SecurityParameters dtlsSecurityParameters)
         {
 
             // SRTP key derivation as described here https://datatracker.ietf.org/doc/html/rfc5764
@@ -91,6 +91,42 @@ namespace SharpSRTP.SRTP
             Console.WriteLine("Server 'server_write_SRTP_master_key': " + Hex.ToHexString(_server_write_SRTP_master_key));
             Console.WriteLine("Server 'client_write_SRTP_master_salt': " + Hex.ToHexString(_client_write_SRTP_master_salt));
             Console.WriteLine("Server 'server_write_SRTP_master_salt': " + Hex.ToHexString(_server_write_SRTP_master_salt));
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void GenerateIV(byte[] k_s, uint ssrc, uint seq, uint roc)
+        {
+            if(k_s == null || k_s.Length != 14)
+                throw new ArgumentException("k_s must be 14 bytes length");
+
+            // RFC 3711 - 3.3.1
+            // i = 2 ^ 16 * ROC + SEQ
+            ulong index = ((ulong)roc << 16) | seq;
+
+            // RFC 3711 - 4.1.1
+            // IV = (k_s * 2 ^ 16) XOR(SSRC * 2 ^ 64) XOR(i * 2 ^ 16)
+            byte[] iv = new byte[16];
+
+            Array.Copy(k_s, 0, iv, 0, 14);
+
+            iv[4] ^= (byte)((ssrc >> 24) & 0xFF);
+            iv[5] ^= (byte)((ssrc >> 16) & 0xFF);
+            iv[6] ^= (byte)((ssrc >> 8) & 0xFF);
+            iv[7] ^= (byte)(ssrc & 0xFF);
+
+            iv[8] ^= (byte)((index >> 40) & 0xFF);
+            iv[9] ^= (byte)((index >> 32) & 0xFF);
+            iv[10] ^= (byte)((index >> 24) & 0xFF);
+            iv[11] ^= (byte)((index >> 16) & 0xFF);
+            iv[12] ^= (byte)((index >> 8) & 0xFF);
+            iv[13] ^= (byte)(index & 0xFF);
+
+            iv[14] = 0;
+            iv[15] = 0;
+
+
         }
     }
 }
