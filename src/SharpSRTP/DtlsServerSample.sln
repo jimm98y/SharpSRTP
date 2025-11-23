@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36616.10
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11217.181 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DtlsServerSample", "DtlsServerSample\DtlsServerSample.csproj", "{D6727D07-EB74-39FF-0053-1879A363287D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Srtp.Tests", "Srtp.Tests\Srtp.Tests.csproj", "{F3074A24-517B-4D5A-988A-1D1CE28BFB29}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{D6727D07-EB74-39FF-0053-1879A363287D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6727D07-EB74-39FF-0053-1879A363287D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D6727D07-EB74-39FF-0053-1879A363287D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3074A24-517B-4D5A-988A-1D1CE28BFB29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3074A24-517B-4D5A-988A-1D1CE28BFB29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3074A24-517B-4D5A-988A-1D1CE28BFB29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3074A24-517B-4D5A-988A-1D1CE28BFB29}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

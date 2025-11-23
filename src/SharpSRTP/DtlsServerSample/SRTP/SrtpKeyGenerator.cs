@@ -1,4 +1,5 @@
-﻿using Org.BouncyCastle.Tls;
+﻿using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
@@ -49,7 +50,6 @@ namespace SharpSRTP.SRTP
 
         public void GenerateMasterKeys(SecurityParameters dtlsSecurityParameters)
         {
-
             // SRTP key derivation as described here https://datatracker.ietf.org/doc/html/rfc5764
             var srtpSecurityParams = _protectionProfiles[_protectionProfile];
 
@@ -93,23 +93,20 @@ namespace SharpSRTP.SRTP
             Console.WriteLine("Server 'server_write_SRTP_master_salt': " + Hex.ToHexString(_server_write_SRTP_master_salt));
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public void GenerateIV(byte[] k_s, uint ssrc, uint seq, uint roc)
+        public ulong GeneratePEIndex(uint seq, uint roc)
         {
-            if(k_s == null || k_s.Length != 14)
-                throw new ArgumentException("k_s must be 14 bytes length");
-
             // RFC 3711 - 3.3.1
             // i = 2 ^ 16 * ROC + SEQ
-            ulong index = ((ulong)roc << 16) | seq;
+            return ((ulong)roc << 16) | seq;
+        }
 
+        public byte[] GeneratePEIV(byte[] masterSalt, uint ssrc, uint index)
+        {
             // RFC 3711 - 4.1.1
             // IV = (k_s * 2 ^ 16) XOR(SSRC * 2 ^ 64) XOR(i * 2 ^ 16)
             byte[] iv = new byte[16];
 
-            Array.Copy(k_s, 0, iv, 0, 14);
+            Array.Copy(masterSalt, 0, iv, 0, 14);
 
             iv[4] ^= (byte)((ssrc >> 24) & 0xFF);
             iv[5] ^= (byte)((ssrc >> 16) & 0xFF);
@@ -126,7 +123,51 @@ namespace SharpSRTP.SRTP
             iv[14] = 0;
             iv[15] = 0;
 
+            return iv;
+        }
 
+        private static ulong DIV(ulong x, ulong y)
+        {
+            if (y == 0)
+                return 0;
+            else
+                return x / y;   
+        }
+
+        public byte[] GenerateIV(byte[] masterSalt, ulong index, ulong kdr, byte label)
+        {
+            // RFC 3711 - 4.1.1
+            // IV = (k_s * 2 ^ 16) XOR(SSRC * 2 ^ 64) XOR(i * 2 ^ 16)
+            byte[] iv = new byte[16];
+
+            ulong r = DIV(index, kdr);
+            ulong keyId = ((ulong)label << 48) | r;
+
+            Array.Copy(masterSalt, 0, iv, 0, 14);
+
+            iv[7] ^= (byte)((keyId >> 48) & 0xFF);
+            iv[8] ^= (byte)((keyId >> 40) & 0xFF);
+            iv[9] ^= (byte)((keyId >> 32) & 0xFF);
+            iv[10] ^= (byte)((keyId >> 24) & 0xFF);
+            iv[11] ^= (byte)((keyId >> 16) & 0xFF);
+            iv[12] ^= (byte)((keyId >> 8) & 0xFF);
+            iv[13] ^= (byte)(keyId & 0xFF);
+
+            iv[14] = 0;
+            iv[15] = 0;
+
+            return iv;
+        }
+
+        public byte[] GenerateCipherKey(byte[] masterKey, byte[] masterSalt, byte[] iv)
+        {
+            var aes = new AesEngine();
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(masterKey));
+
+            byte[] cipherKey = new byte[16];
+            aes.ProcessBlock(iv, 0, cipherKey, 0);
+
+            return cipherKey;
         }
     }
 }
