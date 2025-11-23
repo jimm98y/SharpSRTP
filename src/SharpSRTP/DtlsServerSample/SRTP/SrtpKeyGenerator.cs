@@ -1,4 +1,6 @@
-﻿using Org.BouncyCastle.Crypto.Engines;
+﻿using Org.BouncyCastle.Crypto.Digests;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
@@ -93,11 +95,31 @@ namespace SharpSRTP.SRTP
             Console.WriteLine("Server 'server_write_SRTP_master_salt': " + Hex.ToHexString(_server_write_SRTP_master_salt));
         }
 
-        public ulong GeneratePEIndex(uint seq, uint roc)
+        public static ulong GeneratePEIndex(uint seq, uint roc)
         {
             // RFC 3711 - 3.3.1
             // i = 2 ^ 16 * ROC + SEQ
             return ((ulong)roc << 16) | seq;
+        }
+
+        public static long DeterminePEIndex(long s_l, long SEQ, long ROC)
+        {
+            long v;
+            if (s_l < 32768)
+            {
+                if (SEQ - s_l > 32768)
+                    v = (ROC - 1) % 4294967296L;
+                else
+                    v = ROC;
+            }
+            else
+            {
+                if (s_l - 32768 > SEQ)
+                  v = (ROC + 1) % 4294967296L;
+                else
+                  v = ROC;
+            }
+            return SEQ + v * 65536;
         }
 
         public byte[] GeneratePEIV(byte[] masterSalt, uint ssrc, uint index)
@@ -168,6 +190,28 @@ namespace SharpSRTP.SRTP
             aes.ProcessBlock(iv, 0, cipherKey, 0);
 
             return cipherKey;
+        }
+
+        public byte[] GenerateAuthTag(byte[] authKey, byte[] message)
+        {
+            var hmac = new HMac(new Sha1Digest());
+            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(authKey));
+            hmac.BlockUpdate(message, 0, message.Length);
+
+            byte[] output = new byte[hmac.GetMacSize()];
+            hmac.DoFinal(output, 0);
+
+            return output;
+        }
+
+        public static uint RtpReadSsrc(byte[] rtpPacket)
+        {
+            return (uint)((rtpPacket[8] << 24) | (rtpPacket[9] << 16) | (rtpPacket[10] << 8) | rtpPacket[11]);
+        }
+
+        public static ushort RtpReadSequenceNumber(byte[] rtpPacket)
+        {
+            return (ushort)((rtpPacket[2] << 8) | rtpPacket[3]);
         }
     }
 }
