@@ -11,4 +11,8 @@
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SharpSRTP\SharpSRTP.csproj" />
+  </ItemGroup>
+
 </Project>
