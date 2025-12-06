@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpSRTP.SRTP;
+using System;
 using System.Linq;
 
 namespace Srtp.Tests
@@ -21,16 +22,8 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var generator = new SharpSRTP.SRTP.SrtpKeyGenerator(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80);
-            byte[] iv = generator.GenerateIV(masterSaltBytes, 0, 0, (byte)label);
-            string initializationVector = Convert.ToHexString(iv);
-
-            iv[14] = (byte)((counter >> 8) & 0xff);
-            iv[15] = (byte)(counter & 0xff);
-
-            byte[] ck = generator.GenerateCipherKey(masterKeyBytes, masterSaltBytes, iv);
-            if (label == 2 || label == 5) // 2 is for salt
-                ck = ck.Take(14).ToArray();
+            SrtpKeyGenerator generator = new SharpSRTP.SRTP.SrtpKeyGenerator(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80);
+            byte[] ck = generator.GenerateSessionKey(masterKeyBytes, masterSaltBytes, label, counter);
 
             string cipherKey = Convert.ToHexString(ck);
             Assert.AreEqual(expectedResult, cipherKey);

@@ -7,11 +7,6 @@ namespace DtlsServerSample.SRTP
     public class SrtpContext
     {
         /// <summary>
-        /// Rollover counter.
-        /// </summary>
-        public uint Roc { get; set; } = 0;
-
-        /// <summary>
         /// Receiver only - highest sequence number received.
         /// </summary>
         public ushort S_l { get; set; } = 0;
@@ -34,10 +29,6 @@ namespace DtlsServerSample.SRTP
         public byte[] MasterSalt { get; set; }
         public int MasterKeySentCounter { get; set; }
 
-        /// <summary>
-        /// The length of the session keys for encryption.
-        /// </summary>
-        public uint N_e { get; set; }
 
 
 
@@ -52,18 +43,48 @@ namespace DtlsServerSample.SRTP
         public int From { get; set; }
         public int To { get; set; }
 
+        /// <summary>
+        /// Rollover counter.
+        /// </summary>
+        public uint Roc { get; set; } = 0;
 
-        #region Authentication parameters
+
+
+        #region Session key parameters
 
         /// <summary>
-        /// The session message authentication key.
+        /// The length of the session keys for encryption.
         /// </summary>
-        public byte[] K_a { get; set; }
+        public uint N_e { get; set; }
+
+        /// <summary>
+        /// Session key for encryption.
+        /// </summary>
+        public byte[] K_e { get; set; }
+
+        /// <summary>
+        /// The bit-length of k_s.
+        /// </summary>
+        public uint N_s { get; set; }
+
+        /// <summary>
+        /// Session salting key.
+        /// </summary>
+        public byte[] K_s { get; set; }
+
+        #endregion // Session key parameters
+
+        #region Authentication parameters
 
         /// <summary>
         /// The length of the session keys for authentication.
         /// </summary>
         public uint N_a { get; set; } = 160;
+
+        /// <summary>
+        /// The session message authentication key.
+        /// </summary>
+        public byte[] K_a { get; set; }
 
         /// <summary>
         /// The bit-length of the output authentication tag.

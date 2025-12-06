@@ -95,6 +95,20 @@ namespace SharpSRTP.SRTP
             Console.WriteLine("Server 'server_write_SRTP_master_salt': " + Hex.ToHexString(_server_write_SRTP_master_salt));
         }
 
+        public byte[] GenerateSessionKey(byte[] masterKey, byte[] masterSalt, int label, int counter)
+        {
+            byte[] iv = GenerateIV(masterSalt, 0, 0, (byte)label);
+
+            iv[14] = (byte)((counter >> 8) & 0xff);
+            iv[15] = (byte)(counter & 0xff);
+
+            byte[] ck = GenerateCipherKey(masterKey, masterSalt, iv);
+            if (label == 2 || label == 5) // 2 is for salt
+                ck = ck.Take(14).ToArray();
+
+            return ck;
+        }
+
         public static ulong GeneratePEIndex(uint seq, uint roc)
         {
             // RFC 3711 - 3.3.1
