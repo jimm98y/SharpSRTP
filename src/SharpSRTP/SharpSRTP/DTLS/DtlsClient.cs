@@ -18,7 +18,7 @@ namespace SharpSRTP.DTLS
 
         private int m_handshakeTimeoutMillis = 0;
 
-        public DtlsClient(TlsSession session) : base(new BcTlsCrypto())
+        public DtlsClient(TlsSession session = null) : base(new BcTlsCrypto())
         {
             this.m_session = session;
         }
@@ -170,7 +170,7 @@ namespace SharpSRTP.DTLS
             public TlsCredentials GetClientCredentials(CertificateRequest certificateRequest)
             {
                 short[] certificateTypes = certificateRequest.CertificateTypes;
-                if (certificateTypes == null || !Arrays.Contains(certificateTypes, ClientCertificateType.rsa_sign))
+                if (certificateTypes == null || (!Arrays.Contains(certificateTypes, ClientCertificateType.rsa_sign) && !Arrays.Contains(certificateTypes, ClientCertificateType.ecdsa_sign)))
                     return null;
 
                 // no client certificate

@@ -1,11 +1,5 @@
-﻿using Org.BouncyCastle.Asn1.Pkcs;
-using Org.BouncyCastle.Asn1.Sec;
-using Org.BouncyCastle.Asn1.X509;
-using Org.BouncyCastle.Asn1.X9;
+﻿using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.OpenSsl;
-using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
@@ -18,6 +12,11 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsServer : DefaultTlsServer
     {
+        protected Certificate _myCert;
+        protected AsymmetricKeyParameter _myCertKey;
+
+        public Certificate ClientCertificate { get; private set; }
+
         public event EventHandler<DtlsHandshakeCompletedEventArgs> HandshakeCompleted;
 
         public DtlsServer() : this(new BcTlsCrypto())
@@ -60,8 +59,7 @@ namespace SharpSRTP.DTLS
 
         public override CertificateRequest GetCertificateRequest()
         {
-            short[] certificateTypes = new short[]{ ClientCertificateType.rsa_sign,
-                ClientCertificateType.dss_sign, ClientCertificateType.ecdsa_sign };
+            short[] certificateTypes = new short[]{ ClientCertificateType.ecdsa_sign, ClientCertificateType.rsa_sign };
 
             IList<SignatureAndHashAlgorithm> serverSigAlgs = null;
             if (TlsUtilities.IsSignatureAlgorithmsExtensionAllowed(m_context.ServerVersion))
@@ -69,16 +67,13 @@ namespace SharpSRTP.DTLS
                 serverSigAlgs = TlsUtilities.GetDefaultSupportedSignatureAlgorithms(m_context);
             }
 
-            var certificateAuthorities = new List<X509Name>();
-
-            // All the CA certificates are currently configured with this subject
-            certificateAuthorities.Add(new X509Name("CN=BouncyCastle TLS Test CA"));
-
-            return new CertificateRequest(certificateTypes, serverSigAlgs, certificateAuthorities);
+            return new CertificateRequest(certificateTypes, serverSigAlgs, null);
         }
 
         public override void NotifyClientCertificate(Certificate clientCertificate)
         {
+            ClientCertificate = clientCertificate;
+
             TlsCertificate[] chain = clientCertificate.GetCertificateList();
 
             Console.WriteLine("DTLS server received client certificate chain of length " + chain.Length);
@@ -154,18 +149,36 @@ namespace SharpSRTP.DTLS
             base.GetServerExtensionsForConnection(serverExtensions);
         }
 
-        protected override TlsCredentialedDecryptor GetRsaEncryptionCredentials()
+        protected override TlsCredentialedSigner GetECDsaSignerCredentials()
         {
-            //return TlsTestUtilities.LoadEncryptionCredentials(m_context,
-            //    new string[] { "x509-server-rsa-enc.pem", "x509-ca-rsa.pem" }, "x509-server-key-rsa-enc.pem");
-            return base.GetRsaEncryptionCredentials();
+            var clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
+
+            // TODO: Review this
+            SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
+
+            foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
+            {
+                if (alg.Signature == SignatureAlgorithm.ecdsa)
+                {
+                    // Just grab the first one we find
+                    signatureAndHashAlgorithm = alg;
+                    break;
+                }
+            }
+
+            if (_myCert == null)
+            {
+                var cert = DtlsCertificateUtils.GenerateECDSAServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30));
+                _myCert = cert.certificate;
+                _myCertKey = cert.key;
+            }
+
+            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _myCertKey, _myCert, signatureAndHashAlgorithm);
         }
 
         protected override TlsCredentialedSigner GetRsaSignerCredentials()
         {
             var clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
-
-            //return TlsTestUtilities.LoadSignerCredentialsServer(m_context, clientSigAlgs, SignatureAlgorithm.rsa);
 
             // TODO: Review this
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
@@ -180,49 +193,14 @@ namespace SharpSRTP.DTLS
                 }
             }
 
-            var clientCertificate = DtlsCertificateUtils.GenerateServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30));
-            Certificate certificate = null;
-            AsymmetricKeyParameter privateKey = null;
-            using (var pem = new PemReader(new StringReader(clientCertificate.certificate)))
+            if (_myCert == null)
             {
-                var pemCertificate = pem.ReadPemObject();
-                if (pemCertificate.Type.EndsWith("CERTIFICATE"))
-                {
-                    var tlsCertificate = m_context.Crypto.CreateCertificate(pemCertificate.Content);
-                    certificate = new Certificate(new TlsCertificate[] { tlsCertificate });
-                }
-            }
-            using (var pem = new PemReader(new StringReader(clientCertificate.key)))
-            {
-                var pemPrivateKey = pem.ReadPemObject();
-                if (pemPrivateKey.Type.EndsWith("PRIVATE KEY"))
-                {
-                    if (pemPrivateKey.Type.Equals("PRIVATE KEY"))
-                    {
-                        privateKey = PrivateKeyFactory.CreateKey(pemPrivateKey.Content);
-                    }
-                    if (pemPrivateKey.Type.Equals("ENCRYPTED PRIVATE KEY"))
-                    {
-                        throw new NotSupportedException("Encrypted PKCS#8 keys not supported");
-                    }
-                    if (pemPrivateKey.Type.Equals("RSA PRIVATE KEY"))
-                    {
-                        RsaPrivateKeyStructure rsa = RsaPrivateKeyStructure.GetInstance(pemPrivateKey.Content);
-                        privateKey = new RsaPrivateCrtKeyParameters(rsa.Modulus, rsa.PublicExponent,
-                            rsa.PrivateExponent, rsa.Prime1, rsa.Prime2, rsa.Exponent1,
-                            rsa.Exponent2, rsa.Coefficient);
-                    }
-                    if (pemPrivateKey.Type.Equals("EC PRIVATE KEY"))
-                    {
-                        ECPrivateKeyStructure pKey = ECPrivateKeyStructure.GetInstance(pemPrivateKey.Content);
-                        AlgorithmIdentifier algId = new AlgorithmIdentifier(X9ObjectIdentifiers.IdECPublicKey, pKey.Parameters);
-                        PrivateKeyInfo privInfo = new PrivateKeyInfo(algId, pKey);
-                        privateKey = PrivateKeyFactory.CreateKey(privInfo);
-                    }
-                }
+                (Certificate certificate, AsymmetricKeyParameter key) cert = DtlsCertificateUtils.GenerateRSAServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30));
+                _myCert = cert.certificate;
+                _myCertKey = cert.key;
             }
 
-            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, privateKey, certificate, signatureAndHashAlgorithm);
+            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _myCertKey, _myCert, signatureAndHashAlgorithm);
         }
 
         protected virtual string ToHexString(byte[] data)

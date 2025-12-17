@@ -6,18 +6,21 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 using Org.BouncyCastle.Asn1;
-using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
+using Org.BouncyCastle.Tls;
+using Org.BouncyCastle.Tls.Crypto.Impl.BC;
+using Org.BouncyCastle.Tls.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Asn1.X9;
 
 namespace SharpSRTP.DTLS
 {
     public class DtlsCertificateUtils
     {
-        public static (string certificate, string key) GenerateServerCertificate(
+        public static (Certificate certificate, AsymmetricKeyParameter key) GenerateRSAServerCertificate(
             string name,
             DateTime notBefore,
             DateTime notAfter,
@@ -71,40 +74,85 @@ namespace SharpSRTP.DTLS
             serial[0] = 1;
             certificateGenerator.SetSerialNumber(new Org.BouncyCastle.Math.BigInteger(serial));
 
-            var certificate = certificateGenerator.Generate(signatureFactory);
-            var privateKey = issuerKeyPair.Private;
-            var pkcs8 = new Pkcs8Generator(privateKey);
+            X509Certificate x509Certificate = certificateGenerator.Generate(signatureFactory);
+            AsymmetricKeyParameter privateKey = issuerKeyPair.Private;
 
-            string strCertificate = "";
-            string strKey = "";
+            var crypto = new BcTlsCrypto();
+            var tlsCertificate = crypto.CreateCertificate(x509Certificate.GetEncoded());
+            var certificate = new Certificate(new TlsCertificate[] { tlsCertificate });
 
-            using (var textWriter = new StringWriter())
+            return (certificate, privateKey);
+        }
+
+        public static (Certificate certificate, AsymmetricKeyParameter key) GenerateECDSAServerCertificate(
+            string name,
+            DateTime notBefore,
+            DateTime notAfter,
+            bool exClientAuth = true,
+            string curve = "prime256v1",
+            string signatureAlgorithm = "SHA256WITHECDSA")
+        {
+            var randomGenerator = new CryptoApiRandomGenerator();
+            var random = new SecureRandom(randomGenerator);
+
+            var spec = ECNamedCurveTable.GetByName(curve);
+            var keyPairGenerator = new ECKeyPairGenerator("EC");
+            ECKeyGenerationParameters keyGenerationParameters = new ECKeyGenerationParameters(new ECDomainParameters(spec.Curve, spec.G, spec.N), random);
+            keyPairGenerator.Init(keyGenerationParameters);
+
+            AsymmetricCipherKeyPair subjectKeyPair = keyPairGenerator.GenerateKeyPair();
+            AsymmetricCipherKeyPair issuerKeyPair = subjectKeyPair;
+            ISignatureFactory signatureFactory = new Asn1SignatureFactory(signatureAlgorithm, issuerKeyPair.Private, random);
+
+            var certificateGenerator = new X509V3CertificateGenerator();
+            certificateGenerator.SetNotBefore(notBefore);
+            certificateGenerator.SetNotAfter(notAfter);
+
+            var nameOids = new List<DerObjectIdentifier>
             {
-                using (PemWriter pemWriter = new PemWriter(textWriter))
-                {
-                    pemWriter.WriteObject(certificate);
-                }
+                X509Name.CN
+            };
 
-                strCertificate = textWriter.ToString();
+            var nameValues = new Dictionary<DerObjectIdentifier, string>()
+            {
+                { X509Name.CN, name }
+            };
+
+            var subjectDN = new X509Name(nameOids, nameValues);
+            var issuerDN = subjectDN;
+
+            certificateGenerator.SetIssuerDN(issuerDN);
+            certificateGenerator.SetSubjectDN(subjectDN);
+            certificateGenerator.SetPublicKey(issuerKeyPair.Public);
+
+            if (exClientAuth)
+            {
+                var keyUsage = new KeyUsage(KeyUsage.DigitalSignature);
+                certificateGenerator.AddExtension(X509Extensions.KeyUsage, false, keyUsage.ToAsn1Object());
+
+                var extendedKeyUsage = new ExtendedKeyUsage(new[] { KeyPurposeID.id_kp_serverAuth });
+                certificateGenerator.AddExtension(X509Extensions.ExtendedKeyUsage, true, extendedKeyUsage.ToAsn1Object());
             }
 
-            using (var textWriter = new StringWriter())
-            {
-                using (PemWriter pemWriter = new PemWriter(textWriter))
-                {
-                    pemWriter.WriteObject(pkcs8);
-                }
+            byte[] serial = new byte[20];
+            random.NextBytes(serial);
+            serial[0] = 1;
+            certificateGenerator.SetSerialNumber(new Org.BouncyCastle.Math.BigInteger(serial));
 
-                strKey = textWriter.ToString();
-            }
+            X509Certificate x509Certificate = certificateGenerator.Generate(signatureFactory);
+            AsymmetricKeyParameter privateKey = issuerKeyPair.Private;
 
-            return (strCertificate, strKey);
+            var crypto = new BcTlsCrypto();
+            var tlsCertificate = crypto.CreateCertificate(x509Certificate.GetEncoded());
+            var certificate = new Certificate(new[] { tlsCertificate });
+
+            return (certificate, privateKey);
         }
 
         public static string Fingerprint(X509CertificateStructure c)
         {
             byte[] der = c.GetEncoded();
-            byte[] hash = Sha256DigestOf(der);
+            byte[] hash = DigestUtilities.CalculateDigest("SHA256", der);
             byte[] hexBytes = Hex.Encode(hash);
             string hex = Encoding.ASCII.GetString(hexBytes).ToUpperInvariant();
 
@@ -117,11 +165,6 @@ namespace SharpSRTP.DTLS
                 fp.Append(hex.Substring(i, 2));
             }
             return fp.ToString();
-        }
-
-        public static byte[] Sha256DigestOf(byte[] input)
-        {
-            return DigestUtilities.CalculateDigest("SHA256", input);
         }
     }
 }
