@@ -101,18 +101,17 @@ namespace SharpSRTP.SRTP
             return keys;
         }
 
-        public static byte[] GenerateSessionKey(byte[] masterKey, byte[] masterSalt, int label, int counter)
+        public static byte[] GenerateSessionKey(byte[] masterKey, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
         {
-            byte[] iv = GenerateSessionIV(masterSalt, 0, 0, (byte)label);
+            byte[] iv = GenerateSessionIV(masterSalt, index, kdr, (byte)label);
 
-            iv[14] = (byte)((counter >> 8) & 0xff);
-            iv[15] = (byte)(counter & 0xff);
+            var aes = new AesEngine();
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(masterKey));
 
-            byte[] ck = GenerateSessionCipherKey(masterKey, iv);
-            if (label == 2 || label == 5) // 2 is for salt
-                ck = ck.Take(14).ToArray();
+            byte[] key = new byte[length];
+            EncryptAESCTR(aes, key, 0, length, iv);           
 
-            return ck;
+            return key;
         }
 
         public static ulong GeneratePEIndex(uint seq, uint roc)
@@ -201,21 +200,8 @@ namespace SharpSRTP.SRTP
             return iv;
         }
 
-        public static byte[] GenerateSessionCipherKey(byte[] masterKey, byte[] iv)
+        public static byte[] GenerateAuthTag(HMac hmac, byte[] payload, int offset, int length)
         {
-            var aes = new AesEngine();
-            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(masterKey));
-
-            byte[] cipherKey = new byte[16];
-            aes.ProcessBlock(iv, 0, cipherKey, 0);
-
-            return cipherKey;
-        }
-
-        public static byte[] GenerateAuthTag(byte[] k_A, byte[] payload, int offset, int length)
-        {
-            var hmac = new HMac(new Sha1Digest());
-            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_A));
             hmac.BlockUpdate(payload, offset, length);
 
             byte[] output = new byte[hmac.GetMacSize()];
@@ -224,14 +210,9 @@ namespace SharpSRTP.SRTP
             return output;
         }
 
-        public static void EncryptAESCTR(byte[] payload, int offset, int length, byte[] k_e, byte[] k_s, uint ssrc, ulong index)
+        public static void EncryptAESCTR(AesEngine aes, byte[] payload, int offset, int length, byte[] iv)
         {
             const int aesBlockSize = 16;
-
-            // AES in CTR mode
-            AesEngine aes = new AesEngine();
-            byte[] iv = GenerateMessageIV(k_s, ssrc, index);
-            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
 
             int payloadSize = length - offset;
             byte[] cipher = new byte[payloadSize];
@@ -257,6 +238,25 @@ namespace SharpSRTP.SRTP
             for (int i = 0; i < payloadSize; i++)
             {
                 payload[offset + i] ^= cipher[i];
+            }
+        }
+
+        public static void EncryptBlockAESCTR(AesEngine aes, byte[] payload, byte[] iv, int blockNo)
+        {
+            const int aesBlockSize = 16;
+
+            if(payload.Length > aesBlockSize)
+                throw new ArgumentException("Payload length must not be larger than AES block size.");
+
+            byte[] cipher = new byte[aesBlockSize];
+
+            iv[14] = (byte)((blockNo >> 8) & 0xff);
+            iv[15] = (byte)(blockNo & 0xff);
+            aes.ProcessBlock(iv, 0, cipher, 0);
+
+            for (int i = 0; i < payload.Length; i++)
+            {
+                payload[i] ^= cipher[i];
             }
         }
 

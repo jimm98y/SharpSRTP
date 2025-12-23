@@ -125,12 +125,17 @@ namespace SharpSRTP.DTLS
             HandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
 
+        UseSrtpData _serverSrtpData;
+
         public override void ProcessClientExtensions(IDictionary<int, byte[]> clientExtensions)
         {
             if (m_context.SecurityParameters.ClientRandom == null)
                 throw new TlsFatalAlert(AlertDescription.internal_error);
-
+            
             base.ProcessClientExtensions(clientExtensions);
+
+            UseSrtpData clientSrtpExtension = TlsSrtpUtilities.GetUseSrtpExtension(clientExtensions);
+            _serverSrtpData = new UseSrtpData(new int[] { SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80  }, clientSrtpExtension.Mki); // TODO: 
         }
 
         public override IDictionary<int, byte[]> GetServerExtensions()
@@ -138,7 +143,9 @@ namespace SharpSRTP.DTLS
             if (m_context.SecurityParameters.ServerRandom == null)
                 throw new TlsFatalAlert(AlertDescription.internal_error);
 
-            return base.GetServerExtensions();
+            var extensions = base.GetServerExtensions();
+            TlsSrtpUtilities.AddUseSrtpExtension(extensions, _serverSrtpData);
+            return extensions;
         }
 
         public override void GetServerExtensionsForConnection(IDictionary<int, byte[]> serverExtensions)

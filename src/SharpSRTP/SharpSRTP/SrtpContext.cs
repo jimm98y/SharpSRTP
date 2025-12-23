@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Org.BouncyCastle.Crypto.Digests;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Macs;
+using System;
 using System.Collections.Generic;
 
 namespace SharpSRTP.SRTP
@@ -6,6 +9,10 @@ namespace SharpSRTP.SRTP
     public class SrtpContext
     {
         private readonly bool _isRtp;
+
+        public HMac HMAC { get; private set; }
+        public AesEngine AES { get; private set; }
+
 
         /// <summary>
         /// Receiver only - highest sequence number received.
@@ -48,6 +55,9 @@ namespace SharpSRTP.SRTP
         /// Rollover counter.
         /// </summary>
         public uint Roc { get; set; } = 0;
+
+
+
 
 
 
@@ -105,16 +115,24 @@ namespace SharpSRTP.SRTP
 
             this.MasterKey = masterKey;
             this.MasterSalt = masterSalt;
-
+            
             DeriveSessionKeys();
         }
 
-        public void DeriveSessionKeys(int counter = 0)
+        public void DeriveSessionKeys()
         {
             int b = _isRtp ? 0 : 3;
-            this.K_e = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, b + 0, counter); // TODO: use ROC?
-            this.K_a = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, b + 1, counter);
-            this.K_s = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, b + 2, counter);
+            this.K_e = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, 16, b + 0, 0, 0); // TODO: use ROC?
+            this.K_a = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, 20, b + 1, 0, 0);
+            this.K_s = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, 14, b + 2, 0, 0);
+
+            var aes = new Org.BouncyCastle.Crypto.Engines.AesEngine();
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+            this.AES = aes;
+
+            var hmac = new HMac(new Sha1Digest());
+            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_a));
+            this.HMAC = hmac;
         }
     }
 }
