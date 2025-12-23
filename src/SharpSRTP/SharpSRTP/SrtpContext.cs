@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
-namespace SharpSRTP
+namespace SharpSRTP.SRTP
 {
     public class SrtpContext
     {
+        private readonly bool _isRtp;
+
         /// <summary>
         /// Receiver only - highest sequence number received.
         /// </summary>
-        public ushort S_l { get; set; } = 0;
+        public uint S_l { get; set; } = 0;
 
         public int Cipher { get; set; }
         public int Authentication { get; set; }
@@ -55,7 +56,7 @@ namespace SharpSRTP
         /// <summary>
         /// The length of the session keys for encryption.
         /// </summary>
-        public uint N_e { get; set; }
+        public uint N_e { get; set; } = 128;
 
         /// <summary>
         /// Session key for encryption.
@@ -98,11 +99,22 @@ namespace SharpSRTP
 
         #endregion // Authentication parameters
 
-        public SrtpContext()
+        public SrtpContext(byte[] masterKey, byte[] masterSalt, bool isRtp)
         {
-            
+            this._isRtp = isRtp;
+
+            this.MasterKey = masterKey;
+            this.MasterSalt = masterSalt;
+
+            DeriveSessionKeys();
         }
 
-
+        public void DeriveSessionKeys(int counter = 0)
+        {
+            int b = _isRtp ? 0 : 3;
+            this.K_e = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, b + 0, counter); // TODO: use ROC?
+            this.K_a = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, b + 1, counter);
+            this.K_s = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, b + 2, counter);
+        }
     }
 }

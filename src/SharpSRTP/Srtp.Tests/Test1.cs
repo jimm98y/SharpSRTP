@@ -1,6 +1,6 @@
-﻿using SharpSRTP.SRTP;
+﻿using Org.BouncyCastle.Crypto.Engines;
+using SharpSRTP.SRTP;
 using System;
-using System.Linq;
 
 namespace Srtp.Tests
 {
@@ -22,11 +22,42 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            SrtpKeyGenerator generator = new SharpSRTP.SRTP.SrtpKeyGenerator(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80);
-            byte[] ck = generator.GenerateSessionKey(masterKeyBytes, masterSaltBytes, label, counter);
+            byte[] ck = SrtpKeyGenerator.GenerateSessionKey(masterKeyBytes, masterSaltBytes, label, counter);
 
             string cipherKey = Convert.ToHexString(ck);
             Assert.AreEqual(expectedResult, cipherKey);
+        }
+
+        [TestMethod]
+        [DataRow("E03EAD0935C95E80E166B16DD92B4EB4", 0)]
+        [DataRow("D23513162B02D0F72A43A2FE4A5F97AB", 1)]
+        [DataRow("41E95B3BB0A2E8DD477901E4FCA894C0", 2)]
+        [DataRow("EC8CDF7398607CB0F2D21675EA9EA1E4", 0xFEFF)]
+        [DataRow("362B7C3C6773516318A077D7FC5073AE", 0xFF00)]
+        [DataRow("6A2CC3787889374FBEB4C81B17BA6C44", 0xFF01)]
+        public void TestAESCM(string keystream, int i)
+        {
+            byte[] sessionKey = Convert.FromHexString("2B7E151628AED2A6ABF7158809CF4F3C");
+            int roc = 0;
+            uint sequenceNumber = 0;
+            uint ssrc = 0;
+            byte[] k_s = Convert.FromHexString("F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000");
+
+            ulong index = ((ulong)roc << 16) | sequenceNumber;
+
+            AesEngine aes = new AesEngine();
+            byte[] iv = SrtpKeyGenerator.GenerateMessageIV(k_s, ssrc, index);
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(sessionKey));
+
+            byte[] cipher = new byte[k_s.Length];
+
+            const int aesBlockSize = 16;
+            iv[14] = (byte)((i >> 8) & 0xff);
+            iv[15] = (byte)(i & 0xff);
+            aes.ProcessBlock(iv, 0, cipher, 0);
+
+            string payloadString = Convert.ToHexString(cipher);
+            Assert.AreEqual(keystream, payloadString);
         }
     }
 }

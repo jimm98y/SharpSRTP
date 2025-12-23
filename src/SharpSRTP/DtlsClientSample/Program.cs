@@ -4,29 +4,28 @@ using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
 using System;
 
-SrtpKeyGenerator keyGenerator = new SrtpKeyGenerator(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80);
 DtlsClient client = new DtlsClient(null);
 client.HandshakeCompleted += (sender, e) =>
 {
-    keyGenerator.GenerateMasterKeys(e.SecurityParameters);
+    var keys = SrtpKeyGenerator.GenerateMasterKeys(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, e.SecurityParameters);
 
     int counter = 0;
 
-    byte[] ck_e = keyGenerator.GenerateSessionKey(keyGenerator.ClientWriteMasterKey, keyGenerator.ClientWriteMasterSalt, 0, counter);
-    byte[] ck_a = keyGenerator.GenerateSessionKey(keyGenerator.ClientWriteMasterKey, keyGenerator.ClientWriteMasterSalt, 1, counter);
-    byte[] ck_s = keyGenerator.GenerateSessionKey(keyGenerator.ClientWriteMasterKey, keyGenerator.ClientWriteMasterSalt, 2, counter);
+    byte[] ck_e = SrtpKeyGenerator.GenerateSessionKey(keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, 0, counter);
+    byte[] ck_a = SrtpKeyGenerator.GenerateSessionKey(keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, 1, counter);
+    byte[] ck_s = SrtpKeyGenerator.GenerateSessionKey(keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, 2, counter);
 
-    byte[] c_rtcp_k_e = keyGenerator.GenerateSessionKey(keyGenerator.ClientWriteMasterKey, keyGenerator.ClientWriteMasterSalt, 3, counter);
-    byte[] c_rtcp_k_a = keyGenerator.GenerateSessionKey(keyGenerator.ClientWriteMasterKey, keyGenerator.ClientWriteMasterSalt, 4, counter);
-    byte[] c_rtcp_k_s = keyGenerator.GenerateSessionKey(keyGenerator.ClientWriteMasterKey, keyGenerator.ClientWriteMasterSalt, 5, counter);
+    byte[] c_rtcp_k_e = SrtpKeyGenerator.GenerateSessionKey(keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, 3, counter);
+    byte[] c_rtcp_k_a = SrtpKeyGenerator.GenerateSessionKey(keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, 4, counter);
+    byte[] c_rtcp_k_s = SrtpKeyGenerator.GenerateSessionKey(keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, 5, counter);
 
-    byte[] sk_e = keyGenerator.GenerateSessionKey(keyGenerator.ServerWriteMasterKey, keyGenerator.ServerWriteMasterSalt, 0, counter);
-    byte[] sk_a = keyGenerator.GenerateSessionKey(keyGenerator.ServerWriteMasterKey, keyGenerator.ServerWriteMasterSalt, 1, counter);
-    byte[] sk_s = keyGenerator.GenerateSessionKey(keyGenerator.ServerWriteMasterKey, keyGenerator.ServerWriteMasterSalt, 2, counter);
+    byte[] sk_e = SrtpKeyGenerator.GenerateSessionKey(keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, 0, counter);
+    byte[] sk_a = SrtpKeyGenerator.GenerateSessionKey(keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, 1, counter);
+    byte[] sk_s = SrtpKeyGenerator.GenerateSessionKey(keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, 2, counter);
 
-    byte[] s_rtcp_k_e = keyGenerator.GenerateSessionKey(keyGenerator.ServerWriteMasterKey, keyGenerator.ServerWriteMasterSalt, 3, counter);
-    byte[] s_rtcp_k_a = keyGenerator.GenerateSessionKey(keyGenerator.ServerWriteMasterKey, keyGenerator.ServerWriteMasterSalt, 4, counter);
-    byte[] s_rtcp_k_s = keyGenerator.GenerateSessionKey(keyGenerator.ServerWriteMasterKey, keyGenerator.ServerWriteMasterSalt, 5, counter);
+    byte[] s_rtcp_k_e = SrtpKeyGenerator.GenerateSessionKey(keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, 3, counter);
+    byte[] s_rtcp_k_a = SrtpKeyGenerator.GenerateSessionKey(keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, 4, counter);
+    byte[] s_rtcp_k_s = SrtpKeyGenerator.GenerateSessionKey(keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, 5, counter);
 
     Console.WriteLine("Client RTP k_e:  " + Convert.ToHexString(ck_e));
     Console.WriteLine("Client RTP k_a:  " + Convert.ToHexString(ck_a));

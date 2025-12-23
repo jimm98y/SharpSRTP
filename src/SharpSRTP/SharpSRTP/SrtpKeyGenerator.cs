@@ -2,18 +2,15 @@
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Tls;
-using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpSRTP.SRTP
 {
-    public class SrtpKeyGenerator
+    public class SrtpKeys
     {
         private readonly int _protectionProfile;
-
-        private static readonly Dictionary<int, SrtpProtectionProfile> _protectionProfiles;
 
         private byte[] _client_write_SRTP_master_key = null;
         private byte[] _server_write_SRTP_master_key = null;
@@ -25,9 +22,27 @@ namespace SharpSRTP.SRTP
         public byte[] ServerWriteMasterKey { get { return _server_write_SRTP_master_key; } }
         public byte[] ServerWriteMasterSalt { get { return _server_write_SRTP_master_salt; } }
 
+        public SrtpKeys(int profile)
+        {
+            _protectionProfile = profile;
+
+            var srtpSecurityParams = SrtpKeyGenerator.ProtectionProfiles[_protectionProfile];
+            int cipherKeyLen = srtpSecurityParams.CipherKeyLength >> 3;
+            int cipherSaltLen = srtpSecurityParams.CipherSaltLength >> 3;
+            _client_write_SRTP_master_key = new byte[cipherKeyLen];
+            _server_write_SRTP_master_key = new byte[cipherKeyLen];
+            _client_write_SRTP_master_salt = new byte[cipherSaltLen];
+            _server_write_SRTP_master_salt = new byte[cipherSaltLen];
+        }
+    }
+
+    public static class SrtpKeyGenerator
+    {
+        public static readonly Dictionary<int, SrtpProtectionProfile> ProtectionProfiles;
+
         static SrtpKeyGenerator()
         {
-            _protectionProfiles = new Dictionary<int, SrtpProtectionProfile>()
+            ProtectionProfiles = new Dictionary<int, SrtpProtectionProfile>()
             {
                 // https://datatracker.ietf.org/doc/html/rfc5764#section-9
                 { Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
@@ -37,23 +52,10 @@ namespace SharpSRTP.SRTP
             };
         }
 
-        public SrtpKeyGenerator(int profile)
-        {
-            _protectionProfile = profile;
-
-            var srtpSecurityParams = _protectionProfiles[_protectionProfile];
-            int cipherKeyLen = srtpSecurityParams.CipherKeyLength >> 3;
-            int cipherSaltLen = srtpSecurityParams.CipherSaltLength >> 3;
-            _client_write_SRTP_master_key = new byte[cipherKeyLen];
-            _server_write_SRTP_master_key = new byte[cipherKeyLen];
-            _client_write_SRTP_master_salt = new byte[cipherSaltLen];
-            _server_write_SRTP_master_salt = new byte[cipherSaltLen];
-        }
-
-        public void GenerateMasterKeys(SecurityParameters dtlsSecurityParameters)
+        public static SrtpKeys GenerateMasterKeys(int profile, SecurityParameters dtlsSecurityParameters)
         {
             // SRTP key derivation as described here https://datatracker.ietf.org/doc/html/rfc5764
-            var srtpSecurityParams = _protectionProfiles[_protectionProfile];
+            var srtpSecurityParams = ProtectionProfiles[profile];
 
             // 2 * (SRTPSecurityParams.master_key_len + SRTPSecurityParams.master_salt_len) bytes of data
             int shared_secret_length = 2 * (srtpSecurityParams.CipherKeyLength + srtpSecurityParams.CipherSaltLength); // in bits
@@ -84,25 +86,29 @@ namespace SharpSRTP.SRTP
                 shared_secret_length >> 3
                 ).Extract();
 
-            Buffer.BlockCopy(shared_secret, 0, _client_write_SRTP_master_key, 0, _client_write_SRTP_master_key.Length);
-            Buffer.BlockCopy(shared_secret, _client_write_SRTP_master_key.Length, _server_write_SRTP_master_key, 0, _server_write_SRTP_master_key.Length);
-            Buffer.BlockCopy(shared_secret, _client_write_SRTP_master_key.Length + _server_write_SRTP_master_key.Length, _client_write_SRTP_master_salt, 0, _client_write_SRTP_master_salt.Length);
-            Buffer.BlockCopy(shared_secret, _client_write_SRTP_master_key.Length + _server_write_SRTP_master_key.Length + _client_write_SRTP_master_salt.Length, _server_write_SRTP_master_salt, 0, _server_write_SRTP_master_salt.Length);
+            SrtpKeys keys = new SrtpKeys(profile);
 
-            Console.WriteLine("Server 'client_write_SRTP_master_key': " + Hex.ToHexString(_client_write_SRTP_master_key));
-            Console.WriteLine("Server 'server_write_SRTP_master_key': " + Hex.ToHexString(_server_write_SRTP_master_key));
-            Console.WriteLine("Server 'client_write_SRTP_master_salt': " + Hex.ToHexString(_client_write_SRTP_master_salt));
-            Console.WriteLine("Server 'server_write_SRTP_master_salt': " + Hex.ToHexString(_server_write_SRTP_master_salt));
+            Buffer.BlockCopy(shared_secret, 0, keys.ClientWriteMasterKey, 0, keys.ClientWriteMasterKey.Length);
+            Buffer.BlockCopy(shared_secret, keys.ClientWriteMasterKey.Length, keys.ServerWriteMasterKey, 0, keys.ServerWriteMasterKey.Length);
+            Buffer.BlockCopy(shared_secret, keys.ClientWriteMasterKey.Length + keys.ServerWriteMasterKey.Length, keys.ClientWriteMasterSalt, 0, keys.ClientWriteMasterSalt.Length);
+            Buffer.BlockCopy(shared_secret, keys.ClientWriteMasterKey.Length + keys.ServerWriteMasterKey.Length + keys.ClientWriteMasterSalt.Length, keys.ServerWriteMasterSalt, 0, keys.ServerWriteMasterSalt.Length);
+
+            //Console.WriteLine("Server 'client_write_SRTP_master_key': " + Hex.ToHexString(keys.ClientWriteMasterKey));
+            //Console.WriteLine("Server 'server_write_SRTP_master_key': " + Hex.ToHexString(keys.ServerWriteMasterKey));
+            //Console.WriteLine("Server 'client_write_SRTP_master_salt': " + Hex.ToHexString(keys.ClientWriteMasterSalt));
+            //Console.WriteLine("Server 'server_write_SRTP_master_salt': " + Hex.ToHexString(keys.ServerWriteMasterSalt));
+
+            return keys;
         }
 
-        public byte[] GenerateSessionKey(byte[] masterKey, byte[] masterSalt, int label, int counter)
+        public static byte[] GenerateSessionKey(byte[] masterKey, byte[] masterSalt, int label, int counter)
         {
-            byte[] iv = GenerateIV(masterSalt, 0, 0, (byte)label);
+            byte[] iv = GenerateSessionIV(masterSalt, 0, 0, (byte)label);
 
             iv[14] = (byte)((counter >> 8) & 0xff);
             iv[15] = (byte)(counter & 0xff);
 
-            byte[] ck = GenerateCipherKey(masterKey, masterSalt, iv);
+            byte[] ck = GenerateSessionCipherKey(masterKey, iv);
             if (label == 2 || label == 5) // 2 is for salt
                 ck = ck.Take(14).ToArray();
 
@@ -136,13 +142,13 @@ namespace SharpSRTP.SRTP
             return SEQ + v * 65536;
         }
 
-        public byte[] GeneratePEIV(byte[] masterSalt, uint ssrc, uint index)
+        public static byte[] GenerateMessageIV(byte[] salt, uint ssrc, ulong index)
         {
             // RFC 3711 - 4.1.1
             // IV = (k_s * 2 ^ 16) XOR(SSRC * 2 ^ 64) XOR(i * 2 ^ 16)
             byte[] iv = new byte[16];
 
-            Array.Copy(masterSalt, 0, iv, 0, 14);
+            Array.Copy(salt, 0, iv, 0, 14);
 
             iv[4] ^= (byte)((ssrc >> 24) & 0xFF);
             iv[5] ^= (byte)((ssrc >> 16) & 0xFF);
@@ -170,7 +176,7 @@ namespace SharpSRTP.SRTP
                 return x / y;   
         }
 
-        public byte[] GenerateIV(byte[] masterSalt, ulong index, ulong kdr, byte label)
+        public static byte[] GenerateSessionIV(byte[] masterSalt, ulong index, ulong kdr, byte label)
         {
             // RFC 3711 - 4.1.1
             // IV = (k_s * 2 ^ 16) XOR(SSRC * 2 ^ 64) XOR(i * 2 ^ 16)
@@ -195,7 +201,7 @@ namespace SharpSRTP.SRTP
             return iv;
         }
 
-        public byte[] GenerateCipherKey(byte[] masterKey, byte[] masterSalt, byte[] iv)
+        public static byte[] GenerateSessionCipherKey(byte[] masterKey, byte[] iv)
         {
             var aes = new AesEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(masterKey));
@@ -206,16 +212,52 @@ namespace SharpSRTP.SRTP
             return cipherKey;
         }
 
-        public byte[] GenerateAuthTag(byte[] authKey, byte[] message)
+        public static byte[] GenerateAuthTag(byte[] k_A, byte[] payload, int offset, int length)
         {
             var hmac = new HMac(new Sha1Digest());
-            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(authKey));
-            hmac.BlockUpdate(message, 0, message.Length);
+            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_A));
+            hmac.BlockUpdate(payload, offset, length);
 
             byte[] output = new byte[hmac.GetMacSize()];
             hmac.DoFinal(output, 0);
 
             return output;
+        }
+
+        public static void EncryptAESCTR(byte[] payload, int offset, int length, byte[] k_e, byte[] k_s, uint ssrc, ulong index)
+        {
+            const int aesBlockSize = 16;
+
+            // AES in CTR mode
+            AesEngine aes = new AesEngine();
+            byte[] iv = GenerateMessageIV(k_s, ssrc, index);
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
+
+            int payloadSize = length - offset;
+            byte[] cipher = new byte[payloadSize];
+
+            int blockNo = 0;
+            for (int i = 0; i < payloadSize / aesBlockSize; i++)
+            {
+                iv[14] = (byte)((i >> 8) & 0xff);
+                iv[15] = (byte)(i & 0xff);
+                aes.ProcessBlock(iv, 0, cipher, aesBlockSize * blockNo);
+                blockNo++;
+            }
+
+            if (payloadSize % aesBlockSize != 0)
+            {
+                iv[14] = (byte)((blockNo >> 8) & 0xff);
+                iv[15] = (byte)(blockNo & 0xff);
+                byte[] lastBlock = new byte[aesBlockSize];
+                aes.ProcessBlock(iv, 0, lastBlock, 0);
+                Buffer.BlockCopy(lastBlock, 0, cipher, aesBlockSize * blockNo, payloadSize % aesBlockSize);
+            }
+
+            for (int i = 0; i < payloadSize; i++)
+            {
+                payload[offset + i] ^= cipher[i];
+            }
         }
 
         public static uint RtpReadSsrc(byte[] rtpPacket)
@@ -226,6 +268,27 @@ namespace SharpSRTP.SRTP
         public static ushort RtpReadSequenceNumber(byte[] rtpPacket)
         {
             return (ushort)((rtpPacket[2] << 8) | rtpPacket[3]);
+        }
+
+        public static int RtpReadHeaderLen(byte[] payload)
+        {
+            int length = 12 + 4 * (payload[0] & 0xf);
+            if ((payload[0] & 0x10) == 0x10)
+            {
+                int extLen = (payload[length + 2] << 8) | payload[length + 3];
+                length += 4 + extLen;
+            }
+            return length;
+        }
+
+        public static uint RtcpReadSsrc(byte[] rtcpPacket)
+        {
+            return (uint)((rtcpPacket[4] << 24) | (rtcpPacket[5] << 16) | (rtcpPacket[6] << 8) | rtcpPacket[7]);
+        }
+
+        public static int RtcpReadHeaderLen(byte[] payload)
+        {
+            return 8;
         }
     }
 }
