@@ -18,6 +18,7 @@ namespace SharpSRTP.SRTP
         /// Receiver only - highest sequence number received.
         /// </summary>
         public uint S_l { get; set; } = 0;
+        public bool S_l_set { get; set; } = false;
 
         public int Cipher { get; set; }
         public int Authentication { get; set; }

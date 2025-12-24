@@ -290,5 +290,11 @@ namespace SharpSRTP.SRTP
         {
             return 8;
         }
+
+        public static uint SrtcpReadIndex(byte[] srtcpPacket, int authTagLen)
+        {
+            int index = srtcpPacket.Length - authTagLen - 4;
+            return (uint)((srtcpPacket[index] << 24) | (srtcpPacket[index + 1] << 16) | (srtcpPacket[index + 2] << 8) | srtcpPacket[index + 3]);
+        }
     }
 }
