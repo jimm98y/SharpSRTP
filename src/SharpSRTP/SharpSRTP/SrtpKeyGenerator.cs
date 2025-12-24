@@ -121,9 +121,9 @@ namespace SharpSRTP.SRTP
             return ((ulong)roc << 16) | seq;
         }
 
-        public static long DeterminePEIndex(long s_l, long SEQ, long ROC)
+        public static ulong DetermineIndex(uint s_l, ushort SEQ, ulong ROC)
         {
-            long v;
+            ulong v;
             if (s_l < 32768)
             {
                 if (SEQ - s_l > 32768)
@@ -138,7 +138,7 @@ namespace SharpSRTP.SRTP
                 else
                   v = ROC;
             }
-            return SEQ + v * 65536;
+            return SEQ + v * 65536U;
         }
 
         public static byte[] GenerateMessageIV(byte[] salt, uint ssrc, ulong index)
