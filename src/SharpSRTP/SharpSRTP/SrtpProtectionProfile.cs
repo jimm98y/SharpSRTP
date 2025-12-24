@@ -4,6 +4,8 @@
     {
         public const int NULL = 0;
         public const int AES_128_CM = 1;
+        public const int AES_192_CM = 2;
+        public const int AES_256_CM = 3;
     }
 
     public static class SrtpAuth

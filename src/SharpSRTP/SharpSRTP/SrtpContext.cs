@@ -1,7 +1,6 @@
 ﻿using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
-using System;
 using System.Collections.Generic;
 
 namespace SharpSRTP.SRTP
@@ -26,6 +25,8 @@ namespace SharpSRTP.SRTP
         /// <summary>
         /// Receiver only - list of recently received sequence numbers for replay protection.
         /// </summary>
+// TODO Replay protection missing
+#warning Replay protection missing
         public List<ushort> ReplayList { get; set; }
 
         public bool IsMkiPresent { get; set; }
@@ -37,8 +38,6 @@ namespace SharpSRTP.SRTP
         public byte[] MasterKey { get; set; }
         public byte[] MasterSalt { get; set; }
         public int MasterKeySentCounter { get; set; }
-
-
 
 
         /// <summary>
@@ -57,17 +56,12 @@ namespace SharpSRTP.SRTP
         /// </summary>
         public uint Roc { get; set; } = 0;
 
-
-
-
-
-
         #region Session key parameters
 
         /// <summary>
-        /// The length of the session keys for encryption.
+        /// The byte-length of the session keys for encryption.
         /// </summary>
-        public uint N_e { get; set; } = 128;
+        public uint N_e { get; set; } = 16;
 
         /// <summary>
         /// Session key for encryption.
@@ -75,9 +69,9 @@ namespace SharpSRTP.SRTP
         public byte[] K_e { get; set; }
 
         /// <summary>
-        /// The bit-length of k_s.
+        /// The byte-length of k_s.
         /// </summary>
-        public uint N_s { get; set; }
+        public uint N_s { get; set; } = 14;
 
         /// <summary>
         /// Session salting key.
@@ -89,9 +83,9 @@ namespace SharpSRTP.SRTP
         #region Authentication parameters
 
         /// <summary>
-        /// The length of the session keys for authentication.
+        /// The byte-length of the session keys for authentication.
         /// </summary>
-        public uint N_a { get; set; } = 160;
+        public uint N_a { get; set; } = 20;
 
         /// <summary>
         /// The session message authentication key.
@@ -99,9 +93,9 @@ namespace SharpSRTP.SRTP
         public byte[] K_a { get; set; }
 
         /// <summary>
-        /// The bit-length of the output authentication tag.
+        /// The byte-length of the output authentication tag.
         /// </summary>
-        public int N_tag { get; set; } = 80;
+        public int N_tag { get; set; } = 10;
 
         /// <summary>
         /// SRTP_PREFIX_LENGTH SHALL be zero for HMAC-SHA1.
@@ -123,11 +117,11 @@ namespace SharpSRTP.SRTP
         public void DeriveSessionKeys()
         {
             int b = _isRtp ? 0 : 3;
-            this.K_e = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, 16, b + 0, 0, 0); // TODO: use ROC?
-            this.K_a = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, 20, b + 1, 0, 0);
-            this.K_s = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, 14, b + 2, 0, 0);
+            this.K_e = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, (int)N_e, b + 0, 0, 0); // TODO: use ROC?
+            this.K_a = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, (int)N_a, b + 1, 0, 0);
+            this.K_s = SrtpKeyGenerator.GenerateSessionKey(MasterKey, MasterSalt, (int)N_s, b + 2, 0, 0);
 
-            var aes = new Org.BouncyCastle.Crypto.Engines.AesEngine();
+            var aes = new AesEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
             this.AES = aes;
 

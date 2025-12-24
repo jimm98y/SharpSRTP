@@ -37,12 +37,35 @@ namespace SharpSRTP.SRTP
 
     public static class SrtpKeyGenerator
     {
+        // TODO: Remove this once BouncyCastle adds the constants
+        public const int DRAFT_SRTP_AES256_CM_SHA1_80 = 0x0003;
+        public const int DRAFT_SRTP_AES256_CM_SHA1_32 = 0x0004;
+
+        public const int SRTP_AES192_CM_HMAC_SHA1_80 = 0x0100;
+        public const int SRTP_AES192_CM_HMAC_SHA1_32 = 0x0101;
+        public const int SRTP_AES256_CM_HMAC_SHA1_80 = 0x0102;
+        public const int SRTP_AES256_CM_HMAC_SHA1_32 = 0x0103;
+
+        private const int AES_BLOCK_SIZE = 16;
+
         public static readonly Dictionary<int, SrtpProtectionProfile> ProtectionProfiles;
 
         static SrtpKeyGenerator()
         {
             ProtectionProfiles = new Dictionary<int, SrtpProtectionProfile>()
             {
+                // AES256 CM is later specified in RFC 6188
+                // https://www.rfc-editor.org/rfc/rfc6188
+                { SRTP_AES192_CM_HMAC_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
+                { SRTP_AES192_CM_HMAC_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
+                { SRTP_AES256_CM_HMAC_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
+                { SRTP_AES256_CM_HMAC_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
+
+                // AES256 CM was removed in Draft 4 of RFC 5764
+                // https://author-tools.ietf.org/iddiff?url1=draft-ietf-avt-dtls-srtp-04&url2=draft-ietf-avt-dtls-srtp-03&difftype=--html
+                { DRAFT_SRTP_AES256_CM_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
+                { DRAFT_SRTP_AES256_CM_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
+
                 // https://datatracker.ietf.org/doc/html/rfc5764#section-9
                 { Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
                 { Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
@@ -212,27 +235,25 @@ namespace SharpSRTP.SRTP
 
         public static void EncryptAESCTR(AesEngine aes, byte[] payload, int offset, int length, byte[] iv)
         {
-            const int aesBlockSize = 16;
-
             int payloadSize = length - offset;
             byte[] cipher = new byte[payloadSize];
 
             int blockNo = 0;
-            for (int i = 0; i < payloadSize / aesBlockSize; i++)
+            for (int i = 0; i < payloadSize / AES_BLOCK_SIZE; i++)
             {
                 iv[14] = (byte)((i >> 8) & 0xff);
                 iv[15] = (byte)(i & 0xff);
-                aes.ProcessBlock(iv, 0, cipher, aesBlockSize * blockNo);
+                aes.ProcessBlock(iv, 0, cipher, AES_BLOCK_SIZE * blockNo);
                 blockNo++;
             }
 
-            if (payloadSize % aesBlockSize != 0)
+            if (payloadSize % AES_BLOCK_SIZE != 0)
             {
                 iv[14] = (byte)((blockNo >> 8) & 0xff);
                 iv[15] = (byte)(blockNo & 0xff);
-                byte[] lastBlock = new byte[aesBlockSize];
+                byte[] lastBlock = new byte[AES_BLOCK_SIZE];
                 aes.ProcessBlock(iv, 0, lastBlock, 0);
-                Buffer.BlockCopy(lastBlock, 0, cipher, aesBlockSize * blockNo, payloadSize % aesBlockSize);
+                Buffer.BlockCopy(lastBlock, 0, cipher, AES_BLOCK_SIZE * blockNo, payloadSize % AES_BLOCK_SIZE);
             }
 
             for (int i = 0; i < payloadSize; i++)
@@ -244,12 +265,10 @@ namespace SharpSRTP.SRTP
         // currently only used by tests
         public static void EncryptBlockAESCTR(AesEngine aes, byte[] payload, byte[] iv, int blockNo)
         {
-            const int aesBlockSize = 16;
-
-            if(payload.Length > aesBlockSize)
+            if(payload.Length > AES_BLOCK_SIZE)
                 throw new ArgumentException("Payload length must not be larger than AES block size.");
 
-            byte[] cipher = new byte[aesBlockSize];
+            byte[] cipher = new byte[AES_BLOCK_SIZE];
 
             iv[14] = (byte)((blockNo >> 8) & 0xff);
             iv[15] = (byte)(blockNo & 0xff);
