@@ -1,5 +1,4 @@
-﻿using Org.BouncyCastle.Crypto.Digests;
-using Org.BouncyCastle.Crypto.Engines;
+﻿using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Tls;
 using System;
@@ -114,15 +113,16 @@ namespace SharpSRTP.SRTP
             return key;
         }
 
-        public static ulong GeneratePEIndex(uint seq, uint roc)
+        public static ulong GenerateRTPIndex(uint roc, ushort sequenceNumber)
         {
             // RFC 3711 - 3.3.1
             // i = 2 ^ 16 * ROC + SEQ
-            return ((ulong)roc << 16) | seq;
+            return ((ulong)roc << 16) | sequenceNumber;
         }
 
-        public static ulong DetermineIndex(uint s_l, ushort SEQ, ulong ROC)
+        public static ulong DetermineRTPIndex(uint s_l, ushort SEQ, ulong ROC)
         {
+            // RFC 3711 - Appendix A
             ulong v;
             if (s_l < 32768)
             {
@@ -241,6 +241,7 @@ namespace SharpSRTP.SRTP
             }
         }
 
+        // currently only used by tests
         public static void EncryptBlockAESCTR(AesEngine aes, byte[] payload, byte[] iv, int blockNo)
         {
             const int aesBlockSize = 16;
