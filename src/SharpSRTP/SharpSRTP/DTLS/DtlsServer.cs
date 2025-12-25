@@ -7,6 +7,7 @@ using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace SharpSRTP.DTLS
 {
@@ -51,9 +52,7 @@ namespace SharpSRTP.DTLS
         public override ProtocolVersion GetServerVersion()
         {
             ProtocolVersion serverVersion = base.GetServerVersion();
-
             Console.WriteLine("DTLS server negotiated " + serverVersion);
-
             return serverVersion;
         }
 
@@ -125,7 +124,7 @@ namespace SharpSRTP.DTLS
             HandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
 
-        UseSrtpData _serverSrtpData;
+        protected UseSrtpData _serverSrtpData;
 
         public override void ProcessClientExtensions(IDictionary<int, byte[]> clientExtensions)
         {
@@ -135,7 +134,17 @@ namespace SharpSRTP.DTLS
             base.ProcessClientExtensions(clientExtensions);
 
             UseSrtpData clientSrtpExtension = TlsSrtpUtilities.GetUseSrtpExtension(clientExtensions);
-            _serverSrtpData = new UseSrtpData(new int[] { SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80  }, clientSrtpExtension.Mki); // TODO: 
+
+            // force select SRTP_AES128_CM_HMAC_SHA1_80
+            // TODO: review and add support for other profiles
+            int[] supportedProfiles = clientSrtpExtension.ProtectionProfiles.Where(x => 
+                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80 ||
+                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32
+                ).ToArray();
+            if(supportedProfiles.Length == 0)
+                throw new TlsFatalAlert(AlertDescription.internal_error);
+
+            _serverSrtpData = new UseSrtpData(supportedProfiles, clientSrtpExtension.Mki);
         }
 
         public override IDictionary<int, byte[]> GetServerExtensions()

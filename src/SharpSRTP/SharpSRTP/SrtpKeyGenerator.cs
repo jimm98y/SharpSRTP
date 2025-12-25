@@ -5,6 +5,27 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+namespace Org.BouncyCastle.Tls
+{
+    /// <summary>
+    /// Currently registered DTLS-SRTP profiles: https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml#srtp-protection-1
+    /// </summary>
+    public abstract class ExtendedSrtpProtectionProfile : SrtpProtectionProfile
+    {
+        // TODO: Remove this once BouncyCastle adds the constants
+        public const int DRAFT_SRTP_AES256_CM_SHA1_80 = 0x0003;
+        public const int DRAFT_SRTP_AES256_CM_SHA1_32 = 0x0004;
+        public const int DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 0x0009;
+        public const int DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 0x000A;
+        public const int SRTP_ARIA_128_CTR_HMAC_SHA1_80 = 0x000B;
+        public const int SRTP_ARIA_128_CTR_HMAC_SHA1_32 = 0x000C;
+        public const int SRTP_ARIA_256_CTR_HMAC_SHA1_80 = 0x000D;
+        public const int SRTP_ARIA_256_CTR_HMAC_SHA1_32 = 0x000E;
+        public const int SRTP_AEAD_ARIA_128_GCM = 0x000F;
+        public const int SRTP_AEAD_ARIA_256_GCM = 0x0010;
+    }
+}
+
 namespace SharpSRTP.SRTP
 {
     public class SrtpKeys
@@ -37,15 +58,6 @@ namespace SharpSRTP.SRTP
 
     public static class SrtpKeyGenerator
     {
-        // TODO: Remove this once BouncyCastle adds the constants
-        public const int DRAFT_SRTP_AES256_CM_SHA1_80 = 0x0003;
-        public const int DRAFT_SRTP_AES256_CM_SHA1_32 = 0x0004;
-
-        public const int SRTP_AES192_CM_HMAC_SHA1_80 = 0x0100;
-        public const int SRTP_AES192_CM_HMAC_SHA1_32 = 0x0101;
-        public const int SRTP_AES256_CM_HMAC_SHA1_80 = 0x0102;
-        public const int SRTP_AES256_CM_HMAC_SHA1_32 = 0x0103;
-
         private const int AES_BLOCK_SIZE = 16;
 
         public static readonly Dictionary<int, SrtpProtectionProfile> ProtectionProfiles;
@@ -54,23 +66,19 @@ namespace SharpSRTP.SRTP
         {
             ProtectionProfiles = new Dictionary<int, SrtpProtectionProfile>()
             {
-                // AES256 CM is later specified in RFC 6188
+                // AES256 CM is specified in RFC 6188, but not included in IANA DTLS-SRTP registry https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml#srtp-protection-1
                 // https://www.rfc-editor.org/rfc/rfc6188
-                { SRTP_AES192_CM_HMAC_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
-                { SRTP_AES192_CM_HMAC_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
-                { SRTP_AES256_CM_HMAC_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
-                { SRTP_AES256_CM_HMAC_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
-
+                // AES192 CM is not supported in DTLS-SRTP
                 // AES256 CM was removed in Draft 4 of RFC 5764
                 // https://author-tools.ietf.org/iddiff?url1=draft-ietf-avt-dtls-srtp-04&url2=draft-ietf-avt-dtls-srtp-03&difftype=--html
-                { DRAFT_SRTP_AES256_CM_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
-                { DRAFT_SRTP_AES256_CM_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
+                { Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.DRAFT_SRTP_AES256_CM_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
+                { Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.DRAFT_SRTP_AES256_CM_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
 
                 // https://datatracker.ietf.org/doc/html/rfc5764#section-9
-                { Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
-                { Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
-                { Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.NULL, 0, 0, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
-                { Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.NULL, 0, 0, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
+                { Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
+                { Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
+                { Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80, new SrtpProtectionProfile(SrtpCiphers.NULL, 0, 0, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
+                { Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_32, new SrtpProtectionProfile(SrtpCiphers.NULL, 0, 0, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
             };
         }
 
@@ -136,11 +144,11 @@ namespace SharpSRTP.SRTP
             return key;
         }
 
-        public static ulong GenerateRTPIndex(uint roc, ushort sequenceNumber)
+        public static ulong GenerateRTPIndex(uint ROC, ushort SEQ)
         {
             // RFC 3711 - 3.3.1
             // i = 2 ^ 16 * ROC + SEQ
-            return ((ulong)roc << 16) | sequenceNumber;
+            return ((ulong)ROC << 16) | SEQ;
         }
 
         public static ulong DetermineRTPIndex(uint s_l, ushort SEQ, ulong ROC)
@@ -306,7 +314,7 @@ namespace SharpSRTP.SRTP
             return (uint)((rtcpPacket[4] << 24) | (rtcpPacket[5] << 16) | (rtcpPacket[6] << 8) | rtcpPacket[7]);
         }
 
-        public static int RtcpReadHeaderLen(byte[] payload)
+        public static int RtcpReadHeaderLen(byte[] rtcpPacket)
         {
             return 8;
         }
