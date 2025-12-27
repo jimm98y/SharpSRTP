@@ -1,6 +1,8 @@
 ﻿using Org.BouncyCastle.Tls;
 using System;
+#if NETFRAMEWORK || NETSTANDARD
 using System.Globalization;
+#endif
 using System.Net;
 using System.Net.Sockets;
 

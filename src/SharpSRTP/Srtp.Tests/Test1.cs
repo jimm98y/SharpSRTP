@@ -27,7 +27,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            byte[] iv = SRTProtocol.GenerateSessionKeyIV(masterSaltBytes, 0, 0, (byte)label);
+            byte[] iv = AESCTR.GenerateSessionKeyIV(masterSaltBytes, 0, 0, (byte)label);
 
             var aes = new AesEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(masterKeyBytes));
@@ -57,7 +57,7 @@ namespace Srtp.Tests
             ulong index = ((ulong)roc << 16) | sequenceNumber;
 
             AesEngine aes = new AesEngine();
-            byte[] iv = SRTProtocol.GenerateMessageIV(k_s, ssrc, index);
+            byte[] iv = AESCTR.GenerateMessageKeyIV(k_s, ssrc, index);
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(sessionKey));
 
             byte[] cipher = new byte[k_s.Length];
@@ -79,7 +79,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, masterKeyBytes, masterSaltBytes, SRTPContextType.RTP);
+            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, masterKeyBytes, masterSaltBytes, isRtp ? SRTPContextType.RTP : SRTPContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e);
             string sgk_a = Convert.ToHexString(context.K_a);
@@ -100,7 +100,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, masterKeyBytes, masterSaltBytes, SRTPContextType.RTP);
+            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, masterKeyBytes, masterSaltBytes, isRtp ? SRTPContextType.RTP : SRTPContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e);
             string sgk_a = Convert.ToHexString(context.K_a);
@@ -120,7 +120,7 @@ namespace Srtp.Tests
 
             uint roc = 0;
             ulong index = ((ulong)roc << 16) | sequenceNumber;
-            byte[] iv = SRTProtocol.GenerateMessageIV(context.K_s, ssrc, index);
+            byte[] iv = AESCTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
 
             var aes = new Org.BouncyCastle.Crypto.Engines.AesEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
@@ -153,12 +153,12 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, masterKeyBytes, masterSaltBytes, SRTPContextType.RTCP);    
+            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, masterKeyBytes, masterSaltBytes, SRTPContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e);
             string sgk_a = Convert.ToHexString(context.K_a);
             string sgk_s = Convert.ToHexString(context.K_s);
-            
+
             Assert.AreEqual(k_e.ToUpperInvariant(), sgk_e);
             Assert.AreEqual(k_a.ToUpperInvariant(), sgk_a);
             Assert.AreEqual(k_s.ToUpperInvariant(), sgk_s);
@@ -173,7 +173,7 @@ namespace Srtp.Tests
             uint index = S_l | E_FLAG;
 
             int offset = RTCPReader.GetHeaderLen();
-            byte[] iv = SRTProtocol.GenerateMessageIV(context.K_s, ssrc, S_l);
+            byte[] iv = AESCTR.GenerateMessageKeyIV(context.K_s, ssrc, S_l);
 
             var aes = new Org.BouncyCastle.Crypto.Engines.AesEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));

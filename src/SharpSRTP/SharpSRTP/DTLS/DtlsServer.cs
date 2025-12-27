@@ -6,7 +6,6 @@ using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace SharpSRTP.DTLS
 {

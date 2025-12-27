@@ -160,18 +160,18 @@ namespace SharpSRTP.SRTP
 
         public static byte[] GenerateSessionKey(AesEngine aes, SRTPCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
         {
-            byte[] iv = SRTProtocol.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
-
             byte[] key = new byte[length];
             switch (cipher)
             {
                 case SRTPCiphers.NULL:
-                    Encryption.NULL.Encrypt(aes, key, 0, length, iv);
-                    break;
-
                 case SRTPCiphers.AES_128_CM:
                 case SRTPCiphers.AES_256_CM:
-                    Encryption.AESCTR.Encrypt(aes, key, 0, length, iv);
+                //case SRTPCiphers.AEAD_AES_128_GCM:
+                //case SRTPCiphers.AEAD_AES_256_GCM:
+                    {
+                        byte[] iv = Encryption.AESCTR.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
+                        Encryption.AESCTR.Encrypt(aes, key, 0, length, iv);
+                    }
                     break;
 
                 default:
