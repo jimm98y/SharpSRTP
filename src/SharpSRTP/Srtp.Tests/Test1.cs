@@ -2,6 +2,8 @@
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
 using SharpSRTP.SRTP;
+using SharpSRTP.SRTP.Authentication;
+using SharpSRTP.SRTP.Encryption;
 using System;
 using System.Linq;
 
@@ -25,7 +27,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            byte[] iv = SRTPProtocol.GenerateSessionIV(masterSaltBytes, 0, 0, (byte)label);
+            byte[] iv = SRTProtocol.GenerateSessionKeyIV(masterSaltBytes, 0, 0, (byte)label);
 
             var aes = new AesEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(masterKeyBytes));
@@ -55,7 +57,7 @@ namespace Srtp.Tests
             ulong index = ((ulong)roc << 16) | sequenceNumber;
 
             AesEngine aes = new AesEngine();
-            byte[] iv = SRTPProtocol.GenerateMessageIV(k_s, ssrc, index);
+            byte[] iv = SRTProtocol.GenerateMessageIV(k_s, ssrc, index);
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(sessionKey));
 
             byte[] cipher = new byte[k_s.Length];
@@ -76,14 +78,12 @@ namespace Srtp.Tests
         {
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
-            
-            byte[] gk_e = SRTPProtocol.GenerateSessionKey(masterKeyBytes, masterSaltBytes, 16, 0, 0, 0);
-            byte[] gk_a = SRTPProtocol.GenerateSessionKey(masterKeyBytes, masterSaltBytes, 20, 1, 0, 0);
-            byte[] gk_s = SRTPProtocol.GenerateSessionKey(masterKeyBytes, masterSaltBytes, 14, 2, 0, 0);
 
-            string sgk_e = Convert.ToHexString(gk_e);
-            string sgk_a = Convert.ToHexString(gk_a);
-            string sgk_s = Convert.ToHexString(gk_s);
+            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, masterKeyBytes, masterSaltBytes, SRTPContextType.RTP);
+
+            string sgk_e = Convert.ToHexString(context.K_e);
+            string sgk_a = Convert.ToHexString(context.K_a);
+            string sgk_s = Convert.ToHexString(context.K_s);
             Assert.AreEqual(k_e.ToUpperInvariant(), sgk_e);
             Assert.AreEqual(k_a.ToUpperInvariant(), sgk_a);
             Assert.AreEqual(k_s.ToUpperInvariant(), sgk_s);
@@ -100,13 +100,11 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            byte[] gk_e = SRTPProtocol.GenerateSessionKey(masterKeyBytes, masterSaltBytes, 16, 0, 0, 0);
-            byte[] gk_a = SRTPProtocol.GenerateSessionKey(masterKeyBytes, masterSaltBytes, 20, 1, 0, 0);
-            byte[] gk_s = SRTPProtocol.GenerateSessionKey(masterKeyBytes, masterSaltBytes, 14, 2, 0, 0);
+            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, masterKeyBytes, masterSaltBytes, SRTPContextType.RTP);
 
-            string sgk_e = Convert.ToHexString(gk_e);
-            string sgk_a = Convert.ToHexString(gk_a);
-            string sgk_s = Convert.ToHexString(gk_s);
+            string sgk_e = Convert.ToHexString(context.K_e);
+            string sgk_a = Convert.ToHexString(context.K_a);
+            string sgk_s = Convert.ToHexString(context.K_s);
             Assert.AreEqual(k_e.ToUpperInvariant(), sgk_e);
             Assert.AreEqual(k_a.ToUpperInvariant(), sgk_a);
             Assert.AreEqual(k_s.ToUpperInvariant(), sgk_s);
@@ -122,13 +120,13 @@ namespace Srtp.Tests
 
             uint roc = 0;
             ulong index = ((ulong)roc << 16) | sequenceNumber;
-            byte[] iv = SRTPProtocol.GenerateMessageIV(gk_s, ssrc, index);
+            byte[] iv = SRTProtocol.GenerateMessageIV(context.K_s, ssrc, index);
 
             var aes = new Org.BouncyCastle.Crypto.Engines.AesEngine();
-            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(gk_e));
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
 
             var hmac = new HMac(new Sha1Digest());
-            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(gk_a));
+            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_a));
 
             AESCTR.Encrypt(aes, payload, offset, length, iv);
 
@@ -138,7 +136,7 @@ namespace Srtp.Tests
             payload[length + 3] = (byte)roc;
 
             const int authLen = 10;
-            byte[] auth = SRTPProtocol.GenerateAuthTag(hmac, payload, 0, length + 4);
+            byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
             System.Buffer.BlockCopy(auth, 0, payload, length, authLen); // we don't append ROC in SRTP
             var result = payload.Take(length + authLen).ToArray();
 
@@ -155,13 +153,11 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            byte[] gk_e = SRTPProtocol.GenerateSessionKey(masterKeyBytes, masterSaltBytes, 16, 3 + 0, 0, 0);
-            byte[] gk_a = SRTPProtocol.GenerateSessionKey(masterKeyBytes, masterSaltBytes, 20, 3 + 1, 0, 0);
-            byte[] gk_s = SRTPProtocol.GenerateSessionKey(masterKeyBytes, masterSaltBytes, 14, 3 + 2, 0, 0);
+            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, masterKeyBytes, masterSaltBytes, SRTPContextType.RTCP);    
 
-            string sgk_e = Convert.ToHexString(gk_e);
-            string sgk_a = Convert.ToHexString(gk_a);
-            string sgk_s = Convert.ToHexString(gk_s);
+            string sgk_e = Convert.ToHexString(context.K_e);
+            string sgk_a = Convert.ToHexString(context.K_a);
+            string sgk_s = Convert.ToHexString(context.K_s);
             
             Assert.AreEqual(k_e.ToUpperInvariant(), sgk_e);
             Assert.AreEqual(k_a.ToUpperInvariant(), sgk_a);
@@ -177,13 +173,13 @@ namespace Srtp.Tests
             uint index = S_l | E_FLAG;
 
             int offset = RTCPReader.GetHeaderLen();
-            byte[] iv = SRTPProtocol.GenerateMessageIV(gk_s, ssrc, S_l);
+            byte[] iv = SRTProtocol.GenerateMessageIV(context.K_s, ssrc, S_l);
 
             var aes = new Org.BouncyCastle.Crypto.Engines.AesEngine();
-            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(gk_e));
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
 
             var hmac = new HMac(new Sha1Digest());
-            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(gk_a));
+            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_a));
 
             AESCTR.Encrypt(aes, payload, offset, length, iv);
 
@@ -193,7 +189,7 @@ namespace Srtp.Tests
             payload[length + 3] = (byte)index;
 
             const int authLen = 10;
-            byte[] auth = SRTPProtocol.GenerateAuthTag(hmac, payload, 0, length + 4);
+            byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
             System.Buffer.BlockCopy(auth, 0, payload, length + 4, authLen); // we don't append ROC in SRTP
             var result = payload.Take(length + 4 + authLen).ToArray();
 

@@ -3,9 +3,9 @@ using System;
 
 namespace SharpSRTP.DTLS
 {
-    public class DtlsHandshakeCompletedEventArgs : EventArgs
+    public class DTLSHandshakeCompletedEventArgs : EventArgs
     {
-        public DtlsHandshakeCompletedEventArgs(SecurityParameters securityParameters)
+        public DTLSHandshakeCompletedEventArgs(SecurityParameters securityParameters)
         {
             SecurityParameters = securityParameters;
         }

@@ -18,7 +18,7 @@ using Org.BouncyCastle.Asn1.X9;
 
 namespace SharpSRTP.DTLS
 {
-    public class DtlsCertificateUtils
+    public class DTLSCertificateUtils
     {
         public static (Certificate certificate, AsymmetricKeyParameter key) GenerateRSAServerCertificate(
             string name,

@@ -1,6 +1,7 @@
 ﻿using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
+using System;
 
 namespace SharpSRTP.SRTP
 {
@@ -27,16 +28,17 @@ namespace SharpSRTP.SRTP
         public uint S_l { get { return _lastSeq; } set { _lastSeq = value; } }
         public bool S_l_set { get; set; } = false;
 
-        public int ProtectionProfile { get; set; }
+        public int ProtectionProfile { get; set; } = Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80;
+        public SRTPCiphers Cipher { get; set; } = SRTPCiphers.AES_128_CM;
+        public SRTPAuth Auth { get; set; } = SRTPAuth.HMAC_SHA1;
 
         public bool IsMkiPresent { get; set; }
         public int MkiLength { get; set; }
-
         public byte[] Mki { get; set; }
 
         public byte[] MasterKey { get; set; }
         public byte[] MasterSalt { get; set; }
-        public int MasterKeySentCounter { get; set; }
+        public int MasterKeySentCounter { get; set; } // TODO
 
         /// <summary>
         /// Key derivation rate.
@@ -109,38 +111,91 @@ namespace SharpSRTP.SRTP
             this.ProtectionProfile = protectionProfile;
             this.MasterKey = masterKey;
             this.MasterSalt = masterSalt;
-            
+
+            if (SRTProtocol.ProtectionProfiles.TryGetValue(protectionProfile, out SRTPProtectionProfile srtpSecurityParams))
+            {
+                Cipher = srtpSecurityParams.Cipher;
+                Auth = srtpSecurityParams.Auth;
+                N_e = srtpSecurityParams.CipherKeyLength >> 3;
+                N_a = srtpSecurityParams.AuthKeyLength >> 3;
+                N_s = srtpSecurityParams.CipherSaltLength >> 3;
+                N_tag = srtpSecurityParams.AuthTagLength >> 3;
+                SRTP_PREFIX_LENGTH = srtpSecurityParams.SrtpPrefixLength;
+            }
+            else
+            {
+                throw new NotSupportedException($"Protection profile {protectionProfile} is unsupported!");
+            }
+
             DeriveSessionKeys();
         }
 
-        public void DeriveSessionKeys()
+        public void DeriveSessionKeys(ulong index = 0)
         {
             int labelBaseValue = _contextType == SRTPContextType.RTP ? 0 : 3;
 
-            const ulong index = 0;
-            this.K_e = SRTPProtocol.GenerateSessionKey(MasterKey, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate); // TODO: use ROC?
-            this.K_a = SRTPProtocol.GenerateSessionKey(MasterKey, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-            this.K_s = SRTPProtocol.GenerateSessionKey(MasterKey, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+            if (Cipher == SRTPCiphers.AES_128_CM || Cipher == SRTPCiphers.AES_256_CM || Cipher == SRTPCiphers.NULL)
+            {
+                var aes = new AesEngine();
+                aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
+                this.K_e = GenerateSessionKey(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate); 
+                this.K_a = GenerateSessionKey(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                this.K_s = GenerateSessionKey(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
 
-            var aes = new AesEngine();
-            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
-            this.AES = aes;
+                aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+                this.AES = aes;
+            }
+            else
+            {
+                throw new NotSupportedException($"Unsupported cipher {Cipher.ToString()}!");
+            }
 
-            var hmac = new HMac(new Sha1Digest());
-            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_a));
-            this.HMAC = hmac;
+            if (Auth == SRTPAuth.HMAC_SHA1)
+            {
+                var hmac = new HMac(new Sha1Digest());
+                hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_a));
+                this.HMAC = hmac;
+            }
         }
 
-        // https://datatracker.ietf.org/doc/html/rfc2401 Appendix C
-        public bool CheckandUpdateReplayWindow(uint seq)
+        public static byte[] GenerateSessionKey(AesEngine aes, SRTPCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
+        {
+            byte[] iv = SRTProtocol.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
+
+            byte[] key = new byte[length];
+            switch (cipher)
+            {
+                case SRTPCiphers.NULL:
+                    Encryption.NULL.Encrypt(aes, key, 0, length, iv);
+                    break;
+
+                case SRTPCiphers.AES_128_CM:
+                case SRTPCiphers.AES_256_CM:
+                    Encryption.AESCTR.Encrypt(aes, key, 0, length, iv);
+                    break;
+
+                default:
+                    throw new NotSupportedException($"Unsupported cipher {cipher.ToString()}!");
+            }
+            
+            return key;
+        }
+
+        /// <summary>
+        /// Checks and updates the replay window for the given sequence number.
+        /// </summary>
+        /// <param name="sequenceNumber">RTP/RTCP sequence number.</param>
+        /// <returns>true if the replay check passed, false when the packed was replayed.</returns>
+        /// <remarks>https://datatracker.ietf.org/doc/html/rfc2401 Appendix C</remarks>
+        public bool CheckAndUpdateReplayWindow(uint sequenceNumber)
         {
             int diff;
 
-            if (seq == 0) return false; /* first == 0 or wrapped */
-            if (seq > _lastSeq)
+            if (sequenceNumber == 0) return false; /* first == 0 or wrapped */
+            if (sequenceNumber > _lastSeq)
             {
                 /* new larger sequence number */
-                diff = (int)(seq - _lastSeq);
+                diff = (int)(sequenceNumber - _lastSeq);
                 if (diff < REPLAY_WINDOW_SIZE)
                 {
                     /* In window */
@@ -148,10 +203,10 @@ namespace SharpSRTP.SRTP
                     _bitmap |= 1; /* set bit for this packet */
                 }
                 else _bitmap = 1; /* This packet has a "way larger" */
-                _lastSeq = seq;
+                _lastSeq = sequenceNumber;
                 return true; /* larger is good */
             }
-            diff = (int)(_lastSeq - seq);
+            diff = (int)(_lastSeq - sequenceNumber);
             if (diff >= REPLAY_WINDOW_SIZE) return false; /* too old or wrapped */
             if ((_bitmap & ((ulong)1 << diff)) == ((ulong)1 << diff)) return false; /* already seen */
             _bitmap |= ((ulong)1 << diff); /* mark as seen */

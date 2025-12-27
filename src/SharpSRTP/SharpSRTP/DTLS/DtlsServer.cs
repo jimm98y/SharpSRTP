@@ -7,53 +7,60 @@ using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace SharpSRTP.DTLS
 {
-    public class DtlsServer : DefaultTlsServer
+    public class DTLSServer : DefaultTlsServer
     {
-        protected Certificate _myCert;
-        protected AsymmetricKeyParameter _myCertKey;
-        protected UseSrtpData _serverSrtpData;
+        private Certificate _myCert;
+        private AsymmetricKeyParameter _myCertPrivateKey;
+        protected short _myCertCertificateAlgorithm = SignatureAlgorithm.rsa;
+
+        protected Certificate Certificate => _myCert;
+        protected AsymmetricKeyParameter CertificatePrivateKey => _myCertPrivateKey;
 
         public Certificate ClientCertificate { get; private set; }
 
-        public event EventHandler<DtlsHandshakeCompletedEventArgs> HandshakeCompleted;
+        public event EventHandler<DTLSHandshakeCompletedEventArgs> HandshakeCompleted;
 
-        public DtlsServer() : this(new BcTlsCrypto())
+        public DTLSServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short signatureAlgorithm = SignatureAlgorithm.rsa) : this(new BcTlsCrypto())
         {
+            SetCertificate(certificate, privateKey, signatureAlgorithm);
         }
 
-        public DtlsServer(TlsCrypto crypto) : base(crypto)
+        public DTLSServer(TlsCrypto crypto) : base(crypto)
+        {  }
+
+        public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm)
         {
+            _myCert = certificate;
+            _myCertPrivateKey = privateKey;
+            _myCertCertificateAlgorithm = signatureAlgorithm;
         }
 
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)
         {
-            TextWriter output = (alertLevel == AlertLevel.fatal) ? Console.Error : Console.Out;
-            output.WriteLine("DTLS server raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
+            Log.Debug("DTLS server raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
             
             if (message != null)
             {
-                output.WriteLine("> " + message);
+                Log.Debug("> " + message);
             }
             if (cause != null)
             {
-                output.WriteLine(cause);
+                Log.Debug("", cause);
             }
         }
 
         public override void NotifyAlertReceived(short alertLevel, short alertDescription)
         {
-            TextWriter output = (alertLevel == AlertLevel.fatal) ? Console.Error : Console.Out;
-            output.WriteLine("DTLS server received alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
+            if(Log.DebugEnabled) Log.Debug("DTLS server received alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
         }
 
         public override ProtocolVersion GetServerVersion()
         {
             ProtocolVersion serverVersion = base.GetServerVersion();
-            Console.WriteLine("DTLS server negotiated " + serverVersion);
+            if (Log.DebugEnabled) Log.Debug("DTLS server negotiated " + serverVersion);
             return serverVersion;
         }
 
@@ -76,12 +83,12 @@ namespace SharpSRTP.DTLS
 
             TlsCertificate[] chain = clientCertificate.GetCertificateList();
 
-            Console.WriteLine("DTLS server received client certificate chain of length " + chain.Length);
+            Log.Debug("DTLS server received client certificate chain of length " + chain.Length);
             for (int i = 0; i != chain.Length; i++)
             {
                 X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
                 // TODO Create fingerprint based on certificate signature algorithm digest
-                Console.WriteLine("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
+                Log.Debug("    fingerprint:SHA-256 " + DTLSCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
             }
 
             bool isEmpty = (clientCertificate == null || clientCertificate.IsEmpty);
@@ -113,16 +120,16 @@ namespace SharpSRTP.DTLS
             ProtocolName protocolName = m_context.SecurityParameters.ApplicationProtocol;
             if (protocolName != null)
             {
-                Console.WriteLine("Server ALPN: " + protocolName.GetUtf8Decoding());
+                Log.Debug("Server ALPN: " + protocolName.GetUtf8Decoding());
             }
 
             byte[] tlsServerEndPoint = m_context.ExportChannelBinding(ChannelBinding.tls_server_end_point);
-            Console.WriteLine("Server 'tls-server-end-point': " + ToHexString(tlsServerEndPoint));
+            Log.Debug("Server 'tls-server-end-point': " + ToHexString(tlsServerEndPoint));
 
             byte[] tlsUnique = m_context.ExportChannelBinding(ChannelBinding.tls_unique);
-            Console.WriteLine("Server 'tls-unique': " + ToHexString(tlsUnique));
+            Log.Debug("Server 'tls-unique': " + ToHexString(tlsUnique));
 
-            HandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
+            HandshakeCompleted?.Invoke(this, new DTLSHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
 
         public override void ProcessClientExtensions(IDictionary<int, byte[]> clientExtensions)
@@ -131,20 +138,6 @@ namespace SharpSRTP.DTLS
                 throw new TlsFatalAlert(AlertDescription.internal_error);
             
             base.ProcessClientExtensions(clientExtensions);
-
-            UseSrtpData clientSrtpExtension = TlsSrtpUtilities.GetUseSrtpExtension(clientExtensions);
-
-            // TODO: review and add support for other profiles
-            int[] supportedProfiles = clientSrtpExtension.ProtectionProfiles.Where(x => 
-                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80 ||
-                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32 ||
-                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80 ||
-                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_32
-                ).ToArray();
-            if(supportedProfiles.Length == 0)
-                throw new TlsFatalAlert(AlertDescription.internal_error);
-
-            _serverSrtpData = new UseSrtpData(supportedProfiles, clientSrtpExtension.Mki);
         }
 
         public override IDictionary<int, byte[]> GetServerExtensions()
@@ -152,9 +145,7 @@ namespace SharpSRTP.DTLS
             if (m_context.SecurityParameters.ServerRandom == null)
                 throw new TlsFatalAlert(AlertDescription.internal_error);
 
-            var extensions = base.GetServerExtensions();
-            TlsSrtpUtilities.AddUseSrtpExtension(extensions, _serverSrtpData);
-            return extensions;
+            return base.GetServerExtensions();
         }
 
         public override void GetServerExtensionsForConnection(IDictionary<int, byte[]> serverExtensions)
@@ -165,11 +156,19 @@ namespace SharpSRTP.DTLS
             base.GetServerExtensionsForConnection(serverExtensions);
         }
 
+        protected virtual string ToHexString(byte[] data)
+        {
+            return data == null ? "(null)" : Hex.ToHexString(data);
+        }
+
+        protected override ProtocolVersion[] GetSupportedVersions()
+        {
+            return ProtocolVersion.DTLSv12.Only();
+        }
+
         protected override TlsCredentialedSigner GetECDsaSignerCredentials()
         {
-            var clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
-
-            // TODO: Review this
+            IList<SignatureAndHashAlgorithm> clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
 
             foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
@@ -182,21 +181,22 @@ namespace SharpSRTP.DTLS
                 }
             }
 
-            if (_myCert == null)
+            if (_myCert == null || _myCertPrivateKey == null)
             {
-                var cert = DtlsCertificateUtils.GenerateECDSAServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30));
-                _myCert = cert.certificate;
-                _myCertKey = cert.key;
+                throw new InvalidOperationException("DTLS server ECDsa certificate not set!");
             }
 
-            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _myCertKey, _myCert, signatureAndHashAlgorithm);
+            if(_myCertCertificateAlgorithm != SignatureAlgorithm.ecdsa)
+            {
+                throw new InvalidOperationException("DTLS server ECDsa certificate algorithm mismatch!");
+            }
+
+            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _myCertPrivateKey, _myCert, signatureAndHashAlgorithm);
         }
 
         protected override TlsCredentialedSigner GetRsaSignerCredentials()
         {
-            var clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
-
-            // TODO: Review this
+            IList<SignatureAndHashAlgorithm> clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
 
             foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
@@ -209,24 +209,17 @@ namespace SharpSRTP.DTLS
                 }
             }
 
-            if (_myCert == null)
+            if (_myCert == null || _myCertPrivateKey == null)
             {
-                (Certificate certificate, AsymmetricKeyParameter key) cert = DtlsCertificateUtils.GenerateRSAServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30));
-                _myCert = cert.certificate;
-                _myCertKey = cert.key;
+                throw new InvalidOperationException("DTLS server RSA certificate not set!");
             }
 
-            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _myCertKey, _myCert, signatureAndHashAlgorithm);
-        }
+            if (_myCertCertificateAlgorithm != SignatureAlgorithm.rsa)
+            {
+                throw new InvalidOperationException("DTLS server RSA certificate algorithm mismatch!");
+            }
 
-        protected virtual string ToHexString(byte[] data)
-        {
-            return data == null ? "(null)" : Hex.ToHexString(data);
-        }
-
-        protected override ProtocolVersion[] GetSupportedVersions()
-        {
-            return ProtocolVersion.DTLSv12.Only();
+            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _myCertPrivateKey, _myCert, signatureAndHashAlgorithm);
         }
     }
 }

@@ -19,11 +19,11 @@ namespace SharpSRTP.SRTP
         public byte[] ServerWriteMasterKey { get { return _server_write_SRTP_master_key; } }
         public byte[] ServerWriteMasterSalt { get { return _server_write_SRTP_master_salt; } }
 
-        public SRTPKeys(int profile)
+        public SRTPKeys(int protectionProfile)
         {
-            _protectionProfile = profile;
+            _protectionProfile = protectionProfile;
 
-            var srtpSecurityParams = SRTPProtocol.ProtectionProfiles[_protectionProfile];
+            var srtpSecurityParams = SRTProtocol.ProtectionProfiles[_protectionProfile];
             int cipherKeyLen = srtpSecurityParams.CipherKeyLength >> 3;
             int cipherSaltLen = srtpSecurityParams.CipherSaltLength >> 3;
             _client_write_SRTP_master_key = new byte[cipherKeyLen];
