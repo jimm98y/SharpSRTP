@@ -1,12 +1,15 @@
 ﻿using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
-using System.Collections.Generic;
 
 namespace SharpSRTP.SRTP
 {
     public class SrtpContext
     {
+        private const int REPLAY_WINDOW_SIZE = 64;
+
+        private ulong _bitmap = 0; /* session state - must be 32 bits */
+        private uint _lastSeq = 0; /* session state */
         private readonly bool _isRtp;
 
         public HMac HMAC { get; private set; }
@@ -16,18 +19,12 @@ namespace SharpSRTP.SRTP
         /// <summary>
         /// Receiver only - highest sequence number received.
         /// </summary>
-        public uint S_l { get; set; } = 0;
+        public uint S_l { get { return _lastSeq; } set { _lastSeq = value; } }
         public bool S_l_set { get; set; } = false;
 
         public int Cipher { get; set; }
         public int Authentication { get; set; }
 
-        /// <summary>
-        /// Receiver only - list of recently received sequence numbers for replay protection.
-        /// </summary>
-// TODO Replay protection missing
-#warning Replay protection missing
-        public List<ushort> ReplayList { get; set; }
 
         public bool IsMkiPresent { get; set; }
 
@@ -128,6 +125,33 @@ namespace SharpSRTP.SRTP
             var hmac = new HMac(new Sha1Digest());
             hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_a));
             this.HMAC = hmac;
+        }
+
+        // https://datatracker.ietf.org/doc/html/rfc2401 Appendix C
+        public bool CheckandUpdateReplayWindow(uint seq)
+        {
+            int diff;
+
+            if (seq == 0) return false; /* first == 0 or wrapped */
+            if (seq > _lastSeq)
+            {
+                /* new larger sequence number */
+                diff = (int)(seq - _lastSeq);
+                if (diff < REPLAY_WINDOW_SIZE)
+                {
+                    /* In window */
+                    _bitmap = _bitmap << diff;
+                    _bitmap |= 1; /* set bit for this packet */
+                }
+                else _bitmap = 1; /* This packet has a "way larger" */
+                _lastSeq = seq;
+                return true; /* larger is good */
+            }
+            diff = (int)(_lastSeq - seq);
+            if (diff >= REPLAY_WINDOW_SIZE) return false; /* too old or wrapped */
+            if ((_bitmap & ((ulong)1 << diff)) == ((ulong)1 << diff)) return false; /* already seen */
+            _bitmap |= ((ulong)1 << diff); /* mark as seen */
+            return true; /* out of order but good */
         }
     }
 }

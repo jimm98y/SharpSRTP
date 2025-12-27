@@ -151,7 +151,7 @@ namespace SharpSRTP.SRTP
             return ((ulong)ROC << 16) | SEQ;
         }
 
-        public static ulong DetermineRTPIndex(uint s_l, ushort SEQ, ulong ROC)
+        public static uint DetermineRTPIndex(uint s_l, ushort SEQ, ulong ROC)
         {
             // RFC 3711 - Appendix A
             ulong v;
@@ -165,11 +165,11 @@ namespace SharpSRTP.SRTP
             else
             {
                 if (s_l - 32768 > SEQ)
-                  v = (ROC + 1) % 4294967296L;
+                    v = (ROC + 1) % 4294967296L;
                 else
-                  v = ROC;
+                    v = ROC;
             }
-            return SEQ + v * 65536U;
+            return (uint)(SEQ + v * 65536U);
         }
 
         public static byte[] GenerateMessageIV(byte[] salt, uint ssrc, ulong index)
