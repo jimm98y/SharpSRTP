@@ -15,6 +15,7 @@ namespace SharpSRTP.DTLS
     {
         protected Certificate _myCert;
         protected AsymmetricKeyParameter _myCertKey;
+        protected UseSrtpData _serverSrtpData;
 
         public Certificate ClientCertificate { get; private set; }
 
@@ -124,8 +125,6 @@ namespace SharpSRTP.DTLS
             HandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
 
-        protected UseSrtpData _serverSrtpData;
-
         public override void ProcessClientExtensions(IDictionary<int, byte[]> clientExtensions)
         {
             if (m_context.SecurityParameters.ClientRandom == null)
@@ -135,11 +134,12 @@ namespace SharpSRTP.DTLS
 
             UseSrtpData clientSrtpExtension = TlsSrtpUtilities.GetUseSrtpExtension(clientExtensions);
 
-            // force select SRTP_AES128_CM_HMAC_SHA1_80
             // TODO: review and add support for other profiles
             int[] supportedProfiles = clientSrtpExtension.ProtectionProfiles.Where(x => 
                 x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80 ||
-                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32
+                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32 ||
+                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80 ||
+                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_32
                 ).ToArray();
             if(supportedProfiles.Length == 0)
                 throw new TlsFatalAlert(AlertDescription.internal_error);

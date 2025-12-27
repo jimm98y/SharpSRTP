@@ -1,4 +1,6 @@
 ﻿using Org.BouncyCastle.Asn1.X509;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
@@ -7,20 +9,42 @@ using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace SharpSRTP.DTLS
 {
     public class DtlsClient : DefaultTlsClient
     {
+        protected Certificate _myCert;
+        protected AsymmetricKeyParameter _myCertKey;
+        protected UseSrtpData _clientSrtpData;
+
+        public TlsServerCertificate ServerCertificate { get; private set; }
+
         public event EventHandler<DtlsHandshakeCompletedEventArgs> HandshakeCompleted;
 
         private TlsSession m_session;
-
+        private readonly SecureRandom m_sr;
         private int m_handshakeTimeoutMillis = 0;
 
-        public DtlsClient(TlsSession session = null) : base(new BcTlsCrypto())
+        public DtlsClient(TlsSession session = null) : this(new BcTlsCrypto(), session)
+        { }
+
+        public DtlsClient(TlsCrypto crypto, TlsSession session = null) : base(crypto)
         {
             this.m_session = session;
+
+            // list of all supported profiles
+            int[] protectionProfiles = { 
+                SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80,
+                SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32,
+                SrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80,
+                SrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_32
+            };
+
+            m_sr = new SecureRandom();
+            byte[] mki = SecureRandom.GetNextBytes(m_sr, 4);
+            this._clientSrtpData = new UseSrtpData(protectionProfiles, mki);
         }
 
         public override TlsSession GetSessionToResume()
@@ -62,7 +86,14 @@ namespace SharpSRTP.DTLS
 
         public override TlsAuthentication GetAuthentication()
         {
-            return new MyTlsAuthentication(m_context);
+            if (_myCert == null)
+            {
+                (Certificate certificate, AsymmetricKeyParameter key) cert = DtlsCertificateUtils.GenerateRSAServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30));
+                _myCert = cert.certificate;
+                _myCertKey = cert.key;
+            }
+
+            return new MyTlsAuthentication(m_context, this);
         }
 
         public override void NotifyHandshakeComplete()
@@ -113,7 +144,9 @@ namespace SharpSRTP.DTLS
             if (m_context.SecurityParameters.ClientRandom == null)
                 throw new TlsFatalAlert(AlertDescription.internal_error);
 
-            return base.GetClientExtensions();
+            var extensions = base.GetClientExtensions();
+            TlsSrtpUtilities.AddUseSrtpExtension(extensions, _clientSrtpData);
+            return extensions;
         }
 
         public override void ProcessServerExtensions(IDictionary<int, byte[]> serverExtensions)
@@ -122,6 +155,20 @@ namespace SharpSRTP.DTLS
                 throw new TlsFatalAlert(AlertDescription.internal_error);
 
             base.ProcessServerExtensions(serverExtensions);
+
+            UseSrtpData serverSrtpExtension = TlsSrtpUtilities.GetUseSrtpExtension(serverExtensions);
+
+            // TODO: review and add support for other profiles
+            int[] supportedProfiles = serverSrtpExtension.ProtectionProfiles.Where(x =>
+                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80 ||
+                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32 ||
+                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80 ||
+                x == Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_32
+                ).ToArray();
+            if (supportedProfiles.Length == 0)
+                throw new TlsFatalAlert(AlertDescription.internal_error);
+
+            _clientSrtpData = new UseSrtpData(supportedProfiles, serverSrtpExtension.Mki);
         }
 
         protected virtual string ToHexString(byte[] data)
@@ -137,9 +184,11 @@ namespace SharpSRTP.DTLS
         internal class MyTlsAuthentication : TlsAuthentication
         {
             private readonly TlsContext m_context;
+            private readonly DtlsClient m_client;
 
-            internal MyTlsAuthentication(TlsContext context)
+            public MyTlsAuthentication(TlsContext context, DtlsClient client)
             {
+                this.m_client = client ?? throw new ArgumentNullException(nameof(client));
                 this.m_context = context;
             }
 
@@ -155,14 +204,15 @@ namespace SharpSRTP.DTLS
                     Console.WriteLine("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
                 }
 
-                bool isEmpty = serverCertificate == null || serverCertificate.Certificate == null
-                    || serverCertificate.Certificate.IsEmpty;
+                bool isEmpty = serverCertificate == null || serverCertificate.Certificate == null || serverCertificate.Certificate.IsEmpty;
 
                 if (isEmpty)
                     throw new TlsFatalAlert(AlertDescription.bad_certificate);
 
                 // TODO: certificate chain validation
                 TlsCertificate[] certPath = chain;
+
+                m_client.ServerCertificate = serverCertificate;
 
                 TlsUtilities.CheckPeerSigAlgs(m_context, certPath);
             }
@@ -173,8 +223,22 @@ namespace SharpSRTP.DTLS
                 if (certificateTypes == null || (!Arrays.Contains(certificateTypes, ClientCertificateType.rsa_sign) && !Arrays.Contains(certificateTypes, ClientCertificateType.ecdsa_sign)))
                     return null;
 
-                // no client certificate
-                return null;
+                var clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
+
+                // TODO: Review this
+                SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
+
+                foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
+                {
+                    if (alg.Signature == SignatureAlgorithm.rsa)
+                    {
+                        // Just grab the first one we find
+                        signatureAndHashAlgorithm = alg;
+                        break;
+                    }
+                }
+
+                return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, m_client._myCertKey, m_client._myCert, signatureAndHashAlgorithm);
             }
         }
     }
