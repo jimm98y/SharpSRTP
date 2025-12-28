@@ -6,9 +6,7 @@ namespace SharpSRTP.SRTP.Encryption
 {
     public static class AESGCM
     {
-        public const int AES_BLOCK_SIZE = 16;
-
-        public static void Encrypt(GcmBlockCipher cipher, byte[] payload, int offset, int length, byte[] iv, byte[] K_e, int N_tag, byte[] K_s, byte[] associatedData)
+        public static void Encrypt(GcmBlockCipher cipher, byte[] payload, int offset, int length, byte[] iv, byte[] K_e, int N_tag, byte[] associatedData)
         {
             int payloadSize = length - offset;
 

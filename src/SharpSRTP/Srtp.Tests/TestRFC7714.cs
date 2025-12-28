@@ -52,7 +52,7 @@ namespace Srtp.Tests
 
             var cipher = new GcmBlockCipher(new AesEngine());
             byte[] associatedData = result.Take(offset).ToArray();
-            AESGCM.Encrypt(cipher, result, offset, rtpBytes.Length, iv, k_e, n_tag, k_s, associatedData);
+            AESGCM.Encrypt(cipher, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
 
             string encryptedRTP = Convert.ToHexString(result).ToLowerInvariant();
 
@@ -82,7 +82,7 @@ namespace Srtp.Tests
 
             var cipher = new GcmBlockCipher(new AesEngine());
             byte[] associatedData = srtpBytes.Take(offset).ToArray();
-            AESGCM.Encrypt(cipher, srtpBytes, offset, srtpBytes.Length - n_tag, iv, k_e, n_tag, k_s, associatedData);
+            AESGCM.Encrypt(cipher, srtpBytes, offset, srtpBytes.Length - n_tag, iv, k_e, n_tag, associatedData);
 
             string decryptedRTP = Convert.ToHexString(srtpBytes.Take(srtpBytes.Length - n_tag).ToArray()).ToLowerInvariant();
 
@@ -130,7 +130,7 @@ namespace Srtp.Tests
             const uint E_FLAG = 0x80000000;
             uint index = idx | E_FLAG;
             byte[] associatedData = result.Take(offset).Concat(new byte[] { (byte)(index >> 24), (byte)(index >> 16), (byte)(index >> 8), (byte)index }).ToArray(); // associatedData include also index
-            AESGCM.Encrypt(cipher, result, offset, rtcpBytes.Length, iv, k_e, n_tag, k_s, associatedData);
+            AESGCM.Encrypt(cipher, result, offset, rtcpBytes.Length, iv, k_e, n_tag, associatedData);
 
             result[rtcpBytes.Length + n_tag + 0] = (byte)(index >> 24);
             result[rtcpBytes.Length + n_tag + 1] = (byte)(index >> 16);
@@ -167,7 +167,7 @@ namespace Srtp.Tests
             var cipher = new GcmBlockCipher(new AesEngine());
 
             byte[] associatedData = srtcpBytes.Take(offset).Concat(srtcpBytes.Skip(srtcpBytes.Length - 4).Take(4)).ToArray(); // associatedData include also index
-            AESGCM.Encrypt(cipher, srtcpBytes, offset, srtcpBytes.Length - 4 - n_tag, iv, k_e, n_tag, k_s, associatedData);
+            AESGCM.Encrypt(cipher, srtcpBytes, offset, srtcpBytes.Length - 4 - n_tag, iv, k_e, n_tag, associatedData);
 
             string decryptedRTCP = Convert.ToHexString(srtcpBytes.Take(srtcpBytes.Length - 4 - n_tag).ToArray()).ToLowerInvariant();
 
