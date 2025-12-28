@@ -3,7 +3,6 @@ using Org.BouncyCastle.Crypto.Modes;
 using SharpSRTP.SRTP;
 using SharpSRTP.SRTP.Encryption;
 using System;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Srtp.Tests
@@ -55,10 +54,6 @@ namespace Srtp.Tests
             AESGCM.Encrypt(cipher, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
 
             string encryptedRTP = Convert.ToHexString(result).ToLowerInvariant();
-
-            Debug.WriteLine(encryptedRTP);
-            Debug.WriteLine(expectedEncryptedRTP);
-
             Assert.AreEqual(expectedEncryptedRTP, encryptedRTP);
         }
 
@@ -85,10 +80,6 @@ namespace Srtp.Tests
             AESGCM.Encrypt(cipher, srtpBytes, offset, srtpBytes.Length - n_tag, iv, k_e, n_tag, associatedData);
 
             string decryptedRTP = Convert.ToHexString(srtpBytes.Take(srtpBytes.Length - n_tag).ToArray()).ToLowerInvariant();
-
-            Debug.WriteLine(decryptedRTP);
-            Debug.WriteLine(expectedDecryptedRTP);
-
             Assert.AreEqual(expectedDecryptedRTP, decryptedRTP);
         }
 
@@ -109,19 +100,17 @@ namespace Srtp.Tests
 
         [TestMethod]
         [DataRow("81c8000d4d6172734e5450314e545032525450200000042a0000e9304c756e61deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", "000102030405060708090a0b0c0d0e0f", "517569642070726f2071756f", (uint)0x000005d4, "81c8000d4d61727363e94885dcdab67ca727d7662f6b7e997ff5c0f76c06f32dc676a5f1730d6fda4ce09b4686303ded0bb9275bc84aa45896cf4d2fc5abf87245d9eade800005d4")]
-        public void Test_Encrypt_RTCP(string rtcp, string key, string salt, uint idx, string expectedEncryptedRTCP)
+        public void Test_Encrypt_RTCP(string rtcp, string key, string salt, uint idx, string expectedSRTCP)
         {
             byte[] rtcpBytes = Convert.FromHexString(rtcp);
             byte[] k_e = Convert.FromHexString(key);
             byte[] k_s = Convert.FromHexString(salt);
-
             uint ssrc = RTCPReader.ReadSsrc(rtcpBytes);
-
-            const int n_tag = 16;
 
             int offset = RTCPReader.GetHeaderLen();
             byte[] iv = AESGCM.GenerateMessageKeyIV(k_s, ssrc, idx);
 
+            const int n_tag = 16;
             byte[] result = new byte[rtcpBytes.Length + n_tag + 4];
             Buffer.BlockCopy(rtcpBytes, 0, result, 0, rtcpBytes.Length);
 
@@ -138,16 +127,12 @@ namespace Srtp.Tests
             result[rtcpBytes.Length + n_tag + 3] = (byte)index;
 
             string encryptedRTCP = Convert.ToHexString(result).ToLowerInvariant();
-
-            Debug.WriteLine(encryptedRTCP);
-            Debug.WriteLine(expectedEncryptedRTCP);
-
-            Assert.AreEqual(expectedEncryptedRTCP, encryptedRTCP);
+            Assert.AreEqual(expectedSRTCP, encryptedRTCP);
         }
 
         [TestMethod]
         [DataRow("81c8000d4d617273d50ae4d1f5ce5d304ba297e47d470c282c3ece5dbffe0a50a2eaa5c1110555be8415f658c61de0476f1b6fad1d1eb30c4446839f57ff6f6cb26ac3be800005d4", "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "517569642070726f2071756f", "81c8000d4d6172734e5450314e545032525450200000042a0000e9304c756e61deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")]
-        public void Test_Decrypt_RTCP(string srtcp, string key, string salt, string expectedDecryptedRTCP)
+        public void Test_Decrypt_RTCP(string srtcp, string key, string salt, string expectedRTCP)
         {
             byte[] srtcpBytes = Convert.FromHexString(srtcp);
             byte[] k_e = Convert.FromHexString(key);
@@ -170,11 +155,7 @@ namespace Srtp.Tests
             AESGCM.Encrypt(cipher, srtcpBytes, offset, srtcpBytes.Length - 4 - n_tag, iv, k_e, n_tag, associatedData);
 
             string decryptedRTCP = Convert.ToHexString(srtcpBytes.Take(srtcpBytes.Length - 4 - n_tag).ToArray()).ToLowerInvariant();
-
-            Debug.WriteLine(decryptedRTCP);
-            Debug.WriteLine(expectedDecryptedRTCP);
-
-            Assert.AreEqual(expectedDecryptedRTCP, decryptedRTCP);
+            Assert.AreEqual(expectedRTCP, decryptedRTCP);
         }
     }
 }

@@ -6,7 +6,6 @@ using SharpSRTP.SRTP;
 using SharpSRTP.SRTP.Authentication;
 using SharpSRTP.SRTP.Encryption;
 using System;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Srtp.Tests
@@ -37,7 +36,7 @@ namespace Srtp.Tests
             ulong index = ((ulong)roc << 16) | sequenceNumber;
             byte[] iv = ARIACTR.GenerateMessageKeyIV(bk_s, ssrc, index);
 
-            var aria = new Org.BouncyCastle.Crypto.Engines.AriaEngine();
+            var aria = new AriaEngine();
             aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(bk_e));
 
             var hmac = new HMac(new Sha1Digest());
@@ -62,7 +61,7 @@ namespace Srtp.Tests
         [TestMethod]
         [DataRow("e91e5e75da65554a48181f3846349562", "000000000000000000000000", "8008315ebf2e6fe020e8f5ebf57af5fd4ae19562976ec57a5a7ad55a5af5c5e5c5fdf5c55ad57a4a7272d57262e9729566ed66e97ac54a4a5a7ad5e15ae5fdd5fd5ac5d56ae56ad5c572d54ae54ac55a956afd6aed5a4ac562957a9516991691d572fd14e97ae962ed7a9f4a955af572e162f57a956666e17ae1f54a95f566d54a66e16e4afd6a9f7ae1c5c55ae5d56afde916c5e94a6ec56695e14afde1148416e94ad57ac5146ed59d1cc5", "8008315ebf2e6fe020e8f5eb4d8a9a0675550c704b17d8c9ddc81a5cd6f7da34f2fe1b3db7cb3dfb9697102ea0f3c1fc2dbc873d44bceeae8e4442974ba21ff6789d3272613fb9631a7cf3f14bacbeb421633a90ffbe58c2fa6bdca534f10d0de0502ce1d531b6336e58878278531e5c22bc6c85bbd784d78d9e680aa19031aaf89101d669d7a3965c1f7e16229d7463e0535f4e253f5d18187d40b8ae0f564bd970b5e7e2adfb211e89a9535abace3f37f5a736f4be984bbffbedc1")]
         [DataRow("0c5ffd37a11edc42c325287fc0604f2e3e8cd5671a00fe3216aa5eb105783b54", "000000000000000000000000", "8008315ebf2e6fe020e8f5ebf57af5fd4ae19562976ec57a5a7ad55a5af5c5e5c5fdf5c55ad57a4a7272d57262e9729566ed66e97ac54a4a5a7ad5e15ae5fdd5fd5ac5d56ae56ad5c572d54ae54ac55a956afd6aed5a4ac562957a9516991691d572fd14e97ae962ed7a9f4a955af572e162f57a956666e17ae1f54a95f566d54a66e16e4afd6a9f7ae1c5c55ae5d56afde916c5e94a6ec56695e14afde1148416e94ad57ac5146ed59d1cc5", "8008315ebf2e6fe020e8f5eb6f9e4bcbc8c85fc0128fb1e4a0a20cb9932ff74581f54fc013dd054b19f99371425b352d97d3f337b90b63d1b082adeeea9d2d7391897d591b985e55fb50cb5350cf7d38dc27dda127c078a149c8eb98083d66363a46e3726af217d3a00275ad5bf772c7610ea4c23006878f0ee69a8397703169a419303f40b72e4573714d19e2697df61e7c7252e5abc6bade876ac4961bfac4d5e867afca351a48aed52822e210d6ced2cf430ff841472915e7ef48")]
-        public void Test_Encrypt_ARIAGCM_RTP(string k_e, string k_s, string rtp, string expectedEncryptedRTP)
+        public void Test_Encrypt_ARIAGCM_RTP(string k_e, string k_s, string rtp, string srtp)
         {
             byte[] rtpBytes = Convert.FromHexString(rtp);
             byte[] bk_e = Convert.FromHexString(k_e);
@@ -74,7 +73,6 @@ namespace Srtp.Tests
             const int n_tag = 16;
 
             int offset = RTPReader.ReadHeaderLen(rtpBytes);
-
             byte[] iv = ARIAGCM.GenerateMessageKeyIV(bk_s, ssrc, index);
 
             byte[] result = new byte[rtpBytes.Length + n_tag];
@@ -84,12 +82,8 @@ namespace Srtp.Tests
             byte[] associatedData = result.Take(offset).ToArray();
             ARIAGCM.Encrypt(cipher, result, offset, rtpBytes.Length, iv, bk_e, n_tag, associatedData);
 
-            string encryptedRTP = Convert.ToHexString(result).ToLowerInvariant();
-
-            Debug.WriteLine(encryptedRTP);
-            Debug.WriteLine(expectedEncryptedRTP);
-
-            Assert.AreEqual(expectedEncryptedRTP, encryptedRTP);
+            string srtpResult = Convert.ToHexString(result).ToLowerInvariant();
+            Assert.AreEqual(srtp, srtpResult);
         }
 
         [TestMethod]
@@ -105,6 +99,7 @@ namespace Srtp.Tests
             string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
             string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();
             string sgk_s = Convert.ToHexString(context.K_s).ToLowerInvariant();
+
             Assert.AreEqual(k_e, sgk_e);
             Assert.AreEqual(k_a, sgk_a); // TODO: RFC shows 96 bytes auth key, not sure why
             Assert.AreEqual(k_s, sgk_s);
