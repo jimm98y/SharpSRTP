@@ -5,6 +5,7 @@ using SharpSRTP.SRTP;
 using SharpSRTP.SRTP.Authentication;
 using SharpSRTP.SRTP.Encryption;
 using System;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Srtp.Tests
@@ -197,6 +198,36 @@ namespace Srtp.Tests
             Assert.AreEqual(srtcp, srtpResult);
 
             S_l = (S_l + 1) % 0x80000000;
+        }
+
+        [TestMethod]
+        [DataRow("806e5cba50681de55c62159970736575646f72616e646f6d6e65737320697320746865206e6578742062657374207468696e67", (uint)0xd462564a, "234829008467be186c3de14aae72d62c", "32f2870d", "806e5cba50681de55c621599019ce7a26e7854014a6366aa95d4eefd1ad4172a14f9faf455b7f1d4b62bd08f562c0eef7c4802")]
+        public void Test_AESF8(string rtp, uint roc, string k_e, string k_s, string expectedSrtp)
+        {
+            byte[] bk_e = Convert.FromHexString(k_e);
+            byte[] bk_s = Convert.FromHexString(k_s);
+            byte[] rtpBytes = Convert.FromHexString(rtp);
+
+            uint sequenceNumber = RTPReader.ReadSequenceNumber(rtpBytes);
+            uint ssrc = RTPReader.ReadSsrc(rtpBytes);
+            int offset = RTPReader.ReadHeaderLen(rtpBytes);
+
+            ulong index = ((ulong)roc << 16) | sequenceNumber;
+
+            AesEngine aes = new AesEngine();
+
+            byte[] iv = AESF8.GenerateRTPMessageKeyIV(aes, bk_e, bk_s, rtpBytes, roc);
+            Assert.AreEqual("595b699bbd3bc0df26062093c1ad8f73", Convert.ToHexString(iv).ToLowerInvariant());
+
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(bk_e));
+            AESF8.Encrypt(aes, rtpBytes, offset, rtpBytes.Length, iv);
+
+            string payloadString = Convert.ToHexString(rtpBytes).ToLowerInvariant();
+
+            Debug.WriteLine(payloadString);
+            Debug.WriteLine(expectedSrtp);
+
+            Assert.AreEqual(expectedSrtp, payloadString);
         }
     }
 }

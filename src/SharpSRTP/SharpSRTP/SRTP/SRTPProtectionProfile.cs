@@ -4,15 +4,16 @@
     {
         NULL = 0,
         AES_128_CM = 1,
-        AES_256_CM = 2,
-        AEAD_AES_128_GCM = 3,
-        AEAD_AES_256_GCM = 4,
-        //DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 5,
-        //DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 6,
-        ARIA_128_CTR = 7,
-        ARIA_256_CTR = 8,
-        AEAD_ARIA_128_GCM = 9,
-        AEAD_ARIA_256_GCM = 10
+        AES_128_F8 = 2,
+        AES_256_CM = 3,
+        AEAD_AES_128_GCM = 4,
+        AEAD_AES_256_GCM = 5,
+        ARIA_128_CTR = 6,
+        ARIA_256_CTR = 7,
+        AEAD_ARIA_128_GCM = 8,
+        AEAD_ARIA_256_GCM = 9,
+        //DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 10,
+        //DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 11
     }
 
     public enum SRTPAuth

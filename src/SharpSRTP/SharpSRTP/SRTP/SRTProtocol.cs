@@ -7,11 +7,11 @@ namespace SharpSRTP.SRTP
 {
     public static class SRTProtocol
     {
-        public static readonly Dictionary<int, SRTPProtectionProfile> ProtectionProfiles;
+        public static readonly Dictionary<int, SRTPProtectionProfile> DTLSProtectionProfiles;
 
         static SRTProtocol()
         {
-            ProtectionProfiles = new Dictionary<int, SRTPProtectionProfile>()
+            DTLSProtectionProfiles = new Dictionary<int, SRTPProtectionProfile>()
             {
                 // https://datatracker.ietf.org/doc/html/rfc8269
                 { ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_256_GCM, new SRTPProtectionProfile(SRTPCiphers.AEAD_ARIA_256_GCM, 256, 96, int.MaxValue, SRTPAuth.NONE, 0, 128) },
@@ -44,7 +44,7 @@ namespace SharpSRTP.SRTP
         public static SRTPKeys GenerateMasterKeys(int protectionProfile, SecurityParameters dtlsSecurityParameters)
         {
             // SRTP key derivation as described here https://datatracker.ietf.org/doc/html/rfc5764
-            var srtpSecurityParams = ProtectionProfiles[protectionProfile];
+            var srtpSecurityParams = DTLSProtectionProfiles[protectionProfile];
 
             // 2 * (SRTPSecurityParams.master_key_len + SRTPSecurityParams.master_salt_len) bytes of data
             int shared_secret_length = 2 * (srtpSecurityParams.CipherKeyLength + srtpSecurityParams.CipherSaltLength); // in bits

@@ -23,6 +23,7 @@ namespace SharpSRTP.SRTP
 
         public HMac HMAC { get; private set; }
         public AesEngine AES { get; private set; }
+        public AesEngine AESF8 { get; private set; }
         public AriaEngine ARIA { get; private set; }
         public GcmBlockCipher AESGCM { get; private set; }
         public GcmBlockCipher ARIAGCM { get; private set; }
@@ -117,7 +118,7 @@ namespace SharpSRTP.SRTP
             this.MasterKey = masterKey;
             this.MasterSalt = masterSalt;
 
-            if (SRTProtocol.ProtectionProfiles.TryGetValue(protectionProfile, out SRTPProtectionProfile srtpSecurityParams))
+            if (SRTProtocol.DTLSProtectionProfiles.TryGetValue(protectionProfile, out SRTPProtectionProfile srtpSecurityParams))
             {
                 Cipher = srtpSecurityParams.Cipher;
                 Auth = srtpSecurityParams.Auth;
@@ -149,6 +150,21 @@ namespace SharpSRTP.SRTP
 
                 aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
                 this.AES = aes;
+            }
+            else if (Cipher == SRTPCiphers.AES_128_F8)
+            {
+                var aes = new AesEngine();
+
+                // TODO: (!) Assuming the session key is still being derived using AES-CM...
+                aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
+                this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+
+                aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+                this.AES = aes;
+
+                this.AESF8 = new AesEngine();
             }
             else if (Cipher == SRTPCiphers.AEAD_AES_128_GCM || Cipher == SRTPCiphers.AEAD_AES_256_GCM)
             {
@@ -205,6 +221,7 @@ namespace SharpSRTP.SRTP
             {
                 case SRTPCiphers.NULL:
                 case SRTPCiphers.AES_128_CM:
+                case SRTPCiphers.AES_128_F8:
                 case SRTPCiphers.AES_256_CM:
                 case SRTPCiphers.AEAD_AES_128_GCM:
                 case SRTPCiphers.AEAD_AES_256_GCM:

@@ -23,7 +23,7 @@ namespace SharpSRTP.SRTP
         {
             _protectionProfile = protectionProfile;
 
-            var srtpSecurityParams = SRTProtocol.ProtectionProfiles[_protectionProfile];
+            var srtpSecurityParams = SRTProtocol.DTLSProtectionProfiles[_protectionProfile];
             int cipherKeyLen = srtpSecurityParams.CipherKeyLength >> 3;
             int cipherSaltLen = srtpSecurityParams.CipherSaltLength >> 3;
             _client_write_SRTP_master_key = new byte[cipherKeyLen];
