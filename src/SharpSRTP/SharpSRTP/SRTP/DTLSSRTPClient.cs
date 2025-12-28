@@ -13,8 +13,8 @@ namespace SharpSRTP.SRTP
     public class DTLSSRTPClient : DTLSClient
     {
         private readonly SecureRandom _sr;
-        private UseSrtpData _clientSrtpData;
-        public UseSrtpData ClientSrtpData { get { return _clientSrtpData; } }
+        private UseSrtpData _srtpData;
+        public UseSrtpData SrtpData { get { return _srtpData; } }
 
         public int MkiLength { get; protected set; } = 4;
 
@@ -28,7 +28,7 @@ namespace SharpSRTP.SRTP
             int[] protectionProfiles = GetSupportedProtectionProfiles();
             _sr = new SecureRandom();
             byte[] mki = SecureRandom.GetNextBytes(_sr, MkiLength);
-            this._clientSrtpData = new UseSrtpData(protectionProfiles, mki);
+            this._srtpData = new UseSrtpData(protectionProfiles, mki);
         }
 
         protected virtual int[] GetSupportedProtectionProfiles()
@@ -57,23 +57,31 @@ namespace SharpSRTP.SRTP
         {
             base.ProcessServerExtensions(serverExtensions);
 
+            // https://www.rfc-editor.org/rfc/rfc5764#section-4.1
             UseSrtpData serverSrtpExtension = TlsSrtpUtilities.GetUseSrtpExtension(serverExtensions);
 
+            // verify that the server has selected exactly 1 profile
             int[] clientSupportedProfiles = GetSupportedProtectionProfiles();
-            int[] supportedProfiles = serverSrtpExtension.ProtectionProfiles.Where(x => clientSupportedProfiles.Contains(x)).ToArray();
-            if (supportedProfiles.Length == 0)
+            if (serverSrtpExtension.ProtectionProfiles.Length != 1)
                 throw new TlsFatalAlert(AlertDescription.internal_error);
 
-            _clientSrtpData = new UseSrtpData(supportedProfiles, serverSrtpExtension.Mki);
+            // verify that the server has selected a profile we support
+            int selectedProfile = serverSrtpExtension.ProtectionProfiles[0];
+            if (!clientSupportedProfiles.Contains(selectedProfile))
+                throw new TlsFatalAlert(AlertDescription.internal_error);
+
+            // verify the mki sent by the server matches our mki
+            if (_srtpData.Mki != null && serverSrtpExtension.Mki != null && !Enumerable.SequenceEqual(_srtpData.Mki, serverSrtpExtension.Mki))
+                throw new TlsFatalAlert(AlertDescription.illegal_parameter);
+
+            // store the server extension as it contains the selected profile
+            _srtpData = serverSrtpExtension;
         }
 
         public override IDictionary<int, byte[]> GetClientExtensions()
         {
             var extensions = base.GetClientExtensions();
-
-            // add use_srtp extension
-            TlsSrtpUtilities.AddUseSrtpExtension(extensions, _clientSrtpData);
-
+            TlsSrtpUtilities.AddUseSrtpExtension(extensions, _srtpData);
             return extensions;
         }
 

@@ -10,8 +10,8 @@ namespace SharpSRTP.SRTP
 {
     public class DTLSSRTPServer : DTLSServer
     {
-        private UseSrtpData _serverSrtpData;
-        public UseSrtpData ServerSrtpData { get { return _serverSrtpData; } }
+        private UseSrtpData _srtpData;
+        public UseSrtpData SrtpData { get { return _srtpData; } }
 
         public DTLSSRTPServer() : this(new BcTlsCrypto())
         { }
@@ -48,18 +48,18 @@ namespace SharpSRTP.SRTP
             UseSrtpData clientSrtpExtension = TlsSrtpUtilities.GetUseSrtpExtension(clientExtensions);
 
             int[] serverSupportedProfiles = GetSupportedProtectionProfiles();
-            int[] supportedProfiles = clientSrtpExtension.ProtectionProfiles.Where(x => serverSupportedProfiles.Contains(x)).ToArray();
-            if (supportedProfiles.Length == 0)
+            int[] mutuallySupportedProfiles = clientSrtpExtension.ProtectionProfiles.Where(x => serverSupportedProfiles.Contains(x)).ToArray();
+            if (mutuallySupportedProfiles.Length == 0)
                 throw new TlsFatalAlert(AlertDescription.internal_error);
 
-            int selectedProfile = supportedProfiles.OrderBy(x => Array.IndexOf(serverSupportedProfiles, x)).First(); // Choose the highest priority profile supported by the server
-            _serverSrtpData = new UseSrtpData(new int[] { selectedProfile }, clientSrtpExtension.Mki); // Server must return only a single selected profile
+            int selectedProfile = mutuallySupportedProfiles.OrderBy(x => Array.IndexOf(serverSupportedProfiles, x)).First(); // Choose the highest priority profile supported by the server
+            _srtpData = new UseSrtpData(new int[] { selectedProfile }, clientSrtpExtension.Mki); // Server must return only a single selected profile
         }
 
         public override IDictionary<int, byte[]> GetServerExtensions()
         {
             var extensions = base.GetServerExtensions();
-            TlsSrtpUtilities.AddUseSrtpExtension(extensions, _serverSrtpData);
+            TlsSrtpUtilities.AddUseSrtpExtension(extensions, _srtpData);
             return extensions;
         }
 
