@@ -24,9 +24,6 @@ namespace SharpSRTP.SRTP
             switch (context.Cipher)
             {
                 case SRTPCiphers.NULL:
-                    {
-                        NULL.Encrypt(context.AES, payload, offset, length, null);
-                    }
                     break;
 
                 case SRTPCiphers.AES_128_F8:
@@ -146,9 +143,6 @@ namespace SharpSRTP.SRTP
             switch (context.Cipher)
             {
                 case SRTPCiphers.NULL:
-                    {
-                        NULL.Encrypt(context.AES, payload, offset, outputBufferLength, null);
-                    }
                     break;
 
                 case SRTPCiphers.AES_128_F8:
@@ -211,9 +205,6 @@ namespace SharpSRTP.SRTP
             switch (context.Cipher)
             {
                 case SRTPCiphers.NULL:
-                    {
-                        NULL.Encrypt(context.AES, payload, offset, length, null);
-                    }
                     break;
 
                 case SRTPCiphers.AES_128_F8:
@@ -316,9 +307,6 @@ namespace SharpSRTP.SRTP
                 switch (context.Cipher)
                 {
                     case SRTPCiphers.NULL:
-                        {
-                            NULL.Encrypt(context.AES, payload, offset, outputBufferLength, null);
-                        }
                         break;
 
                     case SRTPCiphers.AES_128_F8:
