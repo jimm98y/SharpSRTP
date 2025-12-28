@@ -184,8 +184,8 @@ namespace SharpSRTP.SRTP
                 case SRTPCiphers.AEAD_AES_128_GCM:
                 case SRTPCiphers.AEAD_AES_256_GCM:
                     {
-                        byte[] iv = Encryption.AESCTR.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
-                        Encryption.AESCTR.Encrypt(aes, key, 0, length, iv);
+                        byte[] iv = Encryption.AESCM.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
+                        Encryption.AESCM.Encrypt(aes, key, 0, length, iv);
                     }
                     break;
 

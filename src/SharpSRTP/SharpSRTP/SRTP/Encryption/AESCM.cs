@@ -3,7 +3,7 @@ using System;
 
 namespace SharpSRTP.SRTP.Encryption
 {
-    public static class AESCTR
+    public static class AESCM
     {
         public const int AES_BLOCK_SIZE = 16;
 

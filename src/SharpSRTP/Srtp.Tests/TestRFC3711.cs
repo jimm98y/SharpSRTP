@@ -27,13 +27,13 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            byte[] iv = AESCTR.GenerateSessionKeyIV(masterSaltBytes, 0, 0, (byte)label);
+            byte[] iv = AESCM.GenerateSessionKeyIV(masterSaltBytes, 0, 0, (byte)label);
 
             var aes = new AesEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(masterKeyBytes));
 
             byte[] ck = new byte[length];
-            AESCTR.EncryptBlock(aes, ck, iv, index);
+            AESCM.EncryptBlock(aes, ck, iv, index);
 
             string cipherKey = Convert.ToHexString(ck);
             Assert.AreEqual(expectedResult, cipherKey);
@@ -57,7 +57,7 @@ namespace Srtp.Tests
             ulong index = ((ulong)roc << 16) | sequenceNumber;
 
             AesEngine aes = new AesEngine();
-            byte[] iv = AESCTR.GenerateMessageKeyIV(k_s, ssrc, index);
+            byte[] iv = AESCM.GenerateMessageKeyIV(k_s, ssrc, index);
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(sessionKey));
 
             byte[] cipher = new byte[k_s.Length];
@@ -120,7 +120,7 @@ namespace Srtp.Tests
 
             uint roc = 0;
             ulong index = ((ulong)roc << 16) | sequenceNumber;
-            byte[] iv = AESCTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
+            byte[] iv = AESCM.GenerateMessageKeyIV(context.K_s, ssrc, index);
 
             var aes = new Org.BouncyCastle.Crypto.Engines.AesEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
@@ -128,7 +128,7 @@ namespace Srtp.Tests
             var hmac = new HMac(new Sha1Digest());
             hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_a));
 
-            AESCTR.Encrypt(aes, payload, offset, length, iv);
+            AESCM.Encrypt(aes, payload, offset, length, iv);
 
             payload[length + 0] = (byte)(roc >> 24);
             payload[length + 1] = (byte)(roc >> 16);
@@ -173,7 +173,7 @@ namespace Srtp.Tests
             uint index = S_l | E_FLAG;
 
             int offset = RTCPReader.GetHeaderLen();
-            byte[] iv = AESCTR.GenerateMessageKeyIV(context.K_s, ssrc, S_l);
+            byte[] iv = AESCM.GenerateMessageKeyIV(context.K_s, ssrc, S_l);
 
             var aes = new Org.BouncyCastle.Crypto.Engines.AesEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
@@ -181,7 +181,7 @@ namespace Srtp.Tests
             var hmac = new HMac(new Sha1Digest());
             hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_a));
 
-            AESCTR.Encrypt(aes, payload, offset, length, iv);
+            AESCM.Encrypt(aes, payload, offset, length, iv);
 
             payload[length + 0] = (byte)(index >> 24);
             payload[length + 1] = (byte)(index >> 16);
