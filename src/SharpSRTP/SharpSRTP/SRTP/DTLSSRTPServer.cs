@@ -22,11 +22,12 @@ namespace SharpSRTP.SRTP
         {
             return new int[] 
             {
-                //SrtpProtectionProfile.SRTP_AEAD_AES_256_GCM,
-                //SrtpProtectionProfile.SRTP_AEAD_AES_128_GCM,
+                SrtpProtectionProfile.SRTP_AEAD_AES_256_GCM,
+                SrtpProtectionProfile.SRTP_AEAD_AES_128_GCM,
 
                 SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80,
                 SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32,
+
                 SrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80,
                 SrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_32
             };
@@ -43,7 +44,8 @@ namespace SharpSRTP.SRTP
             if (supportedProfiles.Length == 0)
                 throw new TlsFatalAlert(AlertDescription.internal_error);
 
-            _serverSrtpData = new UseSrtpData(supportedProfiles, clientSrtpExtension.Mki);
+            int selectedProfile = supportedProfiles.OrderBy(x => Array.IndexOf(serverSupportedProfiles, x)).First(); // Choose the highest priority profile supported by the server
+            _serverSrtpData = new UseSrtpData(new int[] { selectedProfile }, clientSrtpExtension.Mki); // Server must return only a single selected profile
         }
 
         public override IDictionary<int, byte[]> GetServerExtensions()
