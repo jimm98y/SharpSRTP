@@ -14,6 +14,7 @@ namespace SharpSRTP.SRTP
         public const int ERROR_HMAC_CHECK_FAILED = -3;
         public const int ERROR_REPLAY_CHECK_FAILED = -4;
         public const int ERROR_MASTER_KEY_ROTATION_REQUIRED = -5;
+        public const int ERROR_MKI_CHECK_FAILED = -6;
 
         public static int ProtectRTP(this SRTPContext ServerRtpContext, byte[] payload, int length, out int outputBufferLength)
         {
@@ -86,6 +87,14 @@ namespace SharpSRTP.SRTP
                     return ERROR_UNSUPPORTED_CIPHER;
             }
 
+            byte[] mki = context.Mki;
+            if (mki.Length > 0)
+            {
+                Buffer.BlockCopy(mki, 0, payload, length, mki.Length);
+                length += mki.Length;
+                outputBufferLength += mki.Length;
+            }
+
             if (context.Auth != SRTPAuth.NONE)
             {
                 payload[length + 0] = (byte)(roc >> 24);
@@ -95,9 +104,11 @@ namespace SharpSRTP.SRTP
 
                 byte[] auth = HMAC.GenerateAuthTag(context.HMAC, payload, 0, length + 4);
                 System.Buffer.BlockCopy(auth, 0, payload, length, context.N_tag); // we don't append ROC in SRTP
+                length += context.N_tag;
                 outputBufferLength += context.N_tag;
             }
 
+            // TODO: review
             if (sequenceNumber == 0xFFFF)
             {
                 context.Roc++;
@@ -109,7 +120,15 @@ namespace SharpSRTP.SRTP
         public static int UnprotectRTP(this SRTPContext ClientRtpContext, byte[] payload, int length, out int outputBufferLength)
         {
             var context = ClientRtpContext;
-            outputBufferLength = length - context.N_tag;
+
+            byte[] mki = context.Mki;
+            outputBufferLength = length - context.N_tag - mki.Length;
+
+            for (int i = 0; i < mki.Length; i++)
+            {
+                if (payload[outputBufferLength + i] != mki[i])
+                    return ERROR_MKI_CHECK_FAILED;
+            }
 
             if (!context.IncrementMasterKeyUseCounter())
             {
@@ -122,14 +141,15 @@ namespace SharpSRTP.SRTP
             if (context.Auth != SRTPAuth.NONE)
             {
                 // TODO: optimize memory allocation - we could preallocate 4 byte array and add another GenerateAuthTag overload that processes 2 blocks
-                byte[] msgAuth = new byte[length + 4];
-                Buffer.BlockCopy(payload, 0, msgAuth, 0, length);
-                msgAuth[length + 0] = (byte)(context.Roc >> 24);
-                msgAuth[length + 1] = (byte)(context.Roc >> 16);
-                msgAuth[length + 2] = (byte)(context.Roc >> 8);
-                msgAuth[length + 3] = (byte)(context.Roc);
+                int authenticatedLen = length - context.N_tag - mki.Length;
+                byte[] msgAuth = new byte[authenticatedLen + 4];
+                Buffer.BlockCopy(payload, 0, msgAuth, 0, msgAuth.Length);
+                msgAuth[authenticatedLen + 0] = (byte)(context.Roc >> 24);
+                msgAuth[authenticatedLen + 1] = (byte)(context.Roc >> 16);
+                msgAuth[authenticatedLen + 2] = (byte)(context.Roc >> 8);
+                msgAuth[authenticatedLen + 3] = (byte)(context.Roc);
 
-                byte[] auth = HMAC.GenerateAuthTag(context.HMAC, msgAuth, 0, length - context.N_tag + 4);
+                byte[] auth = HMAC.GenerateAuthTag(context.HMAC, msgAuth, 0, authenticatedLen + 4);
                 for (int i = 0; i < context.N_tag; i++)
                 {
                     if (payload[length - context.N_tag + i] != auth[i])
@@ -282,11 +302,21 @@ namespace SharpSRTP.SRTP
             payload[length + 2] = (byte)(index >> 8);
             payload[length + 3] = (byte)index;
             outputBufferLength += 4;
+            length += 4;
+
+            byte[] mki = context.Mki;
+            if (mki.Length > 0)
+            {
+                Buffer.BlockCopy(mki, 0, payload, length, mki.Length);
+                length += mki.Length;
+                outputBufferLength += mki.Length;
+            }
 
             if (context.Auth != SRTPAuth.NONE)
             {
-                byte[] auth = HMAC.GenerateAuthTag(context.HMAC, payload, 0, length + 4);
-                System.Buffer.BlockCopy(auth, 0, payload, length + 4, context.N_tag);
+                byte[] auth = HMAC.GenerateAuthTag(context.HMAC, payload, 0, length);
+                System.Buffer.BlockCopy(auth, 0, payload, length, context.N_tag);
+                length += context.N_tag;
                 outputBufferLength += context.N_tag;
             }
 
@@ -298,7 +328,15 @@ namespace SharpSRTP.SRTP
         public static int UnprotectRTCP(this SRTPContext clientRtcpContext, byte[] payload, int length, out int outputBufferLength)
         {
             var context = clientRtcpContext;
-            outputBufferLength = length - 4 - context.N_tag;
+
+            byte[] mki = context.Mki;
+            outputBufferLength = length - 4 - context.N_tag - mki.Length;
+
+            for (int i = 0; i < mki.Length; i++)
+            {
+                if (payload[outputBufferLength + 4 + i] != mki[i])
+                    return ERROR_MKI_CHECK_FAILED;
+            }
 
             if (!context.IncrementMasterKeyUseCounter())
             {
@@ -307,7 +345,7 @@ namespace SharpSRTP.SRTP
 
             uint ssrc = RTCPReader.ReadSsrc(payload);
             int offset = RTCPReader.GetHeaderLen();
-            uint index = RTCPReader.SRTCPReadIndex(payload, context.N_a > 0 ? context.N_tag : 0);
+            uint index = RTCPReader.SRTCPReadIndex(payload, context.N_a > 0 ? (context.N_tag + mki.Length) : 0);
             bool isEncrypted = false;
 
             if ((index & E_FLAG) == E_FLAG)
@@ -318,7 +356,7 @@ namespace SharpSRTP.SRTP
 
             if (context.Auth != SRTPAuth.NONE)
             {
-                byte[] auth = HMAC.GenerateAuthTag(context.HMAC, payload, 0, length - context.N_tag);
+                byte[] auth = HMAC.GenerateAuthTag(context.HMAC, payload, 0, length - context.N_tag - mki.Length);
                 for (int i = 0; i < context.N_tag; i++)
                 {
                     if (payload[length - context.N_tag + i] != auth[i])

@@ -71,7 +71,7 @@ namespace SharpSRTP.SRTP
         /// <summary>
         /// Master Key Identifier.
         /// </summary>
-        public byte[] Mki { get; set; }
+        public byte[] Mki { get; private set; }
 
         #endregion // TODO Master key lifespan
 
@@ -128,7 +128,7 @@ namespace SharpSRTP.SRTP
             this._contextType = type;
 
             this.ProtectionProfile = protectionProfile;
-            this.Mki = mki;
+            this.Mki = mki ?? new byte[0];
             this.MasterKey = masterKey;
             this.MasterSalt = masterSalt;
 
