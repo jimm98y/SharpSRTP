@@ -20,6 +20,7 @@ namespace SharpSRTP.DTLS
         protected AsymmetricKeyParameter CertificatePrivateKey => _myCertPrivateKey;
         protected short CertificateSignatureAlgorithm => _myCertSignatureAlgorithm;
 
+        public bool ForceUseExtendedMasterSecret { get; set; } = true;
         public TlsServerCertificate ServerCertificate { get; private set; }
 
         public event EventHandler<DTLSHandshakeCompletedEventArgs> HandshakeCompleted;
@@ -41,6 +42,11 @@ namespace SharpSRTP.DTLS
             _myCert = certificate;
             _myCertPrivateKey = privateKey;
             _myCertSignatureAlgorithm = signatureAlgorithm;
+        }
+
+        public override bool RequiresExtendedMasterSecret()
+        {
+            return ForceUseExtendedMasterSecret;
         }
 
         public override TlsSession GetSessionToResume()

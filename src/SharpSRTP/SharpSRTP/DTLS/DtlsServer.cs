@@ -18,6 +18,7 @@ namespace SharpSRTP.DTLS
         protected Certificate Certificate => _myCert;
         protected AsymmetricKeyParameter CertificatePrivateKey => _myCertPrivateKey;
 
+        public bool ForceUseExtendedMasterSecret { get; set; } = true;
         public Certificate ClientCertificate { get; private set; }
 
         public event EventHandler<DTLSHandshakeCompletedEventArgs> HandshakeCompleted;
@@ -35,6 +36,11 @@ namespace SharpSRTP.DTLS
             _myCert = certificate;
             _myCertPrivateKey = privateKey;
             _myCertCertificateAlgorithm = signatureAlgorithm;
+        }
+
+        public override bool RequiresExtendedMasterSecret()
+        {
+            return ForceUseExtendedMasterSecret;
         }
 
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)
