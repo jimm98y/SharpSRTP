@@ -81,12 +81,12 @@ namespace Srtp.Tests
 
             var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, masterKeyBytes, masterSaltBytes, isRtp ? SRTPContextType.RTP : SRTPContextType.RTCP);
 
-            string sgk_e = Convert.ToHexString(context.K_e);
-            string sgk_a = Convert.ToHexString(context.K_a);
-            string sgk_s = Convert.ToHexString(context.K_s);
-            Assert.AreEqual(k_e.ToUpperInvariant(), sgk_e);
-            Assert.AreEqual(k_a.ToUpperInvariant(), sgk_a);
-            Assert.AreEqual(k_s.ToUpperInvariant(), sgk_s);
+            string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
+            string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();
+            string sgk_s = Convert.ToHexString(context.K_s).ToLowerInvariant();
+            Assert.AreEqual(k_e, sgk_e);
+            Assert.AreEqual(k_a, sgk_a);
+            Assert.AreEqual(k_s, sgk_s);
         }
 
         [TestMethod]
@@ -135,13 +135,13 @@ namespace Srtp.Tests
             payload[length + 2] = (byte)(roc >> 8);
             payload[length + 3] = (byte)roc;
 
-            const int authLen = 10;
+            const int n_tag = 10;
             byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
-            System.Buffer.BlockCopy(auth, 0, payload, length, authLen); // we don't append ROC in SRTP
-            var result = payload.Take(length + authLen).ToArray();
+            System.Buffer.BlockCopy(auth, 0, payload, length, n_tag); // we don't append ROC in SRTP
+            var result = payload.Take(length + n_tag).ToArray();
 
-            string srtpResult = Convert.ToHexString(result);
-            Assert.AreEqual(srtp.ToUpperInvariant(), srtpResult);
+            string srtpResult = Convert.ToHexString(result).ToLowerInvariant();
+            Assert.AreEqual(srtp, srtpResult);
         }
 
         [TestMethod]
@@ -188,13 +188,13 @@ namespace Srtp.Tests
             payload[length + 2] = (byte)(index >> 8);
             payload[length + 3] = (byte)index;
 
-            const int authLen = 10;
+            const int n_tag = 10;
             byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
-            System.Buffer.BlockCopy(auth, 0, payload, length + 4, authLen); // we don't append ROC in SRTP
-            var result = payload.Take(length + 4 + authLen).ToArray();
+            System.Buffer.BlockCopy(auth, 0, payload, length + 4, n_tag); // we don't append ROC in SRTP
+            var result = payload.Take(length + 4 + n_tag).ToArray();
 
-            string srtpResult = Convert.ToHexString(result);
-            Assert.AreEqual(srtcp.ToUpperInvariant(), srtpResult);
+            string srtpResult = Convert.ToHexString(result).ToLowerInvariant();
+            Assert.AreEqual(srtcp, srtpResult);
 
             S_l = (S_l + 1) % 0x80000000;
         }

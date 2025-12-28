@@ -9,10 +9,10 @@
         AEAD_AES_256_GCM = 4,
         //DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 5,
         //DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 6,
-        //ARIA_128_CTR = 7,
-        //ARIA_256_CTR = 8,
-        //AEAD_ARIA_128_GCM = 9,
-        //AEAD_ARIA_256_GCM = 10
+        ARIA_128_CTR = 7,
+        ARIA_256_CTR = 8,
+        AEAD_ARIA_128_GCM = 9,
+        AEAD_ARIA_256_GCM = 10
     }
 
     public enum SRTPAuth

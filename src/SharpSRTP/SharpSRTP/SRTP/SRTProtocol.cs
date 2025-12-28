@@ -13,6 +13,14 @@ namespace SharpSRTP.SRTP
         {
             ProtectionProfiles = new Dictionary<int, SRTPProtectionProfile>()
             {
+                // https://datatracker.ietf.org/doc/html/rfc8269
+                { ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_256_GCM, new SRTPProtectionProfile(SRTPCiphers.AEAD_ARIA_256_GCM, 256, 96, int.MaxValue, SRTPAuth.NONE, 0, 128) },
+                { ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_128_GCM, new SRTPProtectionProfile(SRTPCiphers.AEAD_ARIA_128_GCM, 128, 96, int.MaxValue, SRTPAuth.NONE, 0, 128) },
+                { ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_80, new SRTPProtectionProfile(SRTPCiphers.ARIA_256_CTR, 256, 112, int.MaxValue, SRTPAuth.HMAC_SHA1, 160, 80) },
+                { ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_32, new SRTPProtectionProfile(SRTPCiphers.ARIA_256_CTR, 256, 112, int.MaxValue, SRTPAuth.HMAC_SHA1, 160, 32) },
+                { ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_80, new SRTPProtectionProfile(SRTPCiphers.ARIA_128_CTR, 128, 112, int.MaxValue, SRTPAuth.HMAC_SHA1, 160, 80) },
+                { ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_32, new SRTPProtectionProfile(SRTPCiphers.ARIA_128_CTR, 128, 112, int.MaxValue, SRTPAuth.HMAC_SHA1, 160, 32) },
+
                 // https://datatracker.ietf.org/doc/html/rfc7714
                 { ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_256_GCM, new SRTPProtectionProfile(SRTPCiphers.AEAD_AES_256_GCM, 256, 96, int.MaxValue, SRTPAuth.NONE, 0, 128) },
                 { ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM, new SRTPProtectionProfile(SRTPCiphers.AEAD_AES_128_GCM, 128, 96, int.MaxValue, SRTPAuth.NONE, 0, 128) },

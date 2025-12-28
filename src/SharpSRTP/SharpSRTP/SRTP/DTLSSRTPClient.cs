@@ -34,14 +34,21 @@ namespace SharpSRTP.SRTP
         {
             return new int[] 
             {
-                SrtpProtectionProfile.SRTP_AEAD_AES_256_GCM,
-                SrtpProtectionProfile.SRTP_AEAD_AES_128_GCM,
+                ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_256_GCM,
+                ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_128_GCM,
+                ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_80,
+                ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_32,
+                ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_80,
+                ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_32,
 
-                SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80,
-                SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32,
+                ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_256_GCM,
+                ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM,
 
-                SrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80,
-                SrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_32
+                ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80,
+                ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32,
+
+                ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80,
+                ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_32
             };
         }
 

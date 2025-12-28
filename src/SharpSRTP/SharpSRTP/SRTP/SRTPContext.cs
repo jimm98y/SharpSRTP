@@ -23,7 +23,9 @@ namespace SharpSRTP.SRTP
 
         public HMac HMAC { get; private set; }
         public AesEngine AES { get; private set; }
+        public AriaEngine ARIA { get; private set; }
         public GcmBlockCipher AESGCM { get; private set; }
+        public GcmBlockCipher ARIAGCM { get; private set; }
 
         /// <summary>
         /// Receiver only - highest sequence number received.
@@ -141,9 +143,9 @@ namespace SharpSRTP.SRTP
             {
                 var aes = new AesEngine();
                 aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                this.K_e = GenerateSessionKey(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate); 
-                this.K_a = GenerateSessionKey(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                this.K_s = GenerateSessionKey(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate); 
+                this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
 
                 aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
                 this.AES = aes;
@@ -152,13 +154,36 @@ namespace SharpSRTP.SRTP
             {
                 var aes = new AesEngine();
                 aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                this.K_e = GenerateSessionKey(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                this.K_a = GenerateSessionKey(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                this.K_s = GenerateSessionKey(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
                 this.AES = aes;
 
                 var cipher = new GcmBlockCipher(new AesEngine());
                 this.AESGCM = cipher;
+            }
+            else if (Cipher == SRTPCiphers.ARIA_128_CTR || Cipher == SRTPCiphers.ARIA_256_CTR)
+            {
+                var aria = new AriaEngine();
+                aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
+                this.K_e = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                this.K_a = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                this.K_s = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+
+                aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+                this.ARIA = aria;
+            }
+            else if (Cipher == SRTPCiphers.AEAD_ARIA_128_GCM || Cipher == SRTPCiphers.AEAD_ARIA_256_GCM)
+            {
+                var aria = new AriaEngine();
+                aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
+                this.K_e = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                this.K_a = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                this.K_s = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                this.ARIA = aria;
+
+                var cipher = new GcmBlockCipher(new AriaEngine());
+                this.ARIAGCM = cipher;
             }
             else
             {
@@ -173,7 +198,7 @@ namespace SharpSRTP.SRTP
             }
         }
 
-        public static byte[] GenerateSessionKey(AesEngine aes, SRTPCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
+        public static byte[] GenerateSessionKeyAES(AesEngine aes, SRTPCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
         {
             byte[] key = new byte[length];
             switch (cipher)
@@ -193,6 +218,28 @@ namespace SharpSRTP.SRTP
                     throw new NotSupportedException($"Unsupported cipher {cipher.ToString()}!");
             }
             
+            return key;
+        }
+
+        public static byte[] GenerateSessionKeyARIA(AriaEngine aria, SRTPCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
+        {
+            byte[] key = new byte[length];
+            switch (cipher)
+            {
+                case SRTPCiphers.ARIA_128_CTR:
+                case SRTPCiphers.ARIA_256_CTR:
+                case SRTPCiphers.AEAD_ARIA_128_GCM:
+                case SRTPCiphers.AEAD_ARIA_256_GCM:
+                    {
+                        byte[] iv = Encryption.ARIACTR.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
+                        Encryption.ARIACTR.Encrypt(aria, key, 0, length, iv);
+                    }
+                    break;
+
+                default:
+                    throw new NotSupportedException($"Unsupported cipher {cipher.ToString()}!");
+            }
+
             return key;
         }
 
