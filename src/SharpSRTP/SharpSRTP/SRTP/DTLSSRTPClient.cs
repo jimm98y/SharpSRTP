@@ -13,7 +13,8 @@ namespace SharpSRTP.SRTP
     public class DTLSSRTPClient : DTLSClient
     {
         private readonly SecureRandom _sr;
-        protected UseSrtpData _clientSrtpData;
+        private UseSrtpData _clientSrtpData;
+        public UseSrtpData ClientSrtpData { get { return _clientSrtpData; } }
 
         public int MkiLength { get; protected set; } = 4;
 

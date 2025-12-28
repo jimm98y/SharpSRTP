@@ -85,7 +85,6 @@ namespace SharpSRTP.DTLS
         public override void NotifyClientCertificate(Certificate clientCertificate)
         {
             ClientCertificate = clientCertificate;
-
             TlsCertificate[] chain = clientCertificate.GetCertificateList();
 
             Log.Debug("DTLS server received client certificate chain of length " + chain.Length);

@@ -10,7 +10,8 @@ namespace SharpSRTP.SRTP
 {
     public class DTLSSRTPServer : DTLSServer
     {
-        protected UseSrtpData _serverSrtpData;
+        private UseSrtpData _serverSrtpData;
+        public UseSrtpData ServerSrtpData { get { return _serverSrtpData; } }
 
         public DTLSSRTPServer() : this(new BcTlsCrypto())
         { }

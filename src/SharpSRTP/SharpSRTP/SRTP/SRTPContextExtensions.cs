@@ -9,10 +9,21 @@ namespace SharpSRTP.SRTP
     {
         public const uint E_FLAG = 0x80000000;
 
+        public const int ERROR_GENERIC = -1;
+        public const int ERROR_UNSUPPORTED_CIPHER = -2;
+        public const int ERROR_HMAC_CHECK_FAILED = -3;
+        public const int ERROR_REPLAY_CHECK_FAILED = -4;
+        public const int ERROR_MASTER_KEY_ROTATION_REQUIRED = -5;
+
         public static int ProtectRTP(this SRTPContext ServerRtpContext, byte[] payload, int length, out int outputBufferLength)
         {
             var context = ServerRtpContext;
             outputBufferLength = length;
+
+            if(!context.IncrementMasterKeyUseCounter())
+            {
+                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
+            }
 
             uint ssrc = RTPReader.ReadSsrc(payload);
             ushort sequenceNumber = RTPReader.ReadSequenceNumber(payload);
@@ -72,7 +83,7 @@ namespace SharpSRTP.SRTP
                     break;
 
                 default:
-                    return -1;
+                    return ERROR_UNSUPPORTED_CIPHER;
             }
 
             if (context.Auth != SRTPAuth.NONE)
@@ -100,6 +111,11 @@ namespace SharpSRTP.SRTP
             var context = ClientRtpContext;
             outputBufferLength = length - context.N_tag;
 
+            if (!context.IncrementMasterKeyUseCounter())
+            {
+                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
+            }
+
             uint ssrc = RTPReader.ReadSsrc(payload);
             ushort sequenceNumber = RTPReader.ReadSequenceNumber(payload);
 
@@ -118,7 +134,7 @@ namespace SharpSRTP.SRTP
                 {
                     if (payload[length - context.N_tag + i] != auth[i])
                     {
-                        return -1;
+                        return ERROR_HMAC_CHECK_FAILED;
                     }
                 }
 
@@ -137,7 +153,7 @@ namespace SharpSRTP.SRTP
 
             if (!context.CheckAndUpdateReplayWindow(index))
             {
-                return -1;
+                return ERROR_REPLAY_CHECK_FAILED;
             }
 
             switch (context.Cipher)
@@ -187,7 +203,7 @@ namespace SharpSRTP.SRTP
                     break;
 
                 default:
-                    return -1;
+                    return ERROR_UNSUPPORTED_CIPHER;
             }
 
             return 0;
@@ -197,6 +213,11 @@ namespace SharpSRTP.SRTP
         {
             var context = serverRtcpContext;
             outputBufferLength = length;
+
+            if (!context.IncrementMasterKeyUseCounter())
+            {
+                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
+            }
 
             uint ssrc = RTCPReader.ReadSsrc(payload);
             int offset = RTCPReader.GetHeaderLen();
@@ -253,7 +274,7 @@ namespace SharpSRTP.SRTP
                     break;
 
                 default:
-                    return -1;
+                    return ERROR_UNSUPPORTED_CIPHER;
             }
 
             payload[length + 0] = (byte)(index >> 24);
@@ -279,31 +300,41 @@ namespace SharpSRTP.SRTP
             var context = clientRtcpContext;
             outputBufferLength = length - 4 - context.N_tag;
 
+            if (!context.IncrementMasterKeyUseCounter())
+            {
+                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
+            }
+
             uint ssrc = RTCPReader.ReadSsrc(payload);
             int offset = RTCPReader.GetHeaderLen();
             uint index = RTCPReader.SRTCPReadIndex(payload, context.N_a > 0 ? context.N_tag : 0);
+            bool isEncrypted = false;
 
             if ((index & E_FLAG) == E_FLAG)
             {
                 index = index & ~E_FLAG;
+                isEncrypted = true;
+            }
 
-                if (context.Auth != SRTPAuth.NONE)
+            if (context.Auth != SRTPAuth.NONE)
+            {
+                byte[] auth = HMAC.GenerateAuthTag(context.HMAC, payload, 0, length - context.N_tag);
+                for (int i = 0; i < context.N_tag; i++)
                 {
-                    byte[] auth = HMAC.GenerateAuthTag(context.HMAC, payload, 0, length - context.N_tag);
-                    for (int i = 0; i < context.N_tag; i++)
+                    if (payload[length - context.N_tag + i] != auth[i])
                     {
-                        if (payload[length - context.N_tag + i] != auth[i])
-                        {
-                            return -1;
-                        }
+                        return ERROR_HMAC_CHECK_FAILED;
                     }
                 }
+            }
 
-                if (!context.CheckAndUpdateReplayWindow(index))
-                {
-                    return -1;
-                }
+            if (!context.CheckAndUpdateReplayWindow(index))
+            {
+                return ERROR_REPLAY_CHECK_FAILED;
+            }
 
+            if (isEncrypted)
+            {
                 switch (context.Cipher)
                 {
                     case SRTPCiphers.NULL:
@@ -351,13 +382,11 @@ namespace SharpSRTP.SRTP
                         break;
 
                     default:
-                        return -1;
+                        return ERROR_UNSUPPORTED_CIPHER;
                 }
-
-                return 0;
             }
 
-            return -1;
+            return 0;
         }
     }
 }

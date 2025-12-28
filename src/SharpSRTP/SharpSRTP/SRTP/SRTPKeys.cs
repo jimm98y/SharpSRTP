@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace SharpSRTP.SRTP
+﻿namespace SharpSRTP.SRTP
 {
     public class SRTPKeys
     {
         private readonly int _protectionProfile;
         public int ProtectionProfile { get { return _protectionProfile; } }
+        public byte[] Mki { get; private set; }
 
         private byte[] _client_write_SRTP_master_key = null;
         private byte[] _server_write_SRTP_master_key = null;
@@ -19,9 +16,10 @@ namespace SharpSRTP.SRTP
         public byte[] ServerWriteMasterKey { get { return _server_write_SRTP_master_key; } }
         public byte[] ServerWriteMasterSalt { get { return _server_write_SRTP_master_salt; } }
 
-        public SRTPKeys(int protectionProfile)
+        public SRTPKeys(int protectionProfile, byte[] mki)
         {
             _protectionProfile = protectionProfile;
+            Mki = mki;
 
             var srtpSecurityParams = SRTProtocol.DTLSProtectionProfiles[_protectionProfile];
             int cipherKeyLen = srtpSecurityParams.CipherKeyLength >> 3;

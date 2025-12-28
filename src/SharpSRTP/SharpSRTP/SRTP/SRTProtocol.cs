@@ -41,7 +41,7 @@ namespace SharpSRTP.SRTP
             };
         }
 
-        public static SRTPKeys GenerateMasterKeys(int protectionProfile, SecurityParameters dtlsSecurityParameters)
+        public static SRTPKeys GenerateMasterKeys(int protectionProfile, byte[] mki, SecurityParameters dtlsSecurityParameters)
         {
             // SRTP key derivation as described here https://datatracker.ietf.org/doc/html/rfc5764
             var srtpSecurityParams = DTLSProtectionProfiles[protectionProfile];
@@ -75,7 +75,7 @@ namespace SharpSRTP.SRTP
                 shared_secret_length >> 3
                 ).Extract();
 
-            SRTPKeys keys = new SRTPKeys(protectionProfile);
+            SRTPKeys keys = new SRTPKeys(protectionProfile, mki);
 
             Buffer.BlockCopy(shared_secret, 0, keys.ClientWriteMasterKey, 0, keys.ClientWriteMasterKey.Length);
             Buffer.BlockCopy(shared_secret, keys.ClientWriteMasterKey.Length, keys.ServerWriteMasterKey, 0, keys.ServerWriteMasterKey.Length);

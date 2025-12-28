@@ -2,8 +2,8 @@
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Crypto.Modes;
-using Org.BouncyCastle.Crypto.Parameters;
 using System;
+using System.Threading;
 
 namespace SharpSRTP.SRTP
 {
@@ -20,6 +20,8 @@ namespace SharpSRTP.SRTP
         private ulong _bitmap = 0; /* session state - must be 32 bits */
         private uint _lastSeq = 0; /* session state */
         private readonly SRTPContextType _contextType;
+
+        public event EventHandler<EventArgs> OnRekeyingRequested;
 
         public HMac HMAC { get; private set; }
         public AesEngine AES { get; private set; }
@@ -38,13 +40,22 @@ namespace SharpSRTP.SRTP
         public SRTPCiphers Cipher { get; set; } = SRTPCiphers.AES_128_CM;
         public SRTPAuth Auth { get; set; } = SRTPAuth.HMAC_SHA1;
 
-        public bool IsMkiPresent { get; set; }
-        public int MkiLength { get; set; }
-        public byte[] Mki { get; set; }
-
         public byte[] MasterKey { get; set; }
         public byte[] MasterSalt { get; set; }
-        public int MasterKeySentCounter { get; set; } // TODO
+
+        /// <summary>
+        /// Rollover counter.
+        /// </summary>
+        public uint Roc { get; set; } = 0;
+
+        #region TODO Master key lifespan
+
+        private long _masterKeySentCounter = 0;
+
+        /// <summary>
+        /// Specified how many times was the current master key used.
+        /// </summary>
+        public long MasterKeySentCounter { get { return _masterKeySentCounter; } }
 
         /// <summary>
         /// Key derivation rate.
@@ -54,13 +65,15 @@ namespace SharpSRTP.SRTP
         /// <summary>
         /// From, To values, specifying the lifetime for a master key.
         /// </summary>
-        public int From { get; set; }
-        public int To { get; set; }
+        //public int From { get; set; }
+        //public int To { get; set; }
 
         /// <summary>
-        /// Rollover counter.
+        /// Master Key Identifier.
         /// </summary>
-        public uint Roc { get; set; } = 0;
+        public byte[] Mki { get; set; }
+
+        #endregion // TODO Master key lifespan
 
         #region Session key parameters
 
@@ -110,11 +123,12 @@ namespace SharpSRTP.SRTP
 
         #endregion // Authentication parameters
 
-        public SRTPContext(int protectionProfile, byte[] masterKey, byte[] masterSalt, SRTPContextType type)
+        public SRTPContext(int protectionProfile, byte[] mki, byte[] masterKey, byte[] masterSalt, SRTPContextType type)
         {
             this._contextType = type;
 
             this.ProtectionProfile = protectionProfile;
+            this.Mki = mki;
             this.MasterKey = masterKey;
             this.MasterSalt = masterSalt;
 
@@ -290,6 +304,24 @@ namespace SharpSRTP.SRTP
             if ((_bitmap & ((ulong)1 << diff)) == ((ulong)1 << diff)) return false; /* already seen */
             _bitmap |= ((ulong)1 << diff); /* mark as seen */
             return true; /* out of order but good */
+        }
+
+        /// <summary>
+        /// Increments the master key use counter.
+        /// </summary>
+        public bool IncrementMasterKeyUseCounter()
+        {
+            long currentValue = Interlocked.Increment(ref _masterKeySentCounter);
+            long maxAllowedValue = _contextType == SRTPContextType.RTP ? 281474976710656L : 2147483648L;
+            if (currentValue >= maxAllowedValue) // 2^48
+            {
+                OnRekeyingRequested?.Invoke(this, new EventArgs());
+
+                // at this point we shall not transmit any other packets protected by these keys
+                return false;
+            }
+
+            return true;
         }
     }
 }
