@@ -13,6 +13,10 @@ namespace SharpSRTP.SRTP
         {
             ProtectionProfiles = new Dictionary<int, SRTPProtectionProfile>()
             {
+                // https://datatracker.ietf.org/doc/html/rfc7714
+                { ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_256_GCM, new SRTPProtectionProfile(SRTPCiphers.AEAD_AES_256_GCM, 256, 96, int.MaxValue, SRTPAuth.NONE, 0, 128) },
+                { ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM, new SRTPProtectionProfile(SRTPCiphers.AEAD_AES_128_GCM, 128, 96, int.MaxValue, SRTPAuth.NONE, 0, 128) },
+
                 // AES256 CM is specified in RFC 6188, but not included in IANA DTLS-SRTP registry https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml#srtp-protection-1
                 // https://www.rfc-editor.org/rfc/rfc6188
                 // AES192 CM is not supported in DTLS-SRTP
@@ -73,13 +77,6 @@ namespace SharpSRTP.SRTP
             return keys;
         }
 
-        public static ulong GenerateRTPIndex(uint ROC, ushort SEQ)
-        {
-            // RFC 3711 - 3.3.1
-            // i = 2 ^ 16 * ROC + SEQ
-            return ((ulong)ROC << 16) | SEQ;
-        }
-
         public static uint DetermineRTPIndex(uint s_l, ushort SEQ, ulong ROC)
         {
             // RFC 3711 - Appendix A
@@ -99,6 +96,13 @@ namespace SharpSRTP.SRTP
                     v = ROC;
             }
             return (uint)(SEQ + v * 65536U);
+        }
+
+        public static ulong GenerateRTPIndex(uint ROC, ushort SEQ)
+        {
+            // RFC 3711 - 3.3.1
+            // i = 2 ^ 16 * ROC + SEQ
+            return ((ulong)ROC << 16) | SEQ;
         }
     }
 }

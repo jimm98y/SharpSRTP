@@ -6,7 +6,7 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 
-DTLSServer server = new DTLSServer();
+DTLSSRTPServer server = new DTLSSRTPServer();
 server.HandshakeCompleted += (sender, e) =>
 {
     var keys = SRTProtocol.GenerateMasterKeys(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, e.SecurityParameters);

@@ -1,6 +1,8 @@
 ﻿using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
+using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Crypto.Parameters;
 using System;
 
 namespace SharpSRTP.SRTP
@@ -21,6 +23,7 @@ namespace SharpSRTP.SRTP
 
         public HMac HMAC { get; private set; }
         public AesEngine AES { get; private set; }
+        public GcmBlockCipher AESGCM { get; private set; }
 
         /// <summary>
         /// Receiver only - highest sequence number received.
@@ -145,6 +148,18 @@ namespace SharpSRTP.SRTP
                 aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
                 this.AES = aes;
             }
+            else if (Cipher == SRTPCiphers.AEAD_AES_128_GCM || Cipher == SRTPCiphers.AEAD_AES_256_GCM)
+            {
+                var aes = new AesEngine();
+                aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
+                this.K_e = GenerateSessionKey(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                this.K_a = GenerateSessionKey(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                this.K_s = GenerateSessionKey(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                this.AES = aes;
+
+                var cipher = new GcmBlockCipher(new AesEngine());
+                this.AESGCM = cipher;
+            }
             else
             {
                 throw new NotSupportedException($"Unsupported cipher {Cipher.ToString()}!");
@@ -166,8 +181,8 @@ namespace SharpSRTP.SRTP
                 case SRTPCiphers.NULL:
                 case SRTPCiphers.AES_128_CM:
                 case SRTPCiphers.AES_256_CM:
-                //case SRTPCiphers.AEAD_AES_128_GCM:
-                //case SRTPCiphers.AEAD_AES_256_GCM:
+                case SRTPCiphers.AEAD_AES_128_GCM:
+                case SRTPCiphers.AEAD_AES_256_GCM:
                     {
                         byte[] iv = Encryption.AESCTR.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
                         Encryption.AESCTR.Encrypt(aes, key, 0, length, iv);

@@ -2,6 +2,7 @@
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
+using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using SharpSRTP.DTLS;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,10 @@ namespace SharpSRTP.SRTP
 
         public int MkiLength { get; protected set; } = 4;
 
+        public DTLSSRTPClient(TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short preferredCertificateAlgorithm = SignatureAlgorithm.rsa) :
+           this(new BcTlsCrypto(), session, certificate, privateKey, preferredCertificateAlgorithm)
+        { }
+
         public DTLSSRTPClient(TlsCrypto crypto, TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short preferredCertificateAlgorithm = SignatureAlgorithm.rsa) : 
             base(crypto, session, certificate, privateKey, preferredCertificateAlgorithm)
         {
@@ -29,6 +34,9 @@ namespace SharpSRTP.SRTP
         {
             return new int[] 
             {
+                //SrtpProtectionProfile.SRTP_AEAD_AES_256_GCM,
+                //SrtpProtectionProfile.SRTP_AEAD_AES_128_GCM,
+
                 SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80,
                 SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32,
                 SrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80,

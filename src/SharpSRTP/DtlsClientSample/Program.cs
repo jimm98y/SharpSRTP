@@ -4,7 +4,7 @@ using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
 using System;
 
-DTLSClient client = new DTLSClient();
+DTLSSRTPClient client = new DTLSSRTPClient();
 client.HandshakeCompleted += (sender, e) =>
 {
     var keys = SRTProtocol.GenerateMasterKeys(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, e.SecurityParameters);
