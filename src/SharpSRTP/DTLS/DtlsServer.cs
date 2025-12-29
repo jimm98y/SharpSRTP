@@ -13,15 +13,10 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsServer : DefaultTlsServer, IDtlsPeer
     {
-        private Certificate _myCert;
-        private AsymmetricKeyParameter _myCertPrivateKey;
-        private short _myCertSignatureAlgorithm = SignatureAlgorithm.rsa;
-        private short _myCertHashAlgorithm = HashAlgorithm.sha256;
-        protected short CertificateSignatureAlgorithm => _myCertSignatureAlgorithm;
-        protected short CertificateHashAlgorithm => _myCertHashAlgorithm;
-
-        protected Certificate Certificate => _myCert;
-        protected AsymmetricKeyParameter CertificatePrivateKey => _myCertPrivateKey;
+        public Certificate Certificate { get; private set; }
+        public AsymmetricKeyParameter CertificatePrivateKey { get; private set; }
+        public short CertificateSignatureAlgorithm { get; private set; }
+        public short CertificateHashAlgorithm { get; private set; }
 
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
@@ -38,10 +33,10 @@ namespace SharpSRTP.DTLS
 
         public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
         {
-            _myCert = certificate;
-            _myCertPrivateKey = privateKey;
-            _myCertSignatureAlgorithm = signatureAlgorithm;
-            _myCertHashAlgorithm = hashAlgorithm;
+            Certificate = certificate;
+            CertificatePrivateKey = privateKey;
+            CertificateSignatureAlgorithm = signatureAlgorithm;
+            CertificateHashAlgorithm = hashAlgorithm;
         }
 
         public override bool RequiresExtendedMasterSecret()
@@ -257,7 +252,7 @@ namespace SharpSRTP.DTLS
             IList<SignatureAndHashAlgorithm> clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
 
-            if (_myCert == null || _myCertPrivateKey == null)
+            if (Certificate == null || CertificatePrivateKey == null)
             {
                 throw new InvalidOperationException("DTLS server ECDsa certificate not set!");
             }
@@ -276,7 +271,7 @@ namespace SharpSRTP.DTLS
                 throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
             }
 
-            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _myCertPrivateKey, _myCert, signatureAndHashAlgorithm);
+            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, CertificatePrivateKey, Certificate, signatureAndHashAlgorithm);
         }
 
         protected override TlsCredentialedSigner GetRsaSignerCredentials()
@@ -284,7 +279,7 @@ namespace SharpSRTP.DTLS
             IList<SignatureAndHashAlgorithm> clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
 
-            if (_myCert == null || _myCertPrivateKey == null)
+            if (Certificate == null || CertificatePrivateKey == null)
             {
                 throw new InvalidOperationException("DTLS server RSA certificate not set!");
             }

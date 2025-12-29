@@ -13,19 +13,14 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsClient : DefaultTlsClient, IDtlsPeer
     {
-        private Certificate _myCert;
-        private AsymmetricKeyParameter _myCertPrivateKey;
-        private short _myCertSignatureAlgorithm = SignatureAlgorithm.rsa;
-        private short _myCertHashAlgorithm = HashAlgorithm.sha256;
-
-        protected Certificate Certificate => _myCert;
-        protected AsymmetricKeyParameter CertificatePrivateKey => _myCertPrivateKey;
-        protected short CertificateSignatureAlgorithm => _myCertSignatureAlgorithm;
-        protected short CertificateHashAlgorithm => _myCertHashAlgorithm;
+        public Certificate Certificate { get; private set; }
+        public AsymmetricKeyParameter CertificatePrivateKey { get; private set; }
+        public short CertificateSignatureAlgorithm { get; private set; }
+        public short CertificateHashAlgorithm { get; private set; }
 
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
         public TlsServerCertificate RemoteCertificate { get; private set; }
-        public Certificate PeerCertificate { get { return RemoteCertificate.Certificate; } }
+        public Certificate PeerCertificate { get { return RemoteCertificate?.Certificate; } }
 
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
@@ -44,10 +39,10 @@ namespace SharpSRTP.DTLS
 
         public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
         {
-            _myCert = certificate;
-            _myCertPrivateKey = privateKey;
-            _myCertSignatureAlgorithm = signatureAlgorithm;
-            _myCertHashAlgorithm = hashAlgorithm;
+            Certificate = certificate;
+            CertificatePrivateKey = privateKey;
+            CertificateSignatureAlgorithm = signatureAlgorithm;
+            CertificateHashAlgorithm = hashAlgorithm;
         }
 
         public override bool RequiresExtendedMasterSecret()
@@ -284,7 +279,7 @@ namespace SharpSRTP.DTLS
                     return null;
                 }
 
-                if(_client._myCert == null || _client._myCertPrivateKey == null)
+                if(_client.Certificate == null || _client.CertificatePrivateKey == null)
                 {
                     return null;
                 }

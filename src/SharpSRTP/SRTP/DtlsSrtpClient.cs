@@ -90,34 +90,6 @@ namespace SharpSRTP.SRTP
             return extensions;
         }
 
-        public override TlsAuthentication GetAuthentication()
-        {
-            if (Certificate == null || CertificatePrivateKey == null)
-            {
-                (Certificate certificate, AsymmetricKeyParameter key) cert;
-                const string webrtcCertificateName = "WebRTC";
-                DateTime validFrom = DateTime.UtcNow.AddDays(-1);
-                DateTime validTo = DateTime.UtcNow.AddDays(30);
-
-                if (CertificateSignatureAlgorithm == SignatureAlgorithm.ecdsa)
-                {
-                    cert = DtlsCertificateUtils.GenerateECDSAServerCertificate(webrtcCertificateName, validFrom, validTo);
-                }
-                else if(CertificateSignatureAlgorithm == SignatureAlgorithm.rsa)
-                {
-                    cert = DtlsCertificateUtils.GenerateRSAServerCertificate(webrtcCertificateName, validFrom, validTo);
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
-
-                SetCertificate(cert.certificate, cert.key, CertificateSignatureAlgorithm, HashAlgorithm.sha256);
-            }
-
-            return base.GetAuthentication();
-        }
-
         public override void NotifyHandshakeComplete()
         {
             base.NotifyHandshakeComplete();
