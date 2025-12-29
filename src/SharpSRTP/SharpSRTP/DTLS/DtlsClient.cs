@@ -130,16 +130,16 @@ namespace SharpSRTP.DTLS
         {
             if (Log.DebugEnabled) Log.Debug("DTLS client received alert: " + AlertLevel.GetText(level) + ", " + AlertDescription.GetText(alertDescription));
 
-            AlertTypesEnum alertType = AlertTypesEnum.Unknown;
-            if (Enum.IsDefined(typeof(AlertTypesEnum), (int)alertDescription))
+            TlsAlertTypesEnum alertType = TlsAlertTypesEnum.Unknown;
+            if (Enum.IsDefined(typeof(TlsAlertTypesEnum), (int)alertDescription))
             {
-                alertType = (AlertTypesEnum)alertDescription;
+                alertType = (TlsAlertTypesEnum)alertDescription;
             }
 
-            AlertLevelsEnum alertLevel = AlertLevelsEnum.Warn;
-            if (Enum.IsDefined(typeof(AlertLevelsEnum), (int)alertLevel))
+            TlsAlertLevelsEnum alertLevel = TlsAlertLevelsEnum.Warn;
+            if (Enum.IsDefined(typeof(TlsAlertLevelsEnum), (int)alertLevel))
             {
-                alertLevel = (AlertLevelsEnum)level;
+                alertLevel = (TlsAlertLevelsEnum)level;
             }
 
             OnAlert?.Invoke(alertLevel, alertType, AlertDescription.GetText(alertDescription));
