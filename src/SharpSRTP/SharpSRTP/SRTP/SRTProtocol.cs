@@ -41,8 +41,14 @@ namespace SharpSRTP.SRTP
             };
         }
 
-        public static SRTPKeys GenerateMasterKeys(int protectionProfile, byte[] mki, SecurityParameters dtlsSecurityParameters)
+        public static SRTPKeys GenerateMasterKeys(int protectionProfile, byte[] mki, SecurityParameters dtlsSecurityParameters, bool requireExtendedMasterSecret = true)
         {
+            // verify that we have extended master secret before computing the keys
+            if(!dtlsSecurityParameters.IsExtendedMasterSecret && requireExtendedMasterSecret)
+            {
+                throw new InvalidOperationException();
+            }
+
             // SRTP key derivation as described here https://datatracker.ietf.org/doc/html/rfc5764
             var srtpSecurityParams = DTLSProtectionProfiles[protectionProfile];
 

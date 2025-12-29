@@ -12,7 +12,7 @@ namespace SharpSRTP.SRTP
 {
     public class DTLSSRTPClient : DTLSClient
     {
-        private readonly SecureRandom _sr;
+        private readonly SecureRandom _sr = new SecureRandom();
         private UseSrtpData _srtpData;
         public UseSrtpData SrtpData { get { return _srtpData; } }
 
@@ -26,9 +26,13 @@ namespace SharpSRTP.SRTP
             base(crypto, session, certificate, privateKey, preferredCertificateAlgorithm)
         {
             int[] protectionProfiles = GetSupportedProtectionProfiles();
-            _sr = new SecureRandom();
-            byte[] mki = SecureRandom.GetNextBytes(_sr, MkiLength);
+            byte[] mki = GenerateMki(MkiLength);
             this._srtpData = new UseSrtpData(protectionProfiles, mki);
+        }
+
+        private byte[] GenerateMki(int length)
+        {
+            return SecureRandom.GetNextBytes(_sr, length);
         }
 
         protected virtual int[] GetSupportedProtectionProfiles()

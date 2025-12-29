@@ -85,7 +85,7 @@ namespace SharpSRTP.DTLS
 
         public override TlsAuthentication GetAuthentication()
         {
-            return new MyTlsAuthentication(m_context, this);
+            return new DTlsAuthentication(m_context, this);
         }
 
         public override void NotifyHandshakeComplete()
@@ -157,12 +157,12 @@ namespace SharpSRTP.DTLS
             return ProtocolVersion.DTLSv12.Only();
         }
 
-        internal class MyTlsAuthentication : TlsAuthentication
+        internal class DTlsAuthentication : TlsAuthentication
         {
             private readonly TlsContext m_context;
             private readonly DTLSClient m_client;
 
-            public MyTlsAuthentication(TlsContext context, DTLSClient client)
+            public DTlsAuthentication(TlsContext context, DTLSClient client)
             {
                 this.m_client = client ?? throw new ArgumentNullException(nameof(client));
                 this.m_context = context;
