@@ -87,11 +87,12 @@ namespace SharpSRTP.SRTP.Encryption
         public static void Encrypt(AesEngine aes, byte[] payload, int offset, int length, byte[] iv)
         {
             int payloadSize = length - offset;
-            byte[] cipher = new byte[(payloadSize / AES_BLOCK_SIZE + payloadSize % AES_BLOCK_SIZE) * AES_BLOCK_SIZE];
+            int blockCount = payloadSize / AES_BLOCK_SIZE + payloadSize % AES_BLOCK_SIZE;
+            byte[] cipher = new byte[blockCount * AES_BLOCK_SIZE];
 
             int blockNo = 0;
             byte[] iv2 = new byte[iv.Length];
-            for (uint j = 0; j < payloadSize / AES_BLOCK_SIZE + (payloadSize % AES_BLOCK_SIZE); j++)
+            for (uint j = 0; j < blockCount; j++)
             {
                 Buffer.BlockCopy(iv, 0, iv2, 0, iv.Length);
 
