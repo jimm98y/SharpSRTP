@@ -1,6 +1,6 @@
 ﻿namespace SharpSRTP.SRTP
 {
-    public class SRTPKeys
+    public class SrtpKeys
     {
         private readonly int _protectionProfile;
         public int ProtectionProfile { get { return _protectionProfile; } }
@@ -16,12 +16,12 @@
         public byte[] ServerWriteMasterKey { get { return _server_write_SRTP_master_key; } }
         public byte[] ServerWriteMasterSalt { get { return _server_write_SRTP_master_salt; } }
 
-        public SRTPKeys(int protectionProfile, byte[] mki)
+        public SrtpKeys(int protectionProfile, byte[] mki)
         {
             _protectionProfile = protectionProfile;
             Mki = mki;
 
-            var srtpSecurityParams = SRTProtocol.DTLSProtectionProfiles[_protectionProfile];
+            var srtpSecurityParams = DtlsSrtpProtocol.DtlsProtectionProfiles[_protectionProfile];
             int cipherKeyLen = srtpSecurityParams.CipherKeyLength >> 3;
             int cipherSaltLen = srtpSecurityParams.CipherSaltLength >> 3;
             _client_write_SRTP_master_key = new byte[cipherKeyLen];

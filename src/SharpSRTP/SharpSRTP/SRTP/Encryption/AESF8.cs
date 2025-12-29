@@ -7,14 +7,14 @@ namespace SharpSRTP.SRTP.Encryption
     {
         public const int AES_BLOCK_SIZE = 16;
 
-        public static byte[] GenerateRTPMessageKeyIV(AesEngine aes, byte[] k_e, byte[] k_s, byte[] rtpPacket, uint ROC)
+        public static byte[] GenerateRtpMessageKeyIV(AesEngine aes, byte[] k_e, byte[] k_s, byte[] rtpPacket, uint ROC)
         {
-            byte[] iv = GenerateRTPIV(rtpPacket, ROC);            
+            byte[] iv = GenerateRtpIV(rtpPacket, ROC);            
             byte[] iv2 = GenerateIV2(aes, k_e, k_s, iv);
             return iv2;
         }
 
-        private static byte[] GenerateRTPIV(byte[] rtpPacket, uint ROC)
+        private static byte[] GenerateRtpIV(byte[] rtpPacket, uint ROC)
         {
             byte[] iv = new byte[AES_BLOCK_SIZE];
             iv[0] = 0;
@@ -30,14 +30,14 @@ namespace SharpSRTP.SRTP.Encryption
             return iv;
         }
 
-        public static byte[] GenerateRTCPMessageKeyIV(AesEngine aes, byte[] k_e, byte[] k_s, byte[] rtcpPacket, uint index)
+        public static byte[] GenerateRtcpMessageKeyIV(AesEngine aes, byte[] k_e, byte[] k_s, byte[] rtcpPacket, uint index)
         {
-            byte[] iv = GenerateRTCPIV(rtcpPacket, index);
+            byte[] iv = GenerateRtcpIV(rtcpPacket, index);
             byte[] iv2 = GenerateIV2(aes, k_e, k_s, iv);
             return iv2;
         }
 
-        private static byte[] GenerateRTCPIV(byte[] rtcpPacket, uint index)
+        private static byte[] GenerateRtcpIV(byte[] rtcpPacket, uint index)
         {
             byte[] iv = new byte[AES_BLOCK_SIZE];
 
@@ -119,11 +119,6 @@ namespace SharpSRTP.SRTP.Encryption
             {
                 payload[offset + i] ^= cipher[i];
             }
-        }
-
-        public static byte[] GenerateRTPMessageKeyIV(object aESF8, byte[] k_e, byte[] k_s, byte[] payload, uint roc)
-        {
-            throw new NotImplementedException();
         }
     }
 }

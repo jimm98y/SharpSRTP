@@ -1,6 +1,6 @@
 ﻿namespace SharpSRTP.SRTP
 {
-    public static class RTPReader
+    public static class RtpReader
     {
         public static uint ReadSsrc(byte[] rtpPacket)
         {

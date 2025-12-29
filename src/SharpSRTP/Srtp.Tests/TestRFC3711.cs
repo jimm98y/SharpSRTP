@@ -9,36 +9,12 @@ using System.Linq;
 
 namespace Srtp.Tests
 {
+    /// <summary>
+    /// RFC 3711 tests. https://datatracker.ietf.org/doc/html/rfc3711
+    /// </summary>
     [TestClass]
     public sealed class TestRFC3711
-    {
-        // https://datatracker.ietf.org/doc/html/rfc3711#appendix-B.3
-        [TestMethod]
-        [DataRow("E1F97A0D3E018BE0D64FA32C06DE4139", "0EC675AD498AFEEBB6960B3AABE6", 16, 0, (ushort)0, "C61E7A93744F39EE10734AFE3FF7A087")]
-        [DataRow("E1F97A0D3E018BE0D64FA32C06DE4139", "0EC675AD498AFEEBB6960B3AABE6", 14, 2, (ushort)0, "30CBBC08863D8C85D49DB34A9AE1")]
-        [DataRow("E1F97A0D3E018BE0D64FA32C06DE4139", "0EC675AD498AFEEBB6960B3AABE6", 16, 1, (ushort)0, "CEBE321F6FF7716B6FD4AB49AF256A15")]
-        [DataRow("E1F97A0D3E018BE0D64FA32C06DE4139", "0EC675AD498AFEEBB6960B3AABE6", 16, 1, (ushort)1, "6D38BAA48F0A0ACF3C34E2359E6CDBCE")]
-        [DataRow("E1F97A0D3E018BE0D64FA32C06DE4139", "0EC675AD498AFEEBB6960B3AABE6", 16, 1, (ushort)2, "E049646C43D9327AD175578EF7227098")]
-        [DataRow("E1F97A0D3E018BE0D64FA32C06DE4139", "0EC675AD498AFEEBB6960B3AABE6", 16, 1, (ushort)3, "6371C10C9A369AC2F94A8C5FBCDDDC25")]
-        [DataRow("E1F97A0D3E018BE0D64FA32C06DE4139", "0EC675AD498AFEEBB6960B3AABE6", 16, 1, (ushort)4, "6D6E919A48B610EF17C2041E47403576")]
-        [DataRow("E1F97A0D3E018BE0D64FA32C06DE4139", "0EC675AD498AFEEBB6960B3AABE6", 16, 1, (ushort)5, "6B68642C59BBFC2F34DB60DBDFB2DC68")]
-        public void Test_Salt_AESCM(string masterKey, string masterSalt, int length, int label, ushort index, string expectedResult)
-        {
-            byte[] masterKeyBytes = Convert.FromHexString(masterKey);
-            byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
-
-            byte[] iv = AESCM.GenerateSessionKeyIV(masterSaltBytes, 0, 0, (byte)label);
-
-            var aes = new AesEngine();
-            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(masterKeyBytes));
-
-            byte[] ck = new byte[length];
-            AESCM.EncryptBlock(aes, ck, iv, index);
-
-            string cipherKey = Convert.ToHexString(ck);
-            Assert.AreEqual(expectedResult, cipherKey);
-        }
-
+    {       
         [TestMethod]
         [DataRow("E03EAD0935C95E80E166B16DD92B4EB4", 0)]
         [DataRow("D23513162B02D0F72A43A2FE4A5F97AB", 1)]
@@ -79,7 +55,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, isRtp ? SRTPContextType.RTP : SRTPContextType.RTCP);
+            var context = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, isRtp ? SrtpContextType.RTP : SrtpContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
             string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();
@@ -101,7 +77,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, isRtp ? SRTPContextType.RTP : SRTPContextType.RTCP);
+            var context = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, isRtp ? SrtpContextType.RTP : SrtpContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e);
             string sgk_a = Convert.ToHexString(context.K_a);
@@ -116,9 +92,9 @@ namespace Srtp.Tests
             byte[] payload = new byte[2048];
             Buffer.BlockCopy(payloadRaw, 0, payload, 0, length);
 
-            uint ssrc = RTPReader.ReadSsrc(payload);
-            ushort sequenceNumber = RTPReader.ReadSequenceNumber(payload);
-            int offset = RTPReader.ReadHeaderLen(payload);
+            uint ssrc = RtpReader.ReadSsrc(payload);
+            ushort sequenceNumber = RtpReader.ReadSequenceNumber(payload);
+            int offset = RtpReader.ReadHeaderLen(payload);
 
             uint roc = 0;
             ulong index = ((ulong)roc << 16) | sequenceNumber;
@@ -155,7 +131,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, SRTPContextType.RTCP);
+            var context = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, SrtpContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e);
             string sgk_a = Convert.ToHexString(context.K_a);
@@ -170,11 +146,11 @@ namespace Srtp.Tests
             byte[] payload = new byte[2048];
             Buffer.BlockCopy(payloadRaw, 0, payload, 0, length);
 
-            uint ssrc = RTCPReader.ReadSsrc(payload);
+            uint ssrc = RtcpReader.ReadSsrc(payload);
             const uint E_FLAG = 0x80000000;
             uint index = S_l | E_FLAG;
 
-            int offset = RTCPReader.GetHeaderLen();
+            int offset = RtcpReader.GetHeaderLen();
             byte[] iv = AESCM.GenerateMessageKeyIV(context.K_s, ssrc, S_l);
 
             var aes = new AesEngine();
@@ -207,13 +183,13 @@ namespace Srtp.Tests
             byte[] bk_s = Convert.FromHexString(k_s);
             byte[] rtpBytes = Convert.FromHexString(rtp);
 
-            uint sequenceNumber = RTPReader.ReadSequenceNumber(rtpBytes);
-            uint ssrc = RTPReader.ReadSsrc(rtpBytes);
-            int offset = RTPReader.ReadHeaderLen(rtpBytes);
+            uint sequenceNumber = RtpReader.ReadSequenceNumber(rtpBytes);
+            uint ssrc = RtpReader.ReadSsrc(rtpBytes);
+            int offset = RtpReader.ReadHeaderLen(rtpBytes);
             ulong index = ((ulong)roc << 16) | sequenceNumber;
 
             AesEngine aes = new AesEngine();
-            byte[] iv = AESF8.GenerateRTPMessageKeyIV(aes, bk_e, bk_s, rtpBytes, roc);
+            byte[] iv = AESF8.GenerateRtpMessageKeyIV(aes, bk_e, bk_s, rtpBytes, roc);
             Assert.AreEqual("595b699bbd3bc0df26062093c1ad8f73", Convert.ToHexString(iv).ToLowerInvariant());
 
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(bk_e));

@@ -10,6 +10,9 @@ using System.Linq;
 
 namespace Srtp.Tests
 {
+    /// <summary>
+    /// RFC 8269 tests. https://datatracker.ietf.org/doc/html/rfc8269
+    /// </summary>
     [TestClass]
     public sealed class TestRFC8269
     {
@@ -28,9 +31,9 @@ namespace Srtp.Tests
             byte[] payload = new byte[2048];
             Buffer.BlockCopy(payloadRaw, 0, payload, 0, length);
 
-            uint ssrc = RTPReader.ReadSsrc(payload);
-            ushort sequenceNumber = RTPReader.ReadSequenceNumber(payload);
-            int offset = RTPReader.ReadHeaderLen(payload);
+            uint ssrc = RtpReader.ReadSsrc(payload);
+            ushort sequenceNumber = RtpReader.ReadSequenceNumber(payload);
+            int offset = RtpReader.ReadHeaderLen(payload);
 
             uint roc = 0;
             ulong index = ((ulong)roc << 16) | sequenceNumber;
@@ -67,12 +70,12 @@ namespace Srtp.Tests
             byte[] bk_e = Convert.FromHexString(k_e);
             byte[] bk_s = Convert.FromHexString(k_s);
 
-            uint ssrc = RTPReader.ReadSsrc(rtpBytes);
-            ushort sequenceNumber = RTPReader.ReadSequenceNumber(rtpBytes);
-            ulong index = SRTProtocol.GenerateRTPIndex(0, sequenceNumber);
+            uint ssrc = RtpReader.ReadSsrc(rtpBytes);
+            ushort sequenceNumber = RtpReader.ReadSequenceNumber(rtpBytes);
+            ulong index = SrtpContextExtensions.GenerateRtpIndex(0, sequenceNumber);
             const int n_tag = 16;
 
-            int offset = RTPReader.ReadHeaderLen(rtpBytes);
+            int offset = RtpReader.ReadHeaderLen(rtpBytes);
             byte[] iv = ARIAGCM.GenerateMessageKeyIV(bk_s, ssrc, index);
 
             byte[] result = new byte[rtpBytes.Length + n_tag];
@@ -94,7 +97,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SRTPContext(profile, null, masterKeyBytes, masterSaltBytes, isRtp ? SRTPContextType.RTP : SRTPContextType.RTCP);
+            var context = new SrtpContext(profile, null, masterKeyBytes, masterSaltBytes, isRtp ? SrtpContextType.RTP : SrtpContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
             string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();

@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace SharpSRTP.DTLS
 {
-    public class DTLSServer : DefaultTlsServer
+    public class DtlsServer : DefaultTlsServer, IDtlsSrtpPeer
     {
         private Certificate _myCert;
         private AsymmetricKeyParameter _myCertPrivateKey;
@@ -22,17 +22,19 @@ namespace SharpSRTP.DTLS
         protected AsymmetricKeyParameter CertificatePrivateKey => _myCertPrivateKey;
 
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
-        public Certificate ClientCertificate { get; private set; }
+        public Certificate PeerCertificate { get; private set; }
 
-        public event EventHandler<DTLSHandshakeCompletedEventArgs> HandshakeCompleted;
+        public event EventHandler<DtlsHandshakeCompletedEventArgs> HandshakeCompleted;
+        public event OnDtlsAlertEvent OnAlert;
 
-        public DTLSServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short signatureAlgorithm = SignatureAlgorithm.rsa, short hashAlgorithm = HashAlgorithm.sha256) : this(new BcTlsCrypto())
-        {
-            SetCertificate(certificate, privateKey, signatureAlgorithm, hashAlgorithm);
-        }
-
-        public DTLSServer(TlsCrypto crypto) : base(crypto)
+        public DtlsServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : 
+            this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         {  }
+
+        public DtlsServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
+        {
+            SetCertificate(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm);
+        }
 
         public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
         {
@@ -91,9 +93,23 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public override void NotifyAlertReceived(short alertLevel, short alertDescription)
+        public override void NotifyAlertReceived(short level, short alertDescription)
         {
-            if(Log.DebugEnabled) Log.Debug("DTLS server received alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
+            if(Log.DebugEnabled) Log.Debug("DTLS server received alert: " + AlertLevel.GetText(level) + ", " + AlertDescription.GetText(alertDescription));
+
+            AlertTypesEnum alertType = AlertTypesEnum.Unknown;
+            if (Enum.IsDefined(typeof(AlertTypesEnum), (int)alertDescription))
+            {
+                alertType = (AlertTypesEnum)alertDescription;
+            }
+
+            AlertLevelsEnum alertLevel = AlertLevelsEnum.Warn;
+            if (Enum.IsDefined(typeof(AlertLevelsEnum), (int)alertLevel))
+            {
+                alertLevel = (AlertLevelsEnum)level;
+            }
+
+            OnAlert?.Invoke(alertLevel, alertType, AlertDescription.GetText(alertDescription));
         }
 
         public override ProtocolVersion GetServerVersion()
@@ -124,11 +140,11 @@ namespace SharpSRTP.DTLS
             for (int i = 0; i != chain.Length; i++)
             {
                 X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
-                Log.Debug("    fingerprint:SHA-256 " + DTLSCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
+                Log.Debug("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
             }
 
             // store the certificate for furhter fingerprint validation
-            ClientCertificate = clientCertificate;
+            PeerCertificate = clientCertificate;
         }
 
         public override void NotifyHandshakeComplete()
@@ -147,7 +163,7 @@ namespace SharpSRTP.DTLS
             byte[] tlsUnique = m_context.ExportChannelBinding(ChannelBinding.tls_unique);
             Log.Debug("Server 'tls-unique': " + ToHexString(tlsUnique));
 
-            HandshakeCompleted?.Invoke(this, new DTLSHandshakeCompletedEventArgs(m_context.SecurityParameters));
+            HandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
 
         public override void ProcessClientExtensions(IDictionary<int, byte[]> clientExtensions)
@@ -235,7 +251,7 @@ namespace SharpSRTP.DTLS
                 throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
             }
 
-            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _myCertPrivateKey, _myCert, signatureAndHashAlgorithm);
+            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, CertificatePrivateKey, Certificate, signatureAndHashAlgorithm);
         }
     }
 }

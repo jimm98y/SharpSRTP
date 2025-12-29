@@ -7,10 +7,12 @@ using System.Linq;
 
 namespace Srtp.Tests
 {
+    /// <summary>
+    /// RFC 7714 tests. https://www.rfc-editor.org/rfc/rfc7714
+    /// </summary>
     [TestClass]
     public sealed class TestRFC7714
     {
-        // https://datatracker.ietf.org/doc/html/rfc3711#appendix-B.3
         [TestMethod]
         [DataRow("8040f17b8041f8d35501a0b247616c6c696120657374206f6d6e69732064697669736120696e207061727465732074726573", "517569642070726f2071756f", "51753c6580c2726f20718414")]
         public void Test_IV_RTP(string rtp, string salt, string expectedIv)
@@ -18,9 +20,9 @@ namespace Srtp.Tests
             byte[] rtpBytes = Convert.FromHexString(rtp);
             byte[] k_s = Convert.FromHexString(salt);
 
-            uint ssrc = RTPReader.ReadSsrc(rtpBytes);
-            ushort sequenceNumber = RTPReader.ReadSequenceNumber(rtpBytes);
-            ulong index = SRTProtocol.GenerateRTPIndex(0, sequenceNumber);
+            uint ssrc = RtpReader.ReadSsrc(rtpBytes);
+            ushort sequenceNumber = RtpReader.ReadSequenceNumber(rtpBytes);
+            ulong index = SrtpContextExtensions.GenerateRtpIndex(0, sequenceNumber);
 
             byte[] iv = AESGCM.GenerateMessageKeyIV(k_s, ssrc, index);
 
@@ -37,12 +39,12 @@ namespace Srtp.Tests
             byte[] k_e = Convert.FromHexString(key);
             byte[] k_s = Convert.FromHexString(salt);
 
-            uint ssrc = RTPReader.ReadSsrc(rtpBytes);
-            ushort sequenceNumber = RTPReader.ReadSequenceNumber(rtpBytes);
-            ulong index = SRTProtocol.GenerateRTPIndex(0, sequenceNumber);
+            uint ssrc = RtpReader.ReadSsrc(rtpBytes);
+            ushort sequenceNumber = RtpReader.ReadSequenceNumber(rtpBytes);
+            ulong index = SrtpContextExtensions.GenerateRtpIndex(0, sequenceNumber);
             const int n_tag = 16;
 
-            int offset = RTPReader.ReadHeaderLen(rtpBytes);
+            int offset = RtpReader.ReadHeaderLen(rtpBytes);
 
             byte[] iv = AESGCM.GenerateMessageKeyIV(k_s, ssrc, index);
 
@@ -66,12 +68,12 @@ namespace Srtp.Tests
             byte[] k_e = Convert.FromHexString(key);
             byte[] k_s = Convert.FromHexString(salt);
 
-            uint ssrc = RTPReader.ReadSsrc(srtpBytes);
-            ushort sequenceNumber = RTPReader.ReadSequenceNumber(srtpBytes);
-            ulong index = SRTProtocol.GenerateRTPIndex(0, sequenceNumber);
+            uint ssrc = RtpReader.ReadSsrc(srtpBytes);
+            ushort sequenceNumber = RtpReader.ReadSequenceNumber(srtpBytes);
+            ulong index = SrtpContextExtensions.GenerateRtpIndex(0, sequenceNumber);
             const int n_tag = 16;
 
-            int offset = RTPReader.ReadHeaderLen(srtpBytes);
+            int offset = RtpReader.ReadHeaderLen(srtpBytes);
 
             byte[] iv = AESGCM.GenerateMessageKeyIV(k_s, ssrc, index);
 
@@ -83,7 +85,6 @@ namespace Srtp.Tests
             Assert.AreEqual(expectedDecryptedRTP, decryptedRTP);
         }
 
-        // https://datatracker.ietf.org/doc/html/rfc3711#appendix-B.3
         [TestMethod]
         [DataRow("81c8000e4d6172734e5450314e545031525450200000042a0000eb984c756e61deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", "517569642070726f2071756f", (uint)0x000005d4, "517524055203726f207170bb")]
         public void Test_IV_RTCP(string rtcp, string salt, uint index, string expectedIv)
@@ -91,7 +92,7 @@ namespace Srtp.Tests
             byte[] rtpBytes = Convert.FromHexString(rtcp);
             byte[] k_s = Convert.FromHexString(salt);
 
-            uint ssrc = RTCPReader.ReadSsrc(rtpBytes);
+            uint ssrc = RtcpReader.ReadSsrc(rtpBytes);
             byte[] iv = AESGCM.GenerateMessageKeyIV(k_s, ssrc, index);
 
             string ivString = Convert.ToHexString(iv).ToLowerInvariant();
@@ -105,9 +106,9 @@ namespace Srtp.Tests
             byte[] rtcpBytes = Convert.FromHexString(rtcp);
             byte[] k_e = Convert.FromHexString(key);
             byte[] k_s = Convert.FromHexString(salt);
-            uint ssrc = RTCPReader.ReadSsrc(rtcpBytes);
+            uint ssrc = RtcpReader.ReadSsrc(rtcpBytes);
 
-            int offset = RTCPReader.GetHeaderLen();
+            int offset = RtcpReader.GetHeaderLen();
             byte[] iv = AESGCM.GenerateMessageKeyIV(k_s, ssrc, idx);
 
             const int n_tag = 16;
@@ -140,13 +141,13 @@ namespace Srtp.Tests
 
             const int n_tag = 16;
 
-            uint ssrc = RTCPReader.ReadSsrc(srtcpBytes);
-            uint idx = RTCPReader.SRTCPReadIndex(srtcpBytes, 0);
+            uint ssrc = RtcpReader.ReadSsrc(srtcpBytes);
+            uint idx = RtcpReader.SrtcpReadIndex(srtcpBytes, 0);
             
             const uint E_FLAG = 0x80000000;
             uint index = idx & ~E_FLAG;
 
-            int offset = RTCPReader.GetHeaderLen();
+            int offset = RtcpReader.GetHeaderLen();
             byte[] iv = AESGCM.GenerateMessageKeyIV(k_s, ssrc, index);
 
             var cipher = new GcmBlockCipher(new AesEngine());

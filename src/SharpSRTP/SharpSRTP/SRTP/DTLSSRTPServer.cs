@@ -1,4 +1,5 @@
-﻿using Org.BouncyCastle.Tls;
+﻿using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using SharpSRTP.DTLS;
@@ -8,15 +9,18 @@ using System.Linq;
 
 namespace SharpSRTP.SRTP
 {
-    public class DTLSSRTPServer : DTLSServer
+    public class DtlsSrtpServer : DtlsServer
     {
         private UseSrtpData _srtpData;
         public UseSrtpData SrtpData { get { return _srtpData; } }
+        public SrtpKeys Keys { get; private set; } 
 
-        public DTLSSRTPServer() : this(new BcTlsCrypto())
+        public DtlsSrtpServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
+            : this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         { }
 
-        public DTLSSRTPServer(TlsCrypto crypto) : base(crypto)
+        public DtlsSrtpServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
+            : base(crypto, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         { }
 
         protected virtual int[] GetSupportedProtectionProfiles()
@@ -71,7 +75,7 @@ namespace SharpSRTP.SRTP
                 DateTime validFrom = DateTime.UtcNow.AddDays(-1);
                 DateTime validTo = DateTime.UtcNow.AddDays(30);
 
-                var cert = DTLSCertificateUtils.GenerateECDSAServerCertificate(webrtcCertificateName, validFrom, validTo);
+                var cert = DtlsCertificateUtils.GenerateECDSAServerCertificate(webrtcCertificateName, validFrom, validTo);
                 SetCertificate(cert.certificate, cert.key, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
             }
 
@@ -86,11 +90,19 @@ namespace SharpSRTP.SRTP
                 DateTime validFrom = DateTime.UtcNow.AddDays(-1);
                 DateTime validTo = DateTime.UtcNow.AddDays(30);
 
-                var cert = DTLSCertificateUtils.GenerateRSAServerCertificate(webrtcCertificateName, validFrom, validTo);
+                var cert = DtlsCertificateUtils.GenerateRSAServerCertificate(webrtcCertificateName, validFrom, validTo);
                 SetCertificate(cert.certificate, cert.key, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
             }
 
             return base.GetRsaSignerCredentials();
+        }
+
+        public override void NotifyHandshakeComplete()
+        {
+            base.NotifyHandshakeComplete();
+
+            var securityParameters = m_context.SecurityParameters;
+            this.Keys = DtlsSrtpProtocol.GenerateMasterKeys(SrtpData.ProtectionProfiles[0], SrtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
         }
     }
 }

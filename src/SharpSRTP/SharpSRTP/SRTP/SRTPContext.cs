@@ -7,19 +7,19 @@ using System.Threading;
 
 namespace SharpSRTP.SRTP
 {
-    public enum SRTPContextType
+    public enum SrtpContextType
     {
         RTP,
         RTCP
     }
 
-    public class SRTPContext
+    public class SrtpContext
     {
         private const int REPLAY_WINDOW_SIZE = 64; // Minumum is 64 according to the RFC, our current implmentation is using a bit mask, so it won't allow more than 64.
 
         private ulong _bitmap = 0; /* session state - must be 32 bits */
         private uint _lastSeq = 0; /* session state */
-        private readonly SRTPContextType _contextType;
+        private readonly SrtpContextType _contextType;
 
         public event EventHandler<EventArgs> OnRekeyingRequested;
 
@@ -37,8 +37,8 @@ namespace SharpSRTP.SRTP
         public bool S_l_set { get; set; } = false;
 
         public int ProtectionProfile { get; set; } = Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80;
-        public SRTPCiphers Cipher { get; set; } = SRTPCiphers.AES_128_CM;
-        public SRTPAuth Auth { get; set; } = SRTPAuth.HMAC_SHA1;
+        public SrtpCiphers Cipher { get; set; } = SrtpCiphers.AES_128_CM;
+        public SrtpAuth Auth { get; set; } = SrtpAuth.HMAC_SHA1;
 
         public byte[] MasterKey { get; set; }
         public byte[] MasterSalt { get; set; }
@@ -123,7 +123,7 @@ namespace SharpSRTP.SRTP
 
         #endregion // Authentication parameters
 
-        public SRTPContext(int protectionProfile, byte[] mki, byte[] masterKey, byte[] masterSalt, SRTPContextType type)
+        public SrtpContext(int protectionProfile, byte[] mki, byte[] masterKey, byte[] masterSalt, SrtpContextType type)
         {
             this._contextType = type;
 
@@ -132,7 +132,7 @@ namespace SharpSRTP.SRTP
             this.MasterKey = masterKey;
             this.MasterSalt = masterSalt;
 
-            if (SRTProtocol.DTLSProtectionProfiles.TryGetValue(protectionProfile, out SRTPProtectionProfile srtpSecurityParams))
+            if (DtlsSrtpProtocol.DtlsProtectionProfiles.TryGetValue(protectionProfile, out SrtpProtectionProfile srtpSecurityParams))
             {
                 Cipher = srtpSecurityParams.Cipher;
                 Auth = srtpSecurityParams.Auth;
@@ -152,9 +152,9 @@ namespace SharpSRTP.SRTP
 
         public void DeriveSessionKeys(ulong index = 0)
         {
-            int labelBaseValue = _contextType == SRTPContextType.RTP ? 0 : 3;
+            int labelBaseValue = _contextType == SrtpContextType.RTP ? 0 : 3;
 
-            if (Cipher == SRTPCiphers.AES_128_CM || Cipher == SRTPCiphers.AES_256_CM || Cipher == SRTPCiphers.NULL)
+            if (Cipher == SrtpCiphers.AES_128_CM || Cipher == SrtpCiphers.AES_256_CM || Cipher == SrtpCiphers.NULL)
             {
                 var aes = new AesEngine();
                 aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
@@ -165,7 +165,7 @@ namespace SharpSRTP.SRTP
                 aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
                 this.AES = aes;
             }
-            else if (Cipher == SRTPCiphers.AES_128_F8)
+            else if (Cipher == SrtpCiphers.AES_128_F8)
             {
                 var aes = new AesEngine();
 
@@ -180,7 +180,7 @@ namespace SharpSRTP.SRTP
 
                 this.AESF8 = new AesEngine();
             }
-            else if (Cipher == SRTPCiphers.AEAD_AES_128_GCM || Cipher == SRTPCiphers.AEAD_AES_256_GCM)
+            else if (Cipher == SrtpCiphers.AEAD_AES_128_GCM || Cipher == SrtpCiphers.AEAD_AES_256_GCM)
             {
                 var aes = new AesEngine();
                 aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
@@ -192,7 +192,7 @@ namespace SharpSRTP.SRTP
                 var cipher = new GcmBlockCipher(new AesEngine());
                 this.AESGCM = cipher;
             }
-            else if (Cipher == SRTPCiphers.ARIA_128_CTR || Cipher == SRTPCiphers.ARIA_256_CTR)
+            else if (Cipher == SrtpCiphers.ARIA_128_CTR || Cipher == SrtpCiphers.ARIA_256_CTR)
             {
                 var aria = new AriaEngine();
                 aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
@@ -203,7 +203,7 @@ namespace SharpSRTP.SRTP
                 aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
                 this.ARIA = aria;
             }
-            else if (Cipher == SRTPCiphers.AEAD_ARIA_128_GCM || Cipher == SRTPCiphers.AEAD_ARIA_256_GCM)
+            else if (Cipher == SrtpCiphers.AEAD_ARIA_128_GCM || Cipher == SrtpCiphers.AEAD_ARIA_256_GCM)
             {
                 var aria = new AriaEngine();
                 aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
@@ -220,7 +220,7 @@ namespace SharpSRTP.SRTP
                 throw new NotSupportedException($"Unsupported cipher {Cipher.ToString()}!");
             }
 
-            if (Auth == SRTPAuth.HMAC_SHA1)
+            if (Auth == SrtpAuth.HMAC_SHA1)
             {
                 var hmac = new HMac(new Sha1Digest());
                 hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_a));
@@ -228,17 +228,17 @@ namespace SharpSRTP.SRTP
             }
         }
 
-        public static byte[] GenerateSessionKeyAES(AesEngine aes, SRTPCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
+        public static byte[] GenerateSessionKeyAES(AesEngine aes, SrtpCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
         {
             byte[] key = new byte[length];
             switch (cipher)
             {
-                case SRTPCiphers.NULL:
-                case SRTPCiphers.AES_128_CM:
-                case SRTPCiphers.AES_128_F8:
-                case SRTPCiphers.AES_256_CM:
-                case SRTPCiphers.AEAD_AES_128_GCM:
-                case SRTPCiphers.AEAD_AES_256_GCM:
+                case SrtpCiphers.NULL:
+                case SrtpCiphers.AES_128_CM:
+                case SrtpCiphers.AES_128_F8:
+                case SrtpCiphers.AES_256_CM:
+                case SrtpCiphers.AEAD_AES_128_GCM:
+                case SrtpCiphers.AEAD_AES_256_GCM:
                     {
                         byte[] iv = Encryption.AESCM.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
                         Encryption.AESCM.Encrypt(aes, key, 0, length, iv);
@@ -252,15 +252,15 @@ namespace SharpSRTP.SRTP
             return key;
         }
 
-        public static byte[] GenerateSessionKeyARIA(AriaEngine aria, SRTPCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
+        public static byte[] GenerateSessionKeyARIA(AriaEngine aria, SrtpCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
         {
             byte[] key = new byte[length];
             switch (cipher)
             {
-                case SRTPCiphers.ARIA_128_CTR:
-                case SRTPCiphers.ARIA_256_CTR:
-                case SRTPCiphers.AEAD_ARIA_128_GCM:
-                case SRTPCiphers.AEAD_ARIA_256_GCM:
+                case SrtpCiphers.ARIA_128_CTR:
+                case SrtpCiphers.ARIA_256_CTR:
+                case SrtpCiphers.AEAD_ARIA_128_GCM:
+                case SrtpCiphers.AEAD_ARIA_256_GCM:
                     {
                         byte[] iv = Encryption.ARIACTR.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
                         Encryption.ARIACTR.Encrypt(aria, key, 0, length, iv);
@@ -312,7 +312,7 @@ namespace SharpSRTP.SRTP
         public bool IncrementMasterKeyUseCounter()
         {
             long currentValue = Interlocked.Increment(ref _masterKeySentCounter);
-            long maxAllowedValue = _contextType == SRTPContextType.RTP ? 281474976710656L : 2147483648L;
+            long maxAllowedValue = _contextType == SrtpContextType.RTP ? 281474976710656L : 2147483648L;
             if (currentValue >= maxAllowedValue) // 2^48
             {
                 OnRekeyingRequested?.Invoke(this, new EventArgs());

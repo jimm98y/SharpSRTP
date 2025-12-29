@@ -10,20 +10,21 @@ using System.Linq;
 
 namespace SharpSRTP.SRTP
 {
-    public class DTLSSRTPClient : DTLSClient
+    public class DtlsSrtpClient : DtlsClient
     {
-        private readonly SecureRandom _sr = new SecureRandom();
+        private readonly SecureRandom _rand = new SecureRandom();
         private UseSrtpData _srtpData;
         public UseSrtpData SrtpData { get { return _srtpData; } }
+        public SrtpKeys Keys { get; private set; }
 
         public int MkiLength { get; protected set; } = 4;
 
-        public DTLSSRTPClient(TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short preferredCertificateAlgorithm = SignatureAlgorithm.rsa) :
-           this(new BcTlsCrypto(), session, certificate, privateKey, preferredCertificateAlgorithm)
+        public DtlsSrtpClient(TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) :
+           this(new BcTlsCrypto(), session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         { }
 
-        public DTLSSRTPClient(TlsCrypto crypto, TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short preferredCertificateAlgorithm = SignatureAlgorithm.rsa) : 
-            base(crypto, session, certificate, privateKey, preferredCertificateAlgorithm)
+        public DtlsSrtpClient(TlsCrypto crypto, TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : 
+            base(crypto, session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         {
             int[] protectionProfiles = GetSupportedProtectionProfiles();
             byte[] mki = GenerateMki(MkiLength);
@@ -32,7 +33,7 @@ namespace SharpSRTP.SRTP
 
         private byte[] GenerateMki(int length)
         {
-            return SecureRandom.GetNextBytes(_sr, length);
+            return SecureRandom.GetNextBytes(_rand, length);
         }
 
         protected virtual int[] GetSupportedProtectionProfiles()
@@ -100,11 +101,11 @@ namespace SharpSRTP.SRTP
 
                 if (CertificateSignatureAlgorithm == SignatureAlgorithm.ecdsa)
                 {
-                    cert = DTLSCertificateUtils.GenerateECDSAServerCertificate(webrtcCertificateName, validFrom, validTo);
+                    cert = DtlsCertificateUtils.GenerateECDSAServerCertificate(webrtcCertificateName, validFrom, validTo);
                 }
                 else if(CertificateSignatureAlgorithm == SignatureAlgorithm.rsa)
                 {
-                    cert = DTLSCertificateUtils.GenerateRSAServerCertificate(webrtcCertificateName, validFrom, validTo);
+                    cert = DtlsCertificateUtils.GenerateRSAServerCertificate(webrtcCertificateName, validFrom, validTo);
                 }
                 else
                 {
@@ -115,6 +116,14 @@ namespace SharpSRTP.SRTP
             }
 
             return base.GetAuthentication();
+        }
+
+        public override void NotifyHandshakeComplete()
+        {
+            base.NotifyHandshakeComplete();
+
+            var securityParameters = m_context.SecurityParameters;
+            this.Keys = DtlsSrtpProtocol.GenerateMasterKeys(SrtpData.ProtectionProfiles[0], SrtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
         }
     }
 }

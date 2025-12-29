@@ -6,16 +6,16 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 
-DTLSSRTPServer server = new DTLSSRTPServer();
+DtlsSrtpServer server = new DtlsSrtpServer();
 server.HandshakeCompleted += (sender, e) =>
 {
-    var keys = SRTProtocol.GenerateMasterKeys(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, server.ServerSrtpData.Mki, e.SecurityParameters);
+    var keys = DtlsSrtpProtocol.GenerateMasterKeys(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, server.SrtpData.Mki, e.SecurityParameters);
 
-    var ck = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SRTPContextType.RTP);
-    var c_rtcp = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SRTPContextType.RTCP);
+    var ck = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
+    var c_rtcp = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
 
-    var sk = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SRTPContextType.RTP);
-    var s_rtcp = new SRTPContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SRTPContextType.RTCP);
+    var sk = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
+    var s_rtcp = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
 
     Console.WriteLine("Client RTP k_e:  " + Convert.ToHexString(ck.K_e));
     Console.WriteLine("Client RTP k_a:  " + Convert.ToHexString(ck.K_a));
