@@ -49,34 +49,31 @@ namespace SharpSRTP.DTLS
 
         protected override ProtocolVersion[] GetSupportedVersions()
         {
-            return new ProtocolVersion[]
-            {
-                // ProtocolVersion.DTLSv10,
-                ProtocolVersion.DTLSv12,
-                //ProtocolVersion.DTLSv13
-            };
+            //return ProtocolVersion.DTLSv13.DownTo(ProtocolVersion.DTLSv12);
+            return ProtocolVersion.DTLSv12.Only(); // ProtocolVersion.IsSupportedDtlsVersionServer currently does not support DTLS 1.3
         }
 
         protected override int[] GetSupportedCipherSuites()
         {
-            // TODO: review
             // ECDSA certificates require matching cipher suites
             return new int[]
             {
                 // TLS 1.3 ciphers:
                 //CipherSuite.TLS_AES_256_GCM_SHA384,
                 //CipherSuite.TLS_AES_128_GCM_SHA256,
+                //CipherSuite.TLS_CHACHA20_POLY1305_SHA256,
 
                 // TLS 1.2 ciphers:
-                CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
                 CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
                 CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-
+                CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+                CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+                CipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
                 CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
                 CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
-                CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-                CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384
+                CipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
             };
         }
 
