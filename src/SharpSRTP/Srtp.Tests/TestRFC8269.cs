@@ -90,8 +90,8 @@ namespace Srtp.Tests
         }
 
         [TestMethod]
-        [DataRow(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_80, "e1f97a0d3e018be0d64fa32c06de4139", "0ec675ad498afeebb6960b3aabe6", "dbd85a3c4d9219b3e81f7d942e299de4", "d021877bd3eaf92d581ed70ddc050e03f1125703", "9700657f5f34161830d7d85f5dc8", true)]
-        [DataRow(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_80, "0c5ffd37a11edc42c325287fc0604f2e3e8cd5671a00fe3216aa5eb105783b54", "0ec675ad498afeebb6960b3aabe6", "0649a09d93755fe9c2b2efba1cce930af2e76ce8b77e4b175950321aa94b0cf4", "e58d42915873b71899234807334658f20bc46018", "194abaa8553a8eba8a413a340fc8", true)]
+        [DataRow(ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_80, "e1f97a0d3e018be0d64fa32c06de4139", "0ec675ad498afeebb6960b3aabe6", "dbd85a3c4d9219b3e81f7d942e299de4", "d021877bd3eaf92d581ed70ddc050e03f1125703", "9700657f5f34161830d7d85f5dc8", true)]
+        [DataRow(ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_80, "0c5ffd37a11edc42c325287fc0604f2e3e8cd5671a00fe3216aa5eb105783b54", "0ec675ad498afeebb6960b3aabe6", "0649a09d93755fe9c2b2efba1cce930af2e76ce8b77e4b175950321aa94b0cf4", "e58d42915873b71899234807334658f20bc46018", "194abaa8553a8eba8a413a340fc8", true)]
         public void Test_Session_Keys_ARIACTR(int profile, string masterKey, string masterSalt, string k_e, string k_a, string k_s, bool isRtp)
         {
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);

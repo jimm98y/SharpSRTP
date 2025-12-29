@@ -1,4 +1,6 @@
-﻿namespace Org.BouncyCastle.Tls
+﻿using Org.BouncyCastle.Tls;
+
+namespace SharpSRTP.SRTP
 {
     /// <summary>
     /// Currently registered DTLS-SRTP profiles: https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml#srtp-protection-1

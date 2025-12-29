@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 DtlsSrtpServer server = new DtlsSrtpServer();
 server.HandshakeCompleted += (sender, e) =>
 {
-    var keys = DtlsSrtpProtocol.GenerateMasterKeys(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, server.SrtpData.Mki, e.SecurityParameters);
+    var keys = DtlsSrtpProtocol.GenerateMasterKeys(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, server.SrtpData.Mki, e.SecurityParameters);
 
-    var ck = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
-    var c_rtcp = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
+    var ck = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
+    var c_rtcp = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
 
-    var sk = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
-    var s_rtcp = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
+    var sk = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
+    var s_rtcp = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
 
     Console.WriteLine("Client RTP k_e:  " + Convert.ToHexString(ck.K_e));
     Console.WriteLine("Client RTP k_a:  " + Convert.ToHexString(ck.K_a));

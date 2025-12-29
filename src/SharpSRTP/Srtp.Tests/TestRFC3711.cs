@@ -55,7 +55,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, isRtp ? SrtpContextType.RTP : SrtpContextType.RTCP);
+            var context = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, isRtp ? SrtpContextType.RTP : SrtpContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
             string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();
@@ -77,7 +77,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, isRtp ? SrtpContextType.RTP : SrtpContextType.RTCP);
+            var context = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, isRtp ? SrtpContextType.RTP : SrtpContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e);
             string sgk_a = Convert.ToHexString(context.K_a);
@@ -131,7 +131,7 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, SrtpContextType.RTCP);
+            var context = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, null, masterKeyBytes, masterSaltBytes, SrtpContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e);
             string sgk_a = Convert.ToHexString(context.K_a);

@@ -36,7 +36,7 @@ namespace SharpSRTP.SRTP
         public uint S_l { get { return _lastSeq; } set { _lastSeq = value; } }
         public bool S_l_set { get; set; } = false;
 
-        public int ProtectionProfile { get; set; } = Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80;
+        public int ProtectionProfile { get; set; } = ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80;
         public SrtpCiphers Cipher { get; set; } = SrtpCiphers.AES_128_CM;
         public SrtpAuth Auth { get; set; } = SrtpAuth.HMAC_SHA1;
 
@@ -132,7 +132,7 @@ namespace SharpSRTP.SRTP
             this.MasterKey = masterKey;
             this.MasterSalt = masterSalt;
 
-            if (DtlsSrtpProtocol.DtlsProtectionProfiles.TryGetValue(protectionProfile, out SrtpProtectionProfile srtpSecurityParams))
+            if (DtlsSrtpProtocol.DtlsProtectionProfiles.TryGetValue(protectionProfile, out SrtpProtectionProfileConfiguration srtpSecurityParams))
             {
                 Cipher = srtpSecurityParams.Cipher;
                 Auth = srtpSecurityParams.Auth;
