@@ -1,52 +1,36 @@
 ﻿using Org.BouncyCastle.Tls;
-using Org.BouncyCastle.Utilities;
-using SharpSRTP.SRTP;
+using SharpSRTP.DTLS;
 using SharpSRTP.UDP;
 using System;
+using System.Threading;
 
-DtlsSrtpClient client = new DtlsSrtpClient();
+DtlsClient client = new DtlsClient();
 client.OnHandshakeCompleted += (sender, e) =>
 {
-    var keys = DtlsSrtpProtocol.GenerateMasterKeys(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, client.SrtpData.Mki, e.SecurityParameters);
-
-    var ck = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
-    var c_rtcp = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
-
-    var sk = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
-    var s_rtcp = new SrtpContext(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
-
-    Console.WriteLine("Client RTP k_e:  " + Convert.ToHexString(ck.K_e));
-    Console.WriteLine("Client RTP k_a:  " + Convert.ToHexString(ck.K_a));
-    Console.WriteLine("Client RTP k_s:  " + Convert.ToHexString(ck.K_s));
-
-    Console.WriteLine("Client RTCP k_e: " + Convert.ToHexString(c_rtcp.K_e));
-    Console.WriteLine("Client RTCP k_a: " + Convert.ToHexString(c_rtcp.K_a));
-    Console.WriteLine("Client RTCP k_s: " + Convert.ToHexString(c_rtcp.K_s));
-
-    Console.WriteLine("Server RTP k_e:  " + Convert.ToHexString(sk.K_e));
-    Console.WriteLine("Server RTP k_a:  " + Convert.ToHexString(sk.K_a));
-    Console.WriteLine("Server RTP k_s:  " + Convert.ToHexString(sk.K_s));
-
-    Console.WriteLine("Server RTCP k_e: " + Convert.ToHexString(s_rtcp.K_e));
-    Console.WriteLine("Server RTCP k_a: " + Convert.ToHexString(s_rtcp.K_a));
-    Console.WriteLine("Server RTCP k_s: " + Convert.ToHexString(s_rtcp.K_s));
+    Console.WriteLine("DTLS client connected");
 };
 
 DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
-UdpDatagramTransport clientTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
+UdpDatagramTransport udpClientTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
+DtlsTransport dtlsClientTransport = clientProtocol.Connect(client, udpClientTransport);
 
-DtlsTransport dtlsClient = clientProtocol.Connect(client, clientTransport);
+byte counter = 0;
 
-for (int i = 1; i <= 10; ++i)
+while (true)
 {
-    byte[] data = new byte[i];
-    Arrays.Fill(data, (byte)i);
-    dtlsClient.Send(data, 0, data.Length);
+    byte[] data = new byte[] { counter };
+    dtlsClientTransport.Send(data, 0, data.Length);
+    counter++;
+
+    byte[] buf = new byte[dtlsClientTransport.GetReceiveLimit()];
+    int ret = dtlsClientTransport.Receive(buf, 0, buf.Length, 100);
+    if (ret < 0) break;
+    if (ret > 0)
+    {
+        Console.WriteLine($"Received {buf[0]}");
+    }
+
+    Thread.Sleep(1000);
 }
 
-byte[] buf = new byte[dtlsClient.GetReceiveLimit()];
-while (dtlsClient.Receive(buf, 0, buf.Length, 100) >= 0)
-{
-}
-
-dtlsClient.Close();
+dtlsClientTransport.Close();
