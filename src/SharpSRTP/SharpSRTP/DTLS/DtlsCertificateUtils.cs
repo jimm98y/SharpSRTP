@@ -188,8 +188,8 @@ namespace SharpSRTP.DTLS
 
         public static bool IsHashSupported(string algStr)
         {
-            string algName = algStr.ToLowerInvariant();
-            return algName == "sha-256" || algName == "sha256";
+            string algName = algStr.ToUpperInvariant();
+            return algName == "SHA-256" || algName == "SHA256";
         }
     }
 }

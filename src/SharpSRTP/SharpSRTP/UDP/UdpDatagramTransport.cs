@@ -10,13 +10,14 @@ namespace SharpSRTP.UDP
 {
     public class UdpDatagramTransport : DatagramTransport
     {
-        private readonly int _mtu = 1472;
+        public const int MTU = 1472; // 1500 - 20 (IP) - 8 (UDP)
+        private readonly int _mtu = MTU;
 
         private UdpClient _udpClient = null;
         private IPEndPoint _remote;
         public IPEndPoint RemoteEndPoint => _remote;
 
-        public UdpDatagramTransport(string localEndpoint, string remoteEndpoint, int mtu = 1472)
+        public UdpDatagramTransport(string localEndpoint, string remoteEndpoint, int mtu = MTU)
         {
             this._mtu = mtu;
             if (string.IsNullOrEmpty(localEndpoint))
