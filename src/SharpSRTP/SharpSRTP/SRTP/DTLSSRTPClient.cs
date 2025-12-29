@@ -102,12 +102,16 @@ namespace SharpSRTP.SRTP
                 {
                     cert = DTLSCertificateUtils.GenerateECDSAServerCertificate(webrtcCertificateName, validFrom, validTo);
                 }
-                else
+                else if(CertificateSignatureAlgorithm == SignatureAlgorithm.rsa)
                 {
                     cert = DTLSCertificateUtils.GenerateRSAServerCertificate(webrtcCertificateName, validFrom, validTo);
                 }
+                else
+                {
+                    throw new NotSupportedException();
+                }
 
-                SetCertificate(cert.certificate, cert.key, CertificateSignatureAlgorithm);
+                SetCertificate(cert.certificate, cert.key, CertificateSignatureAlgorithm, HashAlgorithm.sha256);
             }
 
             return base.GetAuthentication();

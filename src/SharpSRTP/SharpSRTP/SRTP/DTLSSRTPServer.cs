@@ -72,7 +72,7 @@ namespace SharpSRTP.SRTP
                 DateTime validTo = DateTime.UtcNow.AddDays(30);
 
                 var cert = DTLSCertificateUtils.GenerateECDSAServerCertificate(webrtcCertificateName, validFrom, validTo);
-                SetCertificate(cert.certificate, cert.key, SignatureAlgorithm.ecdsa);
+                SetCertificate(cert.certificate, cert.key, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
             }
 
             return base.GetECDsaSignerCredentials();
@@ -87,7 +87,7 @@ namespace SharpSRTP.SRTP
                 DateTime validTo = DateTime.UtcNow.AddDays(30);
 
                 var cert = DTLSCertificateUtils.GenerateRSAServerCertificate(webrtcCertificateName, validFrom, validTo);
-                SetCertificate(cert.certificate, cert.key, SignatureAlgorithm.rsa);
+                SetCertificate(cert.certificate, cert.key, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
             }
 
             return base.GetRsaSignerCredentials();

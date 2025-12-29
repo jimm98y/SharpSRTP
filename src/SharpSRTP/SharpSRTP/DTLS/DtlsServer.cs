@@ -13,7 +13,10 @@ namespace SharpSRTP.DTLS
     {
         private Certificate _myCert;
         private AsymmetricKeyParameter _myCertPrivateKey;
-        protected short _myCertCertificateAlgorithm = SignatureAlgorithm.rsa;
+        private short _myCertSignatureAlgorithm = SignatureAlgorithm.rsa;
+        private short _myCertHashAlgorithm = HashAlgorithm.sha256;
+        protected short CertificateSignatureAlgorithm => _myCertSignatureAlgorithm;
+        protected short CertificateHashAlgorithm => _myCertHashAlgorithm;
 
         protected Certificate Certificate => _myCert;
         protected AsymmetricKeyParameter CertificatePrivateKey => _myCertPrivateKey;
@@ -23,19 +26,20 @@ namespace SharpSRTP.DTLS
 
         public event EventHandler<DTLSHandshakeCompletedEventArgs> HandshakeCompleted;
 
-        public DTLSServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short signatureAlgorithm = SignatureAlgorithm.rsa) : this(new BcTlsCrypto())
+        public DTLSServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short signatureAlgorithm = SignatureAlgorithm.rsa, short hashAlgorithm = HashAlgorithm.sha256) : this(new BcTlsCrypto())
         {
-            SetCertificate(certificate, privateKey, signatureAlgorithm);
+            SetCertificate(certificate, privateKey, signatureAlgorithm, hashAlgorithm);
         }
 
         public DTLSServer(TlsCrypto crypto) : base(crypto)
         {  }
 
-        public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm)
+        public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
         {
             _myCert = certificate;
             _myCertPrivateKey = privateKey;
-            _myCertCertificateAlgorithm = signatureAlgorithm;
+            _myCertSignatureAlgorithm = signatureAlgorithm;
+            _myCertHashAlgorithm = hashAlgorithm;
         }
 
         public override bool RequiresExtendedMasterSecret()
@@ -84,37 +88,17 @@ namespace SharpSRTP.DTLS
 
         public override void NotifyClientCertificate(Certificate clientCertificate)
         {
-            ClientCertificate = clientCertificate;
             TlsCertificate[] chain = clientCertificate.GetCertificateList();
 
             Log.Debug("DTLS server received client certificate chain of length " + chain.Length);
             for (int i = 0; i != chain.Length; i++)
             {
                 X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
-                // TODO Create fingerprint based on certificate signature algorithm digest
                 Log.Debug("    fingerprint:SHA-256 " + DTLSCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
             }
 
-            bool isEmpty = (clientCertificate == null || clientCertificate.IsEmpty);
-
-            if (isEmpty)
-                return;
-
-            // TODO review
-            /*
-            string[] trustedCertResources = new string[]{ "x509-client-dsa.pem", "x509-client-ecdh.pem",
-                "x509-client-ecdsa.pem", "x509-client-ed25519.pem", "x509-client-ed448.pem",
-                "x509-client-ml_dsa_44.pem", "x509-client-ml_dsa_65.pem", "x509-client-ml_dsa_87.pem",
-                "x509-client-rsa_pss_256.pem", "x509-client-rsa_pss_384.pem", "x509-client-rsa_pss_512.pem",
-                "x509-client-rsa.pem" };
-
-            TlsCertificate[] certPath = TlsTestUtilities.GetTrustedCertPath(m_context.Crypto, chain[0], trustedCertResources);
-
-            if (null == certPath)
-                throw new TlsFatalAlert(AlertDescription.bad_certificate);
-
-            TlsUtilities.CheckPeerSigAlgs(m_context, certPath);
-            */
+            // store the certificate for furhter fingerprint validation
+            ClientCertificate = clientCertificate;
         }
 
         public override void NotifyHandshakeComplete()
@@ -167,7 +151,16 @@ namespace SharpSRTP.DTLS
 
         protected override ProtocolVersion[] GetSupportedVersions()
         {
-            return ProtocolVersion.DTLSv12.Only();
+            return new ProtocolVersion[] 
+            {
+                ProtocolVersion.DTLSv10,
+                ProtocolVersion.DTLSv12
+            };
+        }
+
+        public override int GetSelectedCipherSuite()
+        {
+            return base.GetSelectedCipherSuite();
         }
 
         protected override TlsCredentialedSigner GetECDsaSignerCredentials()
@@ -175,14 +168,9 @@ namespace SharpSRTP.DTLS
             IList<SignatureAndHashAlgorithm> clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
 
-            foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
+            if (CertificateSignatureAlgorithm != SignatureAlgorithm.ecdsa)
             {
-                if (alg.Signature == SignatureAlgorithm.ecdsa)
-                {
-                    // Just grab the first one we find
-                    signatureAndHashAlgorithm = alg;
-                    break;
-                }
+                throw new InvalidOperationException("DTLS server ECDsa certificate algorithm mismatch!");
             }
 
             if (_myCert == null || _myCertPrivateKey == null)
@@ -190,9 +178,18 @@ namespace SharpSRTP.DTLS
                 throw new InvalidOperationException("DTLS server ECDsa certificate not set!");
             }
 
-            if(_myCertCertificateAlgorithm != SignatureAlgorithm.ecdsa)
+            foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
             {
-                throw new InvalidOperationException("DTLS server ECDsa certificate algorithm mismatch!");
+                if (alg.Signature == CertificateSignatureAlgorithm && alg.Hash == CertificateHashAlgorithm)
+                {
+                    signatureAndHashAlgorithm = alg;
+                    break;
+                }
+            }
+
+            if (signatureAndHashAlgorithm == null)
+            {
+                throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
             }
 
             return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _myCertPrivateKey, _myCert, signatureAndHashAlgorithm);
@@ -203,14 +200,9 @@ namespace SharpSRTP.DTLS
             IList<SignatureAndHashAlgorithm> clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
 
-            foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
+            if (CertificateSignatureAlgorithm != SignatureAlgorithm.rsa)
             {
-                if (alg.Signature == SignatureAlgorithm.rsa)
-                {
-                    // Just grab the first one we find
-                    signatureAndHashAlgorithm = alg;
-                    break;
-                }
+                throw new InvalidOperationException("DTLS server RSA certificate algorithm mismatch!");
             }
 
             if (_myCert == null || _myCertPrivateKey == null)
@@ -218,9 +210,18 @@ namespace SharpSRTP.DTLS
                 throw new InvalidOperationException("DTLS server RSA certificate not set!");
             }
 
-            if (_myCertCertificateAlgorithm != SignatureAlgorithm.rsa)
+            foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
             {
-                throw new InvalidOperationException("DTLS server RSA certificate algorithm mismatch!");
+                if (alg.Signature == CertificateSignatureAlgorithm && alg.Hash == CertificateHashAlgorithm)
+                {
+                    signatureAndHashAlgorithm = alg;
+                    break;
+                }
+            }
+
+            if(signatureAndHashAlgorithm == null)
+            {
+                throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
             }
 
             return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _myCertPrivateKey, _myCert, signatureAndHashAlgorithm);

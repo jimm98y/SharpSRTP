@@ -15,10 +15,12 @@ namespace SharpSRTP.DTLS
         private Certificate _myCert;
         private AsymmetricKeyParameter _myCertPrivateKey;
         private short _myCertSignatureAlgorithm = SignatureAlgorithm.rsa;
+        private short _myCertHashAlgorithm = HashAlgorithm.sha256;
 
         protected Certificate Certificate => _myCert;
         protected AsymmetricKeyParameter CertificatePrivateKey => _myCertPrivateKey;
         protected short CertificateSignatureAlgorithm => _myCertSignatureAlgorithm;
+        protected short CertificateHashAlgorithm => _myCertHashAlgorithm;
 
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
         public TlsServerCertificate ServerCertificate { get; private set; }
@@ -31,17 +33,18 @@ namespace SharpSRTP.DTLS
         public DTLSClient(TlsSession session = null) : this(new BcTlsCrypto(), session)
         { }
 
-        public DTLSClient(TlsCrypto crypto, TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short signatureAlgorithm = SignatureAlgorithm.rsa) : base(crypto)
+        public DTLSClient(TlsCrypto crypto, TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
         {
             this._session = session;
-            SetCertificate(certificate, privateKey, signatureAlgorithm);
+            SetCertificate(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm);
         }
 
-        public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm)
+        public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
         {
             _myCert = certificate;
             _myCertPrivateKey = privateKey;
             _myCertSignatureAlgorithm = signatureAlgorithm;
+            _myCertHashAlgorithm = hashAlgorithm;
         }
 
         public override bool RequiresExtendedMasterSecret()
@@ -176,7 +179,6 @@ namespace SharpSRTP.DTLS
                 for (int i = 0; i != chain.Length; i++)
                 {
                     X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
-                    // TODO Create fingerprint based on certificate signature algorithm digest
                     if (Log.DebugEnabled) Log.Debug("DTLS client fingerprint:SHA-256 " + DTLSCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
                 }
 
@@ -185,9 +187,9 @@ namespace SharpSRTP.DTLS
                 if (isEmpty)
                     throw new TlsFatalAlert(AlertDescription.bad_certificate);
 
-                // TODO: certificate chain validation
                 TlsCertificate[] certPath = chain;
 
+                // store the certificate for further fingerprint validation
                 m_client.ServerCertificate = serverCertificate;
 
                 TlsUtilities.CheckPeerSigAlgs(m_context, certPath);
@@ -212,9 +214,8 @@ namespace SharpSRTP.DTLS
 
                 foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
                 {
-                    if (alg.Signature == m_client._myCertSignatureAlgorithm)
+                    if (alg.Signature == m_client.CertificateSignatureAlgorithm && alg.Hash == m_client.CertificateSignatureAlgorithm)
                     {
-                        // Just grab the first one we find
                         signatureAndHashAlgorithm = alg;
                         break;
                     }
