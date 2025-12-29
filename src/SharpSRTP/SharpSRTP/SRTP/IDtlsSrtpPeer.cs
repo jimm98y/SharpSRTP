@@ -1,9 +1,10 @@
-﻿using SharpSRTP.DTLS;
+﻿using Org.BouncyCastle.Tls;
+using SharpSRTP.DTLS;
 
 namespace SharpSRTP.SRTP
 {
     public interface IDtlsSrtpPeer : IDtlsPeer
     {
-        SrtpKeys Keys { get; }
+        SrtpSessionContext CreateSessionContext(SecurityParameters securityParameters);
     }
 }

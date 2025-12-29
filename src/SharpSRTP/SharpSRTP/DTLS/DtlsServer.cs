@@ -24,8 +24,6 @@ namespace SharpSRTP.DTLS
         protected AsymmetricKeyParameter CertificatePrivateKey => _myCertPrivateKey;
 
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
-        public Certificate PeerCertificate { get; private set; }
-
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
@@ -199,9 +197,6 @@ namespace SharpSRTP.DTLS
                 X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
                 Log.Debug("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
             }
-
-            // store the certificate for furhter fingerprint validation
-            PeerCertificate = clientCertificate;
         }
 
         public override void NotifyHandshakeComplete()

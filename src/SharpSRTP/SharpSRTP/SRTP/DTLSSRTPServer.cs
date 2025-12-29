@@ -12,9 +12,7 @@ namespace SharpSRTP.SRTP
     public class DtlsSrtpServer : DtlsServer, IDtlsSrtpPeer
     {
         private UseSrtpData _srtpData;
-        public UseSrtpData SrtpData { get { return _srtpData; } }
-        public SrtpKeys Keys { get; private set; } 
-
+        
         public DtlsSrtpServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
             : this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         { }
@@ -67,42 +65,18 @@ namespace SharpSRTP.SRTP
             return extensions;
         }
 
-        protected override TlsCredentialedSigner GetECDsaSignerCredentials()
+        public virtual SrtpSessionContext CreateSessionContext(SecurityParameters securityParameters)
         {
-            if (Certificate == null)
-            {
-                const string webrtcCertificateName = "WebRTC";
-                DateTime validFrom = DateTime.UtcNow.AddDays(-1);
-                DateTime validTo = DateTime.UtcNow.AddDays(30);
+            // this should only be called from OnHandshakeCompleted so we should still have _srtpData from the connection
+            if (m_context == null)
+                throw new InvalidOperationException();
 
-                var cert = DtlsCertificateUtils.GenerateECDSAServerCertificate(webrtcCertificateName, validFrom, validTo);
-                SetCertificate(cert.certificate, cert.key, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
-            }
-
-            return base.GetECDsaSignerCredentials();
-        }
-
-        protected override TlsCredentialedSigner GetRsaSignerCredentials()
-        {
-            if (Certificate == null || CertificatePrivateKey == null)
-            {
-                const string webrtcCertificateName = "WebRTC";
-                DateTime validFrom = DateTime.UtcNow.AddDays(-1);
-                DateTime validTo = DateTime.UtcNow.AddDays(30);
-
-                var cert = DtlsCertificateUtils.GenerateRSAServerCertificate(webrtcCertificateName, validFrom, validTo);
-                SetCertificate(cert.certificate, cert.key, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
-            }
-
-            return base.GetRsaSignerCredentials();
-        }
-
-        public override void NotifyHandshakeComplete()
-        {
-            base.NotifyHandshakeComplete();
-
-            var securityParameters = m_context.SecurityParameters;
-            this.Keys = DtlsSrtpProtocol.GenerateMasterKeys(SrtpData.ProtectionProfiles[0], SrtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
+            SrtpKeys keys = DtlsSrtpProtocol.GenerateMasterKeys(_srtpData.ProtectionProfiles[0], _srtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
+            var encodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
+            var encodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
+            var decodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
+            var decodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
+            return new SrtpSessionContext(encodeRtpContext, decodeRtpContext, encodeRtcpContext, decodeRtcpContext);
         }
     }
 }

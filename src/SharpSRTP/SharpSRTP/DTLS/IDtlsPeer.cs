@@ -81,12 +81,12 @@ namespace SharpSRTP.DTLS
 
     public class DtlsHandshakeCompletedEventArgs : EventArgs
     {
+        public SecurityParameters SecurityParameters { get; }
+
         public DtlsHandshakeCompletedEventArgs(SecurityParameters securityParameters)
         {
             SecurityParameters = securityParameters;
         }
-
-        public SecurityParameters SecurityParameters { get; }
     }
 
     public interface IDtlsPeer
@@ -94,7 +94,6 @@ namespace SharpSRTP.DTLS
         event EventHandler<DtlsAlertEventArgs> OnAlert;
         event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         bool ForceUseExtendedMasterSecret { get; set; }
-        Certificate PeerCertificate { get; }
         DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<IPEndPoint> getRemoteEndpoint = null);
     }
 }
