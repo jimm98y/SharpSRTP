@@ -1,7 +1,7 @@
 ﻿using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Utilities;
-using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
+using SharpSRTP.UDP;
 using System;
 
 DtlsSrtpClient client = new DtlsSrtpClient();

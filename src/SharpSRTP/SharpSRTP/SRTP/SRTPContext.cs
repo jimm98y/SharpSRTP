@@ -323,5 +323,33 @@ namespace SharpSRTP.SRTP
 
             return true;
         }
+
+        public static uint DetermineRtpIndex(uint s_l, ushort SEQ, ulong ROC)
+        {
+            // RFC 3711 - Appendix A
+            ulong v;
+            if (s_l < 32768)
+            {
+                if (SEQ - s_l > 32768)
+                    v = (ROC - 1) % 4294967296L;
+                else
+                    v = ROC;
+            }
+            else
+            {
+                if (s_l - 32768 > SEQ)
+                    v = (ROC + 1) % 4294967296L;
+                else
+                    v = ROC;
+            }
+            return (uint)(SEQ + v * 65536U);
+        }
+
+        public static ulong GenerateRtpIndex(uint ROC, ushort SEQ)
+        {
+            // RFC 3711 - 3.3.1
+            // i = 2 ^ 16 * ROC + SEQ
+            return ((ulong)ROC << 16) | SEQ;
+        }
     }
 }

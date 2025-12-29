@@ -72,7 +72,7 @@ namespace Srtp.Tests
 
             uint ssrc = RtpReader.ReadSsrc(rtpBytes);
             ushort sequenceNumber = RtpReader.ReadSequenceNumber(rtpBytes);
-            ulong index = SrtpContextExtensions.GenerateRtpIndex(0, sequenceNumber);
+            ulong index = SrtpContext.GenerateRtpIndex(0, sequenceNumber);
             const int n_tag = 16;
 
             int offset = RtpReader.ReadHeaderLen(rtpBytes);

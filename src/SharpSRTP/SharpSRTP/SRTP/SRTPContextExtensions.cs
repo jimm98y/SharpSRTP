@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace SharpSRTP.SRTP
 {
-    public static class SrtpContextExtensions
+    public static class SrtpContextEncryptionExtensions
     {
         public const uint E_FLAG = 0x80000000;
 
@@ -16,9 +16,9 @@ namespace SharpSRTP.SRTP
         public const int ERROR_MASTER_KEY_ROTATION_REQUIRED = -5;
         public const int ERROR_MKI_CHECK_FAILED = -6;
 
-        public static int ProtectRTP(this SrtpContext ServerRtpContext, byte[] payload, int length, out int outputBufferLength)
+        public static int ProtectRTP(this SrtpContext encodeRtpContext, byte[] payload, int length, out int outputBufferLength)
         {
-            var context = ServerRtpContext;
+            var context = encodeRtpContext;
             outputBufferLength = length;
 
             if(!context.IncrementMasterKeyUseCounter())
@@ -31,7 +31,7 @@ namespace SharpSRTP.SRTP
             int offset = RtpReader.ReadHeaderLen(payload);
 
             uint roc = context.Roc;
-            ulong index = GenerateRtpIndex(roc, sequenceNumber);
+            ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
 
             switch (context.Cipher)
             {
@@ -117,9 +117,9 @@ namespace SharpSRTP.SRTP
             return 0;
         }
 
-        public static int UnprotectRTP(this SrtpContext ClientRtpContext, byte[] payload, int length, out int outputBufferLength)
+        public static int UnprotectRTP(this SrtpContext decodeRtpContext, byte[] payload, int length, out int outputBufferLength)
         {
-            var context = ClientRtpContext;
+            var context = decodeRtpContext;
 
             byte[] mki = context.Mki;
             outputBufferLength = length - context.N_tag - mki.Length;
@@ -169,7 +169,7 @@ namespace SharpSRTP.SRTP
 
             int offset = RtpReader.ReadHeaderLen(payload);
             uint roc = context.Roc;
-            uint index = DetermineRtpIndex(context.S_l, sequenceNumber, roc);
+            uint index = SrtpContext.DetermineRtpIndex(context.S_l, sequenceNumber, roc);
 
             if (!context.CheckAndUpdateReplayWindow(index))
             {
@@ -229,9 +229,9 @@ namespace SharpSRTP.SRTP
             return 0;
         }
 
-        public static int ProtectRTCP(this SrtpContext serverRtcpContext, byte[] payload, int length, out int outputBufferLength)
+        public static int ProtectRTCP(this SrtpContext encodeRtcpContext, byte[] payload, int length, out int outputBufferLength)
         {
-            var context = serverRtcpContext;
+            var context = encodeRtcpContext;
             outputBufferLength = length;
 
             if (!context.IncrementMasterKeyUseCounter())
@@ -325,9 +325,9 @@ namespace SharpSRTP.SRTP
             return 0;
         }
 
-        public static int UnprotectRTCP(this SrtpContext clientRtcpContext, byte[] payload, int length, out int outputBufferLength)
+        public static int UnprotectRTCP(this SrtpContext decodeRtcpContext, byte[] payload, int length, out int outputBufferLength)
         {
-            var context = clientRtcpContext;
+            var context = decodeRtcpContext;
 
             byte[] mki = context.Mki;
             outputBufferLength = length - 4 - context.N_tag - mki.Length;
@@ -425,34 +425,6 @@ namespace SharpSRTP.SRTP
             }
 
             return 0;
-        }
-
-        public static uint DetermineRtpIndex(uint s_l, ushort SEQ, ulong ROC)
-        {
-            // RFC 3711 - Appendix A
-            ulong v;
-            if (s_l < 32768)
-            {
-                if (SEQ - s_l > 32768)
-                    v = (ROC - 1) % 4294967296L;
-                else
-                    v = ROC;
-            }
-            else
-            {
-                if (s_l - 32768 > SEQ)
-                    v = (ROC + 1) % 4294967296L;
-                else
-                    v = ROC;
-            }
-            return (uint)(SEQ + v * 65536U);
-        }
-
-        public static ulong GenerateRtpIndex(uint ROC, ushort SEQ)
-        {
-            // RFC 3711 - 3.3.1
-            // i = 2 ^ 16 * ROC + SEQ
-            return ((ulong)ROC << 16) | SEQ;
         }
     }
 }

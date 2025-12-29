@@ -22,7 +22,7 @@ namespace Srtp.Tests
 
             uint ssrc = RtpReader.ReadSsrc(rtpBytes);
             ushort sequenceNumber = RtpReader.ReadSequenceNumber(rtpBytes);
-            ulong index = SrtpContextExtensions.GenerateRtpIndex(0, sequenceNumber);
+            ulong index = SrtpContext.GenerateRtpIndex(0, sequenceNumber);
 
             byte[] iv = AESGCM.GenerateMessageKeyIV(k_s, ssrc, index);
 
@@ -41,7 +41,7 @@ namespace Srtp.Tests
 
             uint ssrc = RtpReader.ReadSsrc(rtpBytes);
             ushort sequenceNumber = RtpReader.ReadSequenceNumber(rtpBytes);
-            ulong index = SrtpContextExtensions.GenerateRtpIndex(0, sequenceNumber);
+            ulong index = SrtpContext.GenerateRtpIndex(0, sequenceNumber);
             const int n_tag = 16;
 
             int offset = RtpReader.ReadHeaderLen(rtpBytes);
@@ -70,7 +70,7 @@ namespace Srtp.Tests
 
             uint ssrc = RtpReader.ReadSsrc(srtpBytes);
             ushort sequenceNumber = RtpReader.ReadSequenceNumber(srtpBytes);
-            ulong index = SrtpContextExtensions.GenerateRtpIndex(0, sequenceNumber);
+            ulong index = SrtpContext.GenerateRtpIndex(0, sequenceNumber);
             const int n_tag = 16;
 
             int offset = RtpReader.ReadHeaderLen(srtpBytes);
