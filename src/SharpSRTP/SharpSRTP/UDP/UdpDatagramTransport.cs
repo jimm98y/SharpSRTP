@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 
-namespace SharpSRTP.DTLS
+namespace SharpSRTP.UDP
 {
     public class UdpDatagramTransport : DatagramTransport
     {
