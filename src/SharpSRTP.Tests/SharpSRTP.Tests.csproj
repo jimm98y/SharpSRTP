@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DtlsServerSample\DtlsServerSample.csproj" />
+    <ProjectReference Include="..\SharpSRTP\SharpSRTP.csproj" />
   </ItemGroup>
 
   <ItemGroup>
