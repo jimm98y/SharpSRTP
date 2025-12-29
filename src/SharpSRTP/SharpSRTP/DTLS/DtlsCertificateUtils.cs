@@ -20,6 +20,22 @@ namespace SharpSRTP.DTLS
 {
     public class DTLSCertificateUtils
     {
+        public static (Certificate certificate, AsymmetricKeyParameter key) GenerateServerCertificate(
+            string name,
+            DateTime notBefore,
+            DateTime notAfter,
+            bool useRSA)
+        {
+            if (useRSA)
+            {
+                return GenerateRSAServerCertificate(name, notBefore, notAfter);
+            }
+            else
+            {
+                return GenerateECDSAServerCertificate(name, notBefore, notAfter);
+            }
+        }
+
         public static (Certificate certificate, AsymmetricKeyParameter key) GenerateRSAServerCertificate(
             string name,
             DateTime notBefore,
@@ -149,10 +165,10 @@ namespace SharpSRTP.DTLS
             return (certificate, privateKey);
         }
 
-        public static string Fingerprint(X509CertificateStructure c)
+        public static string Fingerprint(X509CertificateStructure c, string algorithm = "SHA256")
         {
             byte[] der = c.GetEncoded();
-            byte[] hash = DigestUtilities.CalculateDigest("SHA256", der);
+            byte[] hash = DigestUtilities.CalculateDigest(algorithm, der);
             byte[] hexBytes = Hex.Encode(hash);
             string hex = Encoding.ASCII.GetString(hexBytes).ToUpperInvariant();
 
@@ -165,6 +181,12 @@ namespace SharpSRTP.DTLS
                 fp.Append(hex.Substring(i, 2));
             }
             return fp.ToString();
+        }
+
+        public static bool IsHashSupported(string algStr)
+        {
+            string algName = algStr.ToLowerInvariant();
+            return algName == "sha-256" || algName == "sha256";
         }
     }
 }

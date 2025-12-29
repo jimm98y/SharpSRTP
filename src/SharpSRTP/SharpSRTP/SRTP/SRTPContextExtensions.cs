@@ -126,7 +126,7 @@ namespace SharpSRTP.SRTP
 
             for (int i = 0; i < mki.Length; i++)
             {
-                if (payload[outputBufferLength + i] != mki[i])
+                if (payload[length - context.N_tag - mki.Length + i] != mki[i])
                     return ERROR_MKI_CHECK_FAILED;
             }
 
@@ -334,7 +334,7 @@ namespace SharpSRTP.SRTP
 
             for (int i = 0; i < mki.Length; i++)
             {
-                if (payload[outputBufferLength + 4 + i] != mki[i])
+                if (payload[length - context.N_tag - mki.Length + i] != mki[i])
                     return ERROR_MKI_CHECK_FAILED;
             }
 
