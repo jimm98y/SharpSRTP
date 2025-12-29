@@ -16,7 +16,7 @@ namespace SharpSRTP.SRTP
         public const int ERROR_MASTER_KEY_ROTATION_REQUIRED = -5;
         public const int ERROR_MKI_CHECK_FAILED = -6;
 
-        public static int ProtectRTP(this SrtpContext encodeRtpContext, byte[] payload, int length, out int outputBufferLength)
+        public static int ProtectRtp(this SrtpContext encodeRtpContext, byte[] payload, int length, out int outputBufferLength)
         {
             var context = encodeRtpContext;
             outputBufferLength = length;
@@ -117,7 +117,7 @@ namespace SharpSRTP.SRTP
             return 0;
         }
 
-        public static int UnprotectRTP(this SrtpContext decodeRtpContext, byte[] payload, int length, out int outputBufferLength)
+        public static int UnprotectRtp(this SrtpContext decodeRtpContext, byte[] payload, int length, out int outputBufferLength)
         {
             var context = decodeRtpContext;
 
@@ -229,7 +229,7 @@ namespace SharpSRTP.SRTP
             return 0;
         }
 
-        public static int ProtectRTCP(this SrtpContext encodeRtcpContext, byte[] payload, int length, out int outputBufferLength)
+        public static int ProtectRtcp(this SrtpContext encodeRtcpContext, byte[] payload, int length, out int outputBufferLength)
         {
             var context = encodeRtcpContext;
             outputBufferLength = length;
@@ -325,7 +325,7 @@ namespace SharpSRTP.SRTP
             return 0;
         }
 
-        public static int UnprotectRTCP(this SrtpContext decodeRtcpContext, byte[] payload, int length, out int outputBufferLength)
+        public static int UnprotectRtcp(this SrtpContext decodeRtcpContext, byte[] payload, int length, out int outputBufferLength)
         {
             var context = decodeRtcpContext;
 
