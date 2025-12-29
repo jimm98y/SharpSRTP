@@ -26,8 +26,8 @@ namespace SharpSRTP.DTLS
         public TlsServerCertificate RemoteCertificate { get; private set; }
         public Certificate PeerCertificate { get { return RemoteCertificate.Certificate; } }
 
-        public event EventHandler<DtlsHandshakeCompletedEventArgs> HandshakeCompleted;
-        public event OnDtlsAlertEvent OnAlert;
+        public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
+        public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
         private TlsSession _session;
         private int _handshakeTimeoutMillis = 0;
@@ -130,7 +130,7 @@ namespace SharpSRTP.DTLS
         {
             if (Log.DebugEnabled) Log.Debug("DTLS client received alert: " + AlertLevel.GetText(level) + ", " + AlertDescription.GetText(alertDescription));
 
-            TlsAlertTypesEnum alertType = TlsAlertTypesEnum.Unknown;
+            TlsAlertTypesEnum alertType = TlsAlertTypesEnum.Unassigned;
             if (Enum.IsDefined(typeof(TlsAlertTypesEnum), (int)alertDescription))
             {
                 alertType = (TlsAlertTypesEnum)alertDescription;
@@ -142,7 +142,7 @@ namespace SharpSRTP.DTLS
                 alertLevel = (TlsAlertLevelsEnum)level;
             }
 
-            OnAlert?.Invoke(alertLevel, alertType, AlertDescription.GetText(alertDescription));
+            OnAlert?.Invoke(this, new DtlsAlertEventArgs(alertLevel, alertType, AlertDescription.GetText(alertDescription)));
         }
 
         public override void NotifyServerVersion(ProtocolVersion serverVersion)
@@ -197,7 +197,7 @@ namespace SharpSRTP.DTLS
                 if (Log.DebugEnabled) Log.Debug("Client 'tls-unique': " + ToHexString(tlsUnique));
             }
 
-            HandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
+            OnHandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
 
         public override IDictionary<int, byte[]> GetClientExtensions()

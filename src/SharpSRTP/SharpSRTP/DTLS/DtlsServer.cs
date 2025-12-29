@@ -24,8 +24,8 @@ namespace SharpSRTP.DTLS
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
         public Certificate PeerCertificate { get; private set; }
 
-        public event EventHandler<DtlsHandshakeCompletedEventArgs> HandshakeCompleted;
-        public event OnDtlsAlertEvent OnAlert;
+        public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
+        public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
         public DtlsServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : 
             this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
@@ -97,7 +97,7 @@ namespace SharpSRTP.DTLS
         {
             if(Log.DebugEnabled) Log.Debug("DTLS server received alert: " + AlertLevel.GetText(level) + ", " + AlertDescription.GetText(alertDescription));
 
-            TlsAlertTypesEnum alertType = TlsAlertTypesEnum.Unknown;
+            TlsAlertTypesEnum alertType = TlsAlertTypesEnum.Unassigned;
             if (Enum.IsDefined(typeof(TlsAlertTypesEnum), (int)alertDescription))
             {
                 alertType = (TlsAlertTypesEnum)alertDescription;
@@ -109,7 +109,7 @@ namespace SharpSRTP.DTLS
                 alertLevel = (TlsAlertLevelsEnum)level;
             }
 
-            OnAlert?.Invoke(alertLevel, alertType, AlertDescription.GetText(alertDescription));
+            OnAlert?.Invoke(this, new DtlsAlertEventArgs(alertLevel, alertType, AlertDescription.GetText(alertDescription)));
         }
 
         public override ProtocolVersion GetServerVersion()
@@ -163,7 +163,7 @@ namespace SharpSRTP.DTLS
             byte[] tlsUnique = m_context.ExportChannelBinding(ChannelBinding.tls_unique);
             Log.Debug("Server 'tls-unique': " + ToHexString(tlsUnique));
 
-            HandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
+            OnHandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
 
         public override void ProcessClientExtensions(IDictionary<int, byte[]> clientExtensions)

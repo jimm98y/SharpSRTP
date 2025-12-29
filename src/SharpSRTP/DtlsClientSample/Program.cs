@@ -5,7 +5,7 @@ using SharpSRTP.UDP;
 using System;
 
 DtlsSrtpClient client = new DtlsSrtpClient();
-client.HandshakeCompleted += (sender, e) =>
+client.OnHandshakeCompleted += (sender, e) =>
 {
     var keys = DtlsSrtpProtocol.GenerateMasterKeys(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, client.SrtpData.Mki, e.SecurityParameters);
 

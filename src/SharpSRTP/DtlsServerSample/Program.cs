@@ -1,6 +1,5 @@
 ﻿using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
-using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
 using SharpSRTP.UDP;
 using System;
@@ -8,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 DtlsSrtpServer server = new DtlsSrtpServer();
-server.HandshakeCompleted += (sender, e) =>
+server.OnHandshakeCompleted += (sender, e) =>
 {
     var keys = DtlsSrtpProtocol.GenerateMasterKeys(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, server.SrtpData.Mki, e.SecurityParameters);
 

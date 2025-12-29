@@ -61,9 +61,22 @@ namespace SharpSRTP.DTLS
         NoApplicationProtocol = 120,
         EchRequired = 121,
         // 122-255 unassigned
+        Unassigned = 255
     }
 
-    public delegate void OnDtlsAlertEvent(TlsAlertLevelsEnum alertLevel, TlsAlertTypesEnum alertType, string alertDescription);
+    public class DtlsAlertEventArgs : EventArgs
+    {
+        public TlsAlertLevelsEnum Level { get; }
+        public TlsAlertTypesEnum AlertType { get; }
+        public string Description { get; }
+
+        public DtlsAlertEventArgs(TlsAlertLevelsEnum level, TlsAlertTypesEnum type, string description)
+        {
+            this.Level = level;
+            this.AlertType = type;
+            this.Description = description;
+        }
+    }
 
     public class DtlsHandshakeCompletedEventArgs : EventArgs
     {
@@ -77,7 +90,9 @@ namespace SharpSRTP.DTLS
 
     public interface IDtlsSrtpPeer
     {
-        event OnDtlsAlertEvent OnAlert;
+        event EventHandler<DtlsAlertEventArgs> OnAlert;
+        event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
+        bool ForceUseExtendedMasterSecret { get; set; }
         Certificate PeerCertificate { get; }
     }
 }
