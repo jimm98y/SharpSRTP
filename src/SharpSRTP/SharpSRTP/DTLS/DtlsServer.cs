@@ -47,6 +47,31 @@ namespace SharpSRTP.DTLS
             return ForceUseExtendedMasterSecret;
         }
 
+        protected override ProtocolVersion[] GetSupportedVersions()
+        {
+            return new ProtocolVersion[]
+            {
+                ProtocolVersion.DTLSv10,
+                ProtocolVersion.DTLSv12
+            };
+        }
+
+        protected override int[] GetSupportedCipherSuites()
+        {
+            // TODO: review
+            return new int[]
+            {
+                CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+                CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+                CipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+                CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                CipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
+            };
+        }
+
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)
         {
             Log.Debug("DTLS server raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
@@ -149,15 +174,6 @@ namespace SharpSRTP.DTLS
             return data == null ? "(null)" : Hex.ToHexString(data);
         }
 
-        protected override ProtocolVersion[] GetSupportedVersions()
-        {
-            return new ProtocolVersion[] 
-            {
-                ProtocolVersion.DTLSv10,
-                ProtocolVersion.DTLSv12
-            };
-        }
-
         public override int GetSelectedCipherSuite()
         {
             return base.GetSelectedCipherSuite();
@@ -167,11 +183,6 @@ namespace SharpSRTP.DTLS
         {
             IList<SignatureAndHashAlgorithm> clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
-
-            if (CertificateSignatureAlgorithm != SignatureAlgorithm.ecdsa)
-            {
-                throw new InvalidOperationException("DTLS server ECDsa certificate algorithm mismatch!");
-            }
 
             if (_myCert == null || _myCertPrivateKey == null)
             {
@@ -199,11 +210,6 @@ namespace SharpSRTP.DTLS
         {
             IList<SignatureAndHashAlgorithm> clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
-
-            if (CertificateSignatureAlgorithm != SignatureAlgorithm.rsa)
-            {
-                throw new InvalidOperationException("DTLS server RSA certificate algorithm mismatch!");
-            }
 
             if (_myCert == null || _myCertPrivateKey == null)
             {

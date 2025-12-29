@@ -105,15 +105,18 @@ namespace SharpSRTP.DTLS
             DateTime notBefore,
             DateTime notAfter,
             bool exClientAuth = true,
-            string curve = "prime256v1",
+            string curve = "secp256r1",
             string signatureAlgorithm = "SHA256WITHECDSA")
         {
             var randomGenerator = new CryptoApiRandomGenerator();
             var random = new SecureRandom(randomGenerator);
 
             var spec = ECNamedCurveTable.GetByName(curve);
+            var curveOid = ECNamedCurveTable.GetOid(curve);
+            var domainParams = new ECNamedDomainParameters(curveOid, spec.Curve, spec.G, spec.N, spec.H, spec.GetSeed());
+
             var keyPairGenerator = new ECKeyPairGenerator("EC");
-            ECKeyGenerationParameters keyGenerationParameters = new ECKeyGenerationParameters(new ECDomainParameters(spec.Curve, spec.G, spec.N), random);
+            ECKeyGenerationParameters keyGenerationParameters = new ECKeyGenerationParameters(domainParams, random);
             keyPairGenerator.Init(keyGenerationParameters);
 
             AsymmetricCipherKeyPair subjectKeyPair = keyPairGenerator.GenerateKeyPair();
@@ -148,7 +151,7 @@ namespace SharpSRTP.DTLS
 
                 var extendedKeyUsage = new ExtendedKeyUsage(new[] { KeyPurposeID.id_kp_serverAuth });
                 certificateGenerator.AddExtension(X509Extensions.ExtendedKeyUsage, true, extendedKeyUsage.ToAsn1Object());
-            }
+            }            
 
             byte[] serial = new byte[20];
             random.NextBytes(serial);
