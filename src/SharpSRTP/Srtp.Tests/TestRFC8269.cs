@@ -5,6 +5,7 @@ using Org.BouncyCastle.Crypto.Modes;
 using SharpSRTP.SRTP;
 using SharpSRTP.SRTP.Authentication;
 using SharpSRTP.SRTP.Encryption;
+using SharpSRTP.SRTP.Readers;
 using System;
 using System.Linq;
 

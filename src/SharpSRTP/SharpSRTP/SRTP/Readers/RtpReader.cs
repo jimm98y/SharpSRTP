@@ -1,4 +1,4 @@
-﻿namespace SharpSRTP.SRTP
+﻿namespace SharpSRTP.SRTP.Readers
 {
     public static class RtpReader
     {
