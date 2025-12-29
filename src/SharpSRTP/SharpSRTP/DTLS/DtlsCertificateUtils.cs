@@ -1,20 +1,20 @@
 ﻿using Org.BouncyCastle.Asn1.X509;
+using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Operators;
+using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Prng;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
-using Org.BouncyCastle.Asn1;
-using Org.BouncyCastle.Utilities.Encoders;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using Org.BouncyCastle.Tls.Crypto;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Tls;
+using Org.BouncyCastle.Utilities.Encoders;
+using Org.BouncyCastle.X509;
+using System.Collections.Generic;
+using System.Text;
+using System;
 
 namespace SharpSRTP.DTLS
 {
@@ -40,9 +40,9 @@ namespace SharpSRTP.DTLS
             string name,
             DateTime notBefore,
             DateTime notAfter,
-            bool exClientAuth = true,
             int keyStrength = 2048,
-            string signatureAlgorithm = "SHA256WITHRSA")
+            string signatureAlgorithm = "SHA256WITHRSA",
+            int serialNumberLength = 20)
         {
             var randomGenerator = new CryptoApiRandomGenerator();
             var random = new SecureRandom(randomGenerator);
@@ -76,16 +76,7 @@ namespace SharpSRTP.DTLS
             certificateGenerator.SetSubjectDN(subjectDN);
             certificateGenerator.SetPublicKey(issuerKeyPair.Public);
 
-            if (exClientAuth)
-            {
-                var keyUsage = new KeyUsage(KeyUsage.DigitalSignature);
-                certificateGenerator.AddExtension(X509Extensions.KeyUsage, false, keyUsage.ToAsn1Object());
-
-                var extendedKeyUsage = new ExtendedKeyUsage(new[] { KeyPurposeID.id_kp_serverAuth });
-                certificateGenerator.AddExtension(X509Extensions.ExtendedKeyUsage, true, extendedKeyUsage.ToAsn1Object());
-            }
-
-            byte[] serial = new byte[20];
+            byte[] serial = new byte[serialNumberLength];
             random.NextBytes(serial);
             serial[0] = 1;
             certificateGenerator.SetSerialNumber(new Org.BouncyCastle.Math.BigInteger(serial));
@@ -104,9 +95,9 @@ namespace SharpSRTP.DTLS
             string name,
             DateTime notBefore,
             DateTime notAfter,
-            bool exClientAuth = true,
             string curve = "secp256r1",
-            string signatureAlgorithm = "SHA256WITHECDSA")
+            string signatureAlgorithm = "SHA256WITHECDSA",
+            int serialNumberLength = 20)
         {
             var randomGenerator = new CryptoApiRandomGenerator();
             var random = new SecureRandom(randomGenerator);
@@ -144,16 +135,7 @@ namespace SharpSRTP.DTLS
             certificateGenerator.SetSubjectDN(subjectDN);
             certificateGenerator.SetPublicKey(issuerKeyPair.Public);
 
-            if (exClientAuth)
-            {
-                var keyUsage = new KeyUsage(KeyUsage.DigitalSignature);
-                certificateGenerator.AddExtension(X509Extensions.KeyUsage, false, keyUsage.ToAsn1Object());
-
-                var extendedKeyUsage = new ExtendedKeyUsage(new[] { KeyPurposeID.id_kp_serverAuth });
-                certificateGenerator.AddExtension(X509Extensions.ExtendedKeyUsage, true, extendedKeyUsage.ToAsn1Object());
-            }            
-
-            byte[] serial = new byte[20];
+            byte[] serial = new byte[serialNumberLength];
             random.NextBytes(serial);
             serial[0] = 1;
             certificateGenerator.SetSerialNumber(new Org.BouncyCastle.Math.BigInteger(serial));
