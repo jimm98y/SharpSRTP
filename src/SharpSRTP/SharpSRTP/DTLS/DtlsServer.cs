@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace SharpSRTP.DTLS
 {
-    public class DtlsServer : DefaultTlsServer, IDtlsSrtpPeer
+    public class DtlsServer : DefaultTlsServer, IDtlsPeer
     {
         private Certificate _myCert;
         private AsymmetricKeyParameter _myCertPrivateKey;

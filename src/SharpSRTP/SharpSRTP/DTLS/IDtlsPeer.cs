@@ -88,7 +88,7 @@ namespace SharpSRTP.DTLS
         public SecurityParameters SecurityParameters { get; }
     }
 
-    public interface IDtlsSrtpPeer
+    public interface IDtlsPeer
     {
         event EventHandler<DtlsAlertEventArgs> OnAlert;
         event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
