@@ -52,6 +52,49 @@ namespace SharpSRTP.DTLS
             return ForceUseExtendedMasterSecret;
         }
 
+        protected override ProtocolVersion[] GetSupportedVersions()
+        {
+            return new ProtocolVersion[]
+            {
+                // ProtocolVersion.DTLSv10,
+                ProtocolVersion.DTLSv12,
+                //ProtocolVersion.DTLSv13
+            };
+        }
+
+        protected override int[] GetSupportedCipherSuites()
+        {
+            // TODO: review
+
+            if (CertificateSignatureAlgorithm == SignatureAlgorithm.rsa)
+            {
+                return new int[]
+                {
+                    // TLS 1.2 ciphers:
+                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384
+                };
+            }
+            else if(CertificateSignatureAlgorithm == SignatureAlgorithm.ecdsa)
+            {
+                // ECDSA certificates require matching cipher suites
+                return new int[]
+                {
+                    // TLS 1.2 ciphers:
+                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                };
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
         public override TlsSession GetSessionToResume()
         {
             return this._session;
@@ -153,11 +196,6 @@ namespace SharpSRTP.DTLS
         protected virtual string ToHexString(byte[] data)
         {
             return data == null ? "(null)" : Hex.ToHexString(data);
-        }
-
-        protected override ProtocolVersion[] GetSupportedVersions()
-        {
-            return ProtocolVersion.DTLSv12.Only();
         }
 
         internal class DTlsAuthentication : TlsAuthentication
