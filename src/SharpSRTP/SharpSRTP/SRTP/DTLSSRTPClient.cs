@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace SharpSRTP.SRTP
 {
-    public class DtlsSrtpClient : DtlsClient
+    public class DtlsSrtpClient : DtlsClient, IDtlsSrtpPeer
     {
         private readonly SecureRandom _rand = new SecureRandom();
         private UseSrtpData _srtpData;

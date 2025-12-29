@@ -6,6 +6,8 @@ using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Text;
 
 namespace SharpSRTP.DTLS
 {
@@ -77,6 +79,61 @@ namespace SharpSRTP.DTLS
                 CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
                 CipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
             };
+        }
+
+        public DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<IPEndPoint> getRemoteEndpoint = null)
+        {
+            DtlsTransport transport = null;
+
+            try
+            {
+                DtlsServerProtocol serverProtocol = new DtlsServerProtocol();
+                DtlsRequest request = null;
+
+                if (getRemoteEndpoint != null)
+                {
+                    // Use DtlsVerifier to require a HelloVerifyRequest cookie exchange before accepting
+                    DtlsVerifier verifier = new DtlsVerifier(Crypto);
+                    int receiveLimit = datagramTransport.GetReceiveLimit();
+                    byte[] buf = new byte[receiveLimit];
+                    int receiveAttemptCounter = 0;
+
+                    do
+                    {
+                        int length = datagramTransport.Receive(buf, 0, receiveLimit, 100);
+                        if (length > 0)
+                        {
+                            var remoteEndpoint = getRemoteEndpoint();
+                            if(remoteEndpoint == null)
+                                throw new InvalidOperationException();
+
+                            byte[] clientID = Encoding.UTF8.GetBytes(remoteEndpoint.ToString());
+                            request = verifier.VerifyRequest(clientID, buf, 0, length, datagramTransport);
+                        }
+                        else
+                        {
+                            receiveAttemptCounter++;
+
+                            if (receiveAttemptCounter > 300) // 30 seconds so that we don't wait forever
+                            {
+                                handshakeError = "HelloVerifyRequest cookie exchange could not be verified due to a timeout";
+                                return null;
+                            }
+                        }
+                    }
+                    while (request == null);
+                }
+
+                transport = serverProtocol.Accept(this, datagramTransport, request);
+            }
+            catch (Exception ex)
+            {
+                handshakeError = ex.Message;
+                return null;
+            }
+            
+            handshakeError = null;
+            return transport;
         }
 
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)

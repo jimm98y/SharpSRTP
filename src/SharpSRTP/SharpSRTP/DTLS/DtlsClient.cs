@@ -7,6 +7,7 @@ using Org.BouncyCastle.Utilities;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
+using System.Net;
 
 namespace SharpSRTP.DTLS
 {
@@ -102,6 +103,25 @@ namespace SharpSRTP.DTLS
             {
                 throw new NotSupportedException();
             }
+        }
+
+        public DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<IPEndPoint> getRemoteEndpoint = null)
+        {
+            DtlsTransport transport = null;
+                        
+            try
+            {
+                DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
+                transport = clientProtocol.Connect(this, datagramTransport);
+            }
+            catch (Exception ex)
+            {
+                handshakeError = ex.Message;
+                return null;
+            }
+
+            handshakeError = null;
+            return transport;
         }
 
         public override TlsSession GetSessionToResume()

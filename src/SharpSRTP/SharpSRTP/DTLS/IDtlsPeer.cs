@@ -1,5 +1,6 @@
 ﻿using Org.BouncyCastle.Tls;
 using System;
+using System.Net;
 
 namespace SharpSRTP.DTLS
 {
@@ -94,5 +95,6 @@ namespace SharpSRTP.DTLS
         event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         bool ForceUseExtendedMasterSecret { get; set; }
         Certificate PeerCertificate { get; }
+        DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<IPEndPoint> getRemoteEndpoint = null);
     }
 }

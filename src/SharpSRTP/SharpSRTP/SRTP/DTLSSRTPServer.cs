@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace SharpSRTP.SRTP
 {
-    public class DtlsSrtpServer : DtlsServer
+    public class DtlsSrtpServer : DtlsServer, IDtlsSrtpPeer
     {
         private UseSrtpData _srtpData;
         public UseSrtpData SrtpData { get { return _srtpData; } }
