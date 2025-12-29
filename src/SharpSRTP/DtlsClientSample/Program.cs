@@ -7,7 +7,7 @@ using System;
 DtlsSrtpClient client = new DtlsSrtpClient();
 client.HandshakeCompleted += (sender, e) =>
 {
-    var keys = SrtpProtocol.GenerateMasterKeys(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, client.SrtpData.Mki, e.SecurityParameters);
+    var keys = DtlsSrtpProtocol.GenerateMasterKeys(Org.BouncyCastle.Tls.SrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, client.SrtpData.Mki, e.SecurityParameters);
 
     var ck = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
     var c_rtcp = new SrtpContext(Org.BouncyCastle.Tls.ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
