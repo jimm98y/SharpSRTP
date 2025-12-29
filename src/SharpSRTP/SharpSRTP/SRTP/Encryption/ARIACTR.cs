@@ -26,7 +26,7 @@ namespace SharpSRTP.SRTP.Encryption
             // *Let x = key_id XOR master_salt, where key_id and master_salt are
             //  aligned so that their least significant bits agree(right-
             //  alignment).
-            Array.Copy(masterSalt, 0, iv, 0, masterSalt.Length);
+            Buffer.BlockCopy(masterSalt, 0, iv, 0, masterSalt.Length);
 
             iv[7] ^= (byte)((keyId >> 48) & 0xFF);
             iv[8] ^= (byte)((keyId >> 40) & 0xFF);
@@ -56,7 +56,7 @@ namespace SharpSRTP.SRTP.Encryption
             // IV = (k_s * 2 ^ 16) XOR(SSRC * 2 ^ 64) XOR(i * 2 ^ 16)
             byte[] iv = new byte[16];
 
-            Array.Copy(salt, 0, iv, 0, 14);
+            Buffer.BlockCopy(salt, 0, iv, 0, 14);
 
             iv[4] ^= (byte)((ssrc >> 24) & 0xFF);
             iv[5] ^= (byte)((ssrc >> 16) & 0xFF);
