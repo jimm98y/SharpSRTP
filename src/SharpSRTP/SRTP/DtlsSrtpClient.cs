@@ -40,11 +40,11 @@ namespace SharpSRTP.SRTP
 
         public int MkiLength { get; protected set; } = 4;
 
-        public DtlsSrtpClient(TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) :
-           this(new BcTlsCrypto(), session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
+        public DtlsSrtpClient(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256, TlsSession session = null) :
+           this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm, session)
         { }
 
-        public DtlsSrtpClient(TlsCrypto crypto, TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : 
+        public DtlsSrtpClient(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256, TlsSession session = null) : 
             base(crypto, session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         {
             int[] protectionProfiles = GetSupportedProtectionProfiles();
@@ -54,7 +54,14 @@ namespace SharpSRTP.SRTP
 
         private byte[] GenerateMki(int length)
         {
-            return SecureRandom.GetNextBytes(_rand, length);
+            if (length > 0)
+            {
+                return SecureRandom.GetNextBytes(_rand, length);
+            }
+            else
+            {
+                return new byte[0];
+            }
         }
 
         protected virtual int[] GetSupportedProtectionProfiles()

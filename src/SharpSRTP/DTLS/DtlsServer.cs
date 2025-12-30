@@ -27,13 +27,14 @@ using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Text;
 
 namespace SharpSRTP.DTLS
 {
     public class DtlsServer : DefaultTlsServer, IDtlsPeer
     {
+        public int TimeoutMilliseconds { get; set; } = 20000;
+
         public Certificate Certificate { get; private set; }
         public AsymmetricKeyParameter CertificatePrivateKey { get; private set; }
         public short CertificateSignatureAlgorithm { get; private set; }
@@ -54,10 +55,22 @@ namespace SharpSRTP.DTLS
 
         public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
         {
-            Certificate = certificate;
-            CertificatePrivateKey = privateKey;
-            CertificateSignatureAlgorithm = signatureAlgorithm;
-            CertificateHashAlgorithm = hashAlgorithm;
+            if (certificate == null || privateKey == null)
+            {
+                // generate default self-signed certificate - SRTP_AEAD_AES_256_GCM requires ECDsa
+                var cert = DtlsCertificateUtils.GenerateServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), false);
+                Certificate = cert.certificate;
+                CertificatePrivateKey = cert.key;
+                CertificateSignatureAlgorithm = SignatureAlgorithm.ecdsa;
+                CertificateHashAlgorithm = HashAlgorithm.sha256;
+            }
+            else
+            {
+                Certificate = certificate;
+                CertificatePrivateKey = privateKey;
+                CertificateSignatureAlgorithm = signatureAlgorithm;
+                CertificateHashAlgorithm = hashAlgorithm;
+            }
         }
 
         public override bool RequiresExtendedMasterSecret()
@@ -95,7 +108,7 @@ namespace SharpSRTP.DTLS
             };
         }
 
-        public DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<IPEndPoint> getRemoteEndpoint = null)
+        public DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint = null)
         {
             DtlsTransport transport = null;
 
@@ -114,21 +127,22 @@ namespace SharpSRTP.DTLS
 
                     do
                     {
-                        int length = datagramTransport.Receive(buf, 0, receiveLimit, 100);
+                        const int RECEIVE_TIMEOUT = 100;
+                        int length = datagramTransport.Receive(buf, 0, receiveLimit, RECEIVE_TIMEOUT);
                         if (length > 0)
                         {
                             var remoteEndpoint = getRemoteEndpoint();
-                            if(remoteEndpoint == null)
+                            if(string.IsNullOrEmpty(remoteEndpoint))
                                 throw new InvalidOperationException();
 
-                            byte[] clientID = Encoding.UTF8.GetBytes(remoteEndpoint.ToString());
+                            byte[] clientID = Encoding.UTF8.GetBytes(remoteEndpoint);
                             request = verifier.VerifyRequest(clientID, buf, 0, length, datagramTransport);
                         }
                         else
                         {
                             receiveAttemptCounter++;
 
-                            if (receiveAttemptCounter > 300) // 30 seconds so that we don't wait forever
+                            if (receiveAttemptCounter * RECEIVE_TIMEOUT >= TimeoutMilliseconds) // 20 seconds so that we don't wait forever
                             {
                                 handshakeError = "HelloVerifyRequest cookie exchange could not be verified due to a timeout";
                                 return null;

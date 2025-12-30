@@ -28,12 +28,14 @@ using Org.BouncyCastle.Utilities;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
-using System.Net;
 
 namespace SharpSRTP.DTLS
 {
     public class DtlsClient : DefaultTlsClient, IDtlsPeer
     {
+        private TlsSession _session;
+
+        public int TimeoutMilliseconds { get; set; } = 20000;
         public Certificate Certificate { get; private set; }
         public AsymmetricKeyParameter CertificatePrivateKey { get; private set; }
         public short CertificateSignatureAlgorithm { get; private set; }
@@ -46,9 +48,6 @@ namespace SharpSRTP.DTLS
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
-        private TlsSession _session;
-        private int _handshakeTimeoutMillis = 0;
-
         public DtlsClient(TlsSession session = null) : this(new BcTlsCrypto(), session)
         { }
 
@@ -60,10 +59,22 @@ namespace SharpSRTP.DTLS
 
         public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
         {
-            Certificate = certificate;
-            CertificatePrivateKey = privateKey;
-            CertificateSignatureAlgorithm = signatureAlgorithm;
-            CertificateHashAlgorithm = hashAlgorithm;
+            if (certificate == null || privateKey == null)
+            {
+                // generate default self-signed certificate - SRTP_AEAD_AES_256_GCM requires ECDsa
+                var cert = DtlsCertificateUtils.GenerateServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), false);
+                Certificate = cert.certificate;
+                CertificatePrivateKey = cert.key;
+                CertificateSignatureAlgorithm = SignatureAlgorithm.ecdsa;
+                CertificateHashAlgorithm = HashAlgorithm.sha256;
+            }
+            else
+            {
+                Certificate = certificate;
+                CertificatePrivateKey = privateKey;
+                CertificateSignatureAlgorithm = signatureAlgorithm;
+                CertificateHashAlgorithm = hashAlgorithm;
+            }
         }
 
         public override bool RequiresExtendedMasterSecret()
@@ -121,7 +132,7 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<IPEndPoint> getRemoteEndpoint = null)
+        public DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint = null)
         {
             DtlsTransport transport = null;
                         
@@ -145,9 +156,7 @@ namespace SharpSRTP.DTLS
             return this._session;
         }
 
-        public override int GetHandshakeTimeoutMillis() => _handshakeTimeoutMillis;
-
-        public void SetHandshakeTimeoutMillis(int millis) => _handshakeTimeoutMillis = millis;
+        public override int GetHandshakeTimeoutMillis() => TimeoutMilliseconds;
 
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)
         {

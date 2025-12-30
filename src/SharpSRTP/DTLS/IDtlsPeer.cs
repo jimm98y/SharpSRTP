@@ -115,6 +115,7 @@ namespace SharpSRTP.DTLS
     {
         event EventHandler<DtlsAlertEventArgs> OnAlert;
         event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
+        int TimeoutMilliseconds { get; set; }
         bool ForceUseExtendedMasterSecret { get; set; }
 
         Certificate Certificate { get; }
@@ -123,6 +124,6 @@ namespace SharpSRTP.DTLS
         short CertificateHashAlgorithm { get; }
         void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm);
 
-        DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<IPEndPoint> getRemoteEndpoint = null);
+        DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint = null);
     }
 }
