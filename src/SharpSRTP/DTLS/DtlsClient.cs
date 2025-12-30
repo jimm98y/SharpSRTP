@@ -57,7 +57,7 @@ namespace SharpSRTP.DTLS
             SetCertificate(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm);
         }
 
-        public void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
+        public virtual void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
         {
             if (certificate == null || privateKey == null)
             {
