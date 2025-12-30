@@ -22,7 +22,6 @@
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Tls;
 using System;
-using System.Net;
 
 namespace SharpSRTP.DTLS
 {
