@@ -26,17 +26,23 @@ namespace SharpSRTP.SRTP
         NULL = 0,
         AES_128_CM = 1,
         AES_128_F8 = 2,
-        AES_256_CM = 3,
-        AEAD_AES_128_GCM = 4,
-        AEAD_AES_256_GCM = 5,
-        ARIA_128_CTR = 6,
-        ARIA_256_CTR = 7,
-        AEAD_ARIA_128_GCM = 8,
-        AEAD_ARIA_256_GCM = 9,
+        AES_192_CM = 3,
+        AES_256_CM = 4,
+        AEAD_AES_128_GCM = 5,
+        AEAD_AES_256_GCM = 6,
+        ARIA_128_CTR = 7,
+        ARIA_256_CTR = 8,
+        AEAD_ARIA_128_GCM = 9,
+        AEAD_ARIA_256_GCM = 10,
 
         // TODO: https://datatracker.ietf.org/doc/html/rfc8723
-        //DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 10,
-        //DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 11
+        DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 11,
+        DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 12,
+
+        // TODO: https://datatracker.ietf.org/doc/html/rfc5669
+        SEED_128_CTR = 13,
+        SEED_128_CCM = 14,
+        SEED_128_GCM = 15
     }
 
     public enum SrtpAuth

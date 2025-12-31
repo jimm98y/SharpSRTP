@@ -179,77 +179,105 @@ namespace SharpSRTP.SRTP
         {
             int labelBaseValue = _contextType == SrtpContextType.RTP ? 0 : 3;
 
-            if (Cipher == SrtpCiphers.AES_128_CM || Cipher == SrtpCiphers.AES_256_CM || Cipher == SrtpCiphers.NULL)
+            switch(Cipher)
             {
-                var aes = new AesEngine();
-                aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate); 
-                this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                case SrtpCiphers.NULL:
+                case SrtpCiphers.AES_128_CM:
+                case SrtpCiphers.AES_192_CM:
+                case SrtpCiphers.AES_256_CM:
+                    {
+                        var aes = new AesEngine();
+                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
+                        this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
 
-                aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
-                this.AES = aes;
+                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+                        this.AES = aes;
+                    }
+                    break;
+
+                case SrtpCiphers.AES_128_F8:
+                    {
+                        var aes = new AesEngine();
+
+                        // TODO: (!) Assuming the session key is still being derived using AES-CM...
+                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
+                        this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+
+                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+                        this.AES = aes;
+
+                        this.AESF8 = new AesEngine();
+                    }
+                    break;
+
+                case SrtpCiphers.AEAD_AES_128_GCM:
+                case SrtpCiphers.AEAD_AES_256_GCM:
+                    {
+                        var aes = new AesEngine();
+                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
+                        this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                        this.AES = aes;
+
+                        var cipher = new GcmBlockCipher(new AesEngine());
+                        this.AESGCM = cipher;
+                    }
+                    break;
+
+                case SrtpCiphers.ARIA_128_CTR:
+                case SrtpCiphers.ARIA_256_CTR:
+                    {
+                        var aria = new AriaEngine();
+                        aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
+                        this.K_e = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+
+                        aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+                        this.ARIA = aria;
+                    }
+                    break;
+
+                case SrtpCiphers.AEAD_ARIA_128_GCM:
+                case SrtpCiphers.AEAD_ARIA_256_GCM:
+                    {
+                        var aria = new AriaEngine();
+                        aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
+                        this.K_e = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                        this.ARIA = aria;
+
+                        var cipher = new GcmBlockCipher(new AriaEngine());
+                        this.ARIAGCM = cipher;
+                    }
+                    break;
+
+                default:
+                    throw new NotSupportedException($"Unsupported cipher {Cipher.ToString()}!");
+
             }
-            else if (Cipher == SrtpCiphers.AES_128_F8)
+
+            switch(Auth)
             {
-                var aes = new AesEngine();
+                case SrtpAuth.NONE:
+                    break;
 
-                // TODO: (!) Assuming the session key is still being derived using AES-CM...
-                aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                case SrtpAuth.HMAC_SHA1:
+                    {
+                        var hmac = new HMac(new Sha1Digest());
+                        hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_a));
+                        this.HMAC = hmac;
+                    }
+                    break;
 
-                aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
-                this.AES = aes;
-
-                this.AESF8 = new AesEngine();
-            }
-            else if (Cipher == SrtpCiphers.AEAD_AES_128_GCM || Cipher == SrtpCiphers.AEAD_AES_256_GCM)
-            {
-                var aes = new AesEngine();
-                aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-                this.AES = aes;
-
-                var cipher = new GcmBlockCipher(new AesEngine());
-                this.AESGCM = cipher;
-            }
-            else if (Cipher == SrtpCiphers.ARIA_128_CTR || Cipher == SrtpCiphers.ARIA_256_CTR)
-            {
-                var aria = new AriaEngine();
-                aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                this.K_e = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                this.K_a = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                this.K_s = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-
-                aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
-                this.ARIA = aria;
-            }
-            else if (Cipher == SrtpCiphers.AEAD_ARIA_128_GCM || Cipher == SrtpCiphers.AEAD_ARIA_256_GCM)
-            {
-                var aria = new AriaEngine();
-                aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                this.K_e = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                this.K_a = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                this.K_s = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-                this.ARIA = aria;
-
-                var cipher = new GcmBlockCipher(new AriaEngine());
-                this.ARIAGCM = cipher;
-            }
-            else
-            {
-                throw new NotSupportedException($"Unsupported cipher {Cipher.ToString()}!");
-            }
-
-            if (Auth == SrtpAuth.HMAC_SHA1)
-            {
-                var hmac = new HMac(new Sha1Digest());
-                hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_a));
-                this.HMAC = hmac;
+                default:
+                    throw new NotSupportedException($"Unsupported auth {Auth.ToString()}!");
             }
         }
 
@@ -261,6 +289,7 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.NULL:
                 case SrtpCiphers.AES_128_CM:
                 case SrtpCiphers.AES_128_F8:
+                case SrtpCiphers.AES_192_CM:
                 case SrtpCiphers.AES_256_CM:
                 case SrtpCiphers.AEAD_AES_128_GCM:
                 case SrtpCiphers.AEAD_AES_256_GCM:
@@ -342,6 +371,7 @@ namespace SharpSRTP.SRTP
                     break;
 
                 case SrtpCiphers.AES_128_CM:
+                case SrtpCiphers.AES_192_CM:
                 case SrtpCiphers.AES_256_CM:
                     {
                         byte[] iv = SharpSRTP.SRTP.Encryption.AESCM.GenerateMessageKeyIV(context.K_s, ssrc, index);
@@ -485,6 +515,7 @@ namespace SharpSRTP.SRTP
                     break;
 
                 case SrtpCiphers.AES_128_CM:
+                case SrtpCiphers.AES_192_CM:
                 case SrtpCiphers.AES_256_CM:
                     {
                         byte[] iv = SharpSRTP.SRTP.Encryption.AESCM.GenerateMessageKeyIV(context.K_s, ssrc, index);
@@ -552,6 +583,7 @@ namespace SharpSRTP.SRTP
                     break;
 
                 case SrtpCiphers.AES_128_CM:
+                case SrtpCiphers.AES_192_CM:
                 case SrtpCiphers.AES_256_CM:
                     {
                         byte[] iv = SharpSRTP.SRTP.Encryption.AESCM.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
@@ -682,6 +714,7 @@ namespace SharpSRTP.SRTP
                         break;
 
                     case SrtpCiphers.AES_128_CM:
+                    case SrtpCiphers.AES_192_CM:
                     case SrtpCiphers.AES_256_CM:
                         {
                             byte[] iv = SharpSRTP.SRTP.Encryption.AESCM.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);

@@ -26,6 +26,24 @@ using System.Linq;
 
 namespace SharpSRTP.SRTP
 {
+    /// <summary>
+    /// Currently registered DTLS-SRTP profiles: https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml#srtp-protection-1
+    /// </summary>
+    public abstract class ExtendedSrtpProtectionProfile : SrtpProtectionProfile
+    {
+        // TODO: Remove this once BouncyCastle adds the constants
+        public const int DRAFT_SRTP_AES256_CM_SHA1_80 = 0x0003;
+        public const int DRAFT_SRTP_AES256_CM_SHA1_32 = 0x0004;
+        public const int DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 0x0009;
+        public const int DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 0x000A;
+        public const int SRTP_ARIA_128_CTR_HMAC_SHA1_80 = 0x000B;
+        public const int SRTP_ARIA_128_CTR_HMAC_SHA1_32 = 0x000C;
+        public const int SRTP_ARIA_256_CTR_HMAC_SHA1_80 = 0x000D;
+        public const int SRTP_ARIA_256_CTR_HMAC_SHA1_32 = 0x000E;
+        public const int SRTP_AEAD_ARIA_128_GCM = 0x000F;
+        public const int SRTP_AEAD_ARIA_256_GCM = 0x0010;
+    }
+
     public static class DtlsSrtpProtocol
     {
         public static readonly Dictionary<int, SrtpProtectionProfileConfiguration> DtlsProtectionProfiles;
@@ -75,7 +93,7 @@ namespace SharpSRTP.SRTP
             var srtpSecurityParams = DtlsProtectionProfiles[protectionProfile];
 
             // 2 * (SRTPSecurityParams.master_key_len + SRTPSecurityParams.master_salt_len) bytes of data
-            int shared_secret_length = 2 * (srtpSecurityParams.CipherKeyLength + srtpSecurityParams.CipherSaltLength); // in bits
+            int sharedSecretLength = 2 * (srtpSecurityParams.CipherKeyLength + srtpSecurityParams.CipherSaltLength); // in bits
 
             // EXTRACTOR-dtls_srtp https://datatracker.ietf.org/doc/html/rfc5705
 
@@ -95,20 +113,20 @@ namespace SharpSRTP.SRTP
                SecurityParameters.server_random
                )[length]
              */
-            byte[] shared_secret = TlsUtilities.Prf(
+            byte[] sharedSecret = TlsUtilities.Prf(
                 dtlsSecurityParameters,
                 dtlsSecurityParameters.MasterSecret,
                 ExporterLabel.dtls_srtp, // The exporter label for this usage is "EXTRACTOR-dtls_srtp"
                 dtlsSecurityParameters.ClientRandom.Concat(dtlsSecurityParameters.ServerRandom).ToArray(),
-                shared_secret_length >> 3
+                sharedSecretLength >> 3
                 ).Extract();
 
             SrtpKeys keys = new SrtpKeys(protectionProfile, mki);
 
-            Buffer.BlockCopy(shared_secret, 0, keys.ClientWriteMasterKey, 0, keys.ClientWriteMasterKey.Length);
-            Buffer.BlockCopy(shared_secret, keys.ClientWriteMasterKey.Length, keys.ServerWriteMasterKey, 0, keys.ServerWriteMasterKey.Length);
-            Buffer.BlockCopy(shared_secret, keys.ClientWriteMasterKey.Length + keys.ServerWriteMasterKey.Length, keys.ClientWriteMasterSalt, 0, keys.ClientWriteMasterSalt.Length);
-            Buffer.BlockCopy(shared_secret, keys.ClientWriteMasterKey.Length + keys.ServerWriteMasterKey.Length + keys.ClientWriteMasterSalt.Length, keys.ServerWriteMasterSalt, 0, keys.ServerWriteMasterSalt.Length);
+            Buffer.BlockCopy(sharedSecret, 0, keys.ClientWriteMasterKey, 0, keys.ClientWriteMasterKey.Length);
+            Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length, keys.ServerWriteMasterKey, 0, keys.ServerWriteMasterKey.Length);
+            Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length + keys.ServerWriteMasterKey.Length, keys.ClientWriteMasterSalt, 0, keys.ClientWriteMasterSalt.Length);
+            Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length + keys.ServerWriteMasterKey.Length + keys.ClientWriteMasterSalt.Length, keys.ServerWriteMasterSalt, 0, keys.ServerWriteMasterSalt.Length);
 
             return keys;
         }
