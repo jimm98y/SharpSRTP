@@ -34,10 +34,7 @@ namespace SharpSRTP.DTLSSRTP
 {
     public class DtlsSrtpClient : DtlsClient, IDtlsSrtpPeer
     {
-        private readonly SecureRandom _rand = new SecureRandom();
         private UseSrtpData _srtpData;
-        public UseSrtpData SrtpData { get { return _srtpData; } }
-        public SrtpKeys Keys { get; private set; }
 
         public int MkiLength { get; protected set; } = 4;
 
@@ -49,21 +46,9 @@ namespace SharpSRTP.DTLSSRTP
             base(crypto, session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         {
             int[] protectionProfiles = GetSupportedProtectionProfiles();
-            byte[] mki = GenerateMki(MkiLength);
+            byte[] mki = DtlsSrtpProtocol.GenerateMki(MkiLength);
             this._srtpData = new UseSrtpData(protectionProfiles, mki);
-        }
-
-        private byte[] GenerateMki(int length)
-        {
-            if (length > 0)
-            {
-                return SecureRandom.GetNextBytes(_rand, length);
-            }
-            else
-            {
-                return new byte[0];
-            }
-        }
+        }        
 
         protected virtual int[] GetSupportedProtectionProfiles()
         {
@@ -119,25 +104,19 @@ namespace SharpSRTP.DTLSSRTP
             return extensions;
         }
 
-        public override void NotifyHandshakeComplete()
-        {
-            base.NotifyHandshakeComplete();
-
-            var securityParameters = m_context.SecurityParameters;
-            this.Keys = DtlsSrtpProtocol.GenerateMasterKeys(SrtpData.ProtectionProfiles[0], SrtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
-        }
-
         public virtual SrtpSessionContext CreateSessionContext(SecurityParameters securityParameters)
         {
             // this should only be called from OnHandshakeCompleted so we should still have _srtpData from the connection
             if (m_context == null)
                 throw new InvalidOperationException();
 
-            SrtpKeys keys = DtlsSrtpProtocol.GenerateMasterKeys(_srtpData.ProtectionProfiles[0], _srtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
-            var encodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
-            var encodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
-            var decodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
-            var decodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
+            int selectedProtectionProfile = _srtpData.ProtectionProfiles[0];
+            DtlsSrtpKeys keys = DtlsSrtpProtocol.GenerateMasterKeys(selectedProtectionProfile, _srtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
+            var protectionProfile = DtlsSrtpProtocol.DtlsProtectionProfiles[selectedProtectionProfile];
+            var encodeRtpContext = new SrtpContext(protectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
+            var encodeRtcpContext = new SrtpContext(protectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
+            var decodeRtpContext = new SrtpContext(protectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
+            var decodeRtcpContext = new SrtpContext(protectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
             return new SrtpSessionContext(encodeRtpContext, decodeRtpContext, encodeRtcpContext, decodeRtcpContext);
         }
     }

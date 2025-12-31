@@ -99,7 +99,8 @@ namespace Srtp.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SrtpContext(profile, null, masterKeyBytes, masterSaltBytes, isRtp ? SrtpContextType.RTP : SrtpContextType.RTCP);
+            var protectionProfile = DtlsSrtpProtocol.DtlsProtectionProfiles[profile];
+            var context = new SrtpContext(protectionProfile, null, masterKeyBytes, masterSaltBytes, isRtp ? SrtpContextType.RTP : SrtpContextType.RTCP);
 
             string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
             string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();

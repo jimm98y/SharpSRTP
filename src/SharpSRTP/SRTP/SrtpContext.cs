@@ -23,7 +23,6 @@ using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Crypto.Modes;
-using SharpSRTP.DTLSSRTP;
 using SharpSRTP.SRTP.Readers;
 using System;
 using System.Linq;
@@ -60,7 +59,7 @@ namespace SharpSRTP.SRTP
         public uint S_l { get { return _lastSeq; } set { _lastSeq = value; } }
         public bool S_l_set { get; set; } = false;
 
-        public int ProtectionProfile { get; set; } = ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80;
+        public SrtpProtectionProfileConfiguration ProtectionProfile { get; set; }
         public SrtpCiphers Cipher { get; set; } = SrtpCiphers.AES_128_CM;
         public SrtpAuth Auth { get; set; } = SrtpAuth.HMAC_SHA1;
 
@@ -147,29 +146,22 @@ namespace SharpSRTP.SRTP
 
         #endregion // Authentication parameters
 
-        public SrtpContext(int protectionProfile, byte[] mki, byte[] masterKey, byte[] masterSalt, SrtpContextType type)
+        public SrtpContext(SrtpProtectionProfileConfiguration protectionProfile, byte[] mki, byte[] masterKey, byte[] masterSalt, SrtpContextType type)
         {
             this._contextType = type;
 
-            this.ProtectionProfile = protectionProfile;
+            this.ProtectionProfile = protectionProfile ?? throw new ArgumentNullException(nameof(protectionProfile));
             this.Mki = mki ?? new byte[0];
             this.MasterKey = masterKey;
             this.MasterSalt = masterSalt;
 
-            if (DtlsSrtpProtocol.DtlsProtectionProfiles.TryGetValue(protectionProfile, out SrtpProtectionProfileConfiguration srtpSecurityParams))
-            {
-                Cipher = srtpSecurityParams.Cipher;
-                Auth = srtpSecurityParams.Auth;
-                N_e = srtpSecurityParams.CipherKeyLength >> 3;
-                N_a = srtpSecurityParams.AuthKeyLength >> 3;
-                N_s = srtpSecurityParams.CipherSaltLength >> 3;
-                N_tag = srtpSecurityParams.AuthTagLength >> 3;
-                SRTP_PREFIX_LENGTH = srtpSecurityParams.SrtpPrefixLength;
-            }
-            else
-            {
-                throw new NotSupportedException($"Protection profile {protectionProfile} is unsupported!");
-            }
+            Cipher = protectionProfile.Cipher;
+            Auth = protectionProfile.Auth;
+            N_e = protectionProfile.CipherKeyLength >> 3;
+            N_a = protectionProfile.AuthKeyLength >> 3;
+            N_s = protectionProfile.CipherSaltLength >> 3;
+            N_tag = protectionProfile.AuthTagLength >> 3;
+            SRTP_PREFIX_LENGTH = protectionProfile.SrtpPrefixLength;
 
             DeriveSessionKeys();
         }

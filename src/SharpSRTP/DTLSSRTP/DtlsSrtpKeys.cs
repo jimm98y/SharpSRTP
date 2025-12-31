@@ -19,28 +19,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
+using SharpSRTP.SRTP;
 using System;
-using System.Linq;
 
-namespace SharpSRTP.SRTP
+namespace SharpSRTP.DTLSSRTP
 {
-    public class SrtpKeys
+    public class DtlsSrtpKeys
     {
         public SrtpProtectionProfileConfiguration ProtectionProfile { get; }
         public byte[] Mki { get; }
 
-        public byte[] MasterKey { get { return MasterKeySalt.Take(ProtectionProfile.CipherKeyLength >> 3).ToArray(); } }
-        public byte[] MasterSalt { get { return MasterKeySalt.Skip(ProtectionProfile.CipherKeyLength >> 3).ToArray(); } }
-        public byte[] MasterKeySalt { get; }
+        public byte[] ClientWriteMasterKey { get; }
+        public byte[] ClientWriteMasterSalt { get; }
+        public byte[] ServerWriteMasterKey { get; }
+        public byte[] ServerWriteMasterSalt { get; }
 
-        public SrtpKeys(SrtpProtectionProfileConfiguration protectionProfile, byte[] mki = null)
+        public DtlsSrtpKeys(SrtpProtectionProfileConfiguration protectionProfile, byte[] mki = null)
         {
             this.ProtectionProfile = protectionProfile ?? throw new ArgumentNullException(nameof(protectionProfile));
             this.Mki = mki;
 
             int cipherKeyLen = protectionProfile.CipherKeyLength >> 3;
             int cipherSaltLen = protectionProfile.CipherSaltLength >> 3;
-            this.MasterKeySalt = new byte[cipherKeyLen + cipherSaltLen];
+
+            this.ClientWriteMasterKey = new byte[cipherKeyLen];
+            this.ClientWriteMasterSalt = new byte[cipherSaltLen];
+            this.ServerWriteMasterKey = new byte[cipherKeyLen];
+            this.ServerWriteMasterSalt = new byte[cipherSaltLen];
         }
     }
 }

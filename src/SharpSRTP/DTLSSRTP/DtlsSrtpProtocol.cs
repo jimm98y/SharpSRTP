@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
+using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Tls;
 using SharpSRTP.SRTP;
 using System;
@@ -47,6 +48,8 @@ namespace SharpSRTP.DTLSSRTP
 
     public static class DtlsSrtpProtocol
     {
+        private static readonly SecureRandom _rand = new SecureRandom();
+
         public static readonly Dictionary<int, SrtpProtectionProfileConfiguration> DtlsProtectionProfiles;
 
         static DtlsSrtpProtocol()
@@ -82,7 +85,7 @@ namespace SharpSRTP.DTLSSRTP
             };
         }
 
-        public static SrtpKeys GenerateMasterKeys(int protectionProfile, byte[] mki, SecurityParameters dtlsSecurityParameters, bool requireExtendedMasterSecret = true)
+        public static DtlsSrtpKeys GenerateMasterKeys(int protectionProfile, byte[] mki, SecurityParameters dtlsSecurityParameters, bool requireExtendedMasterSecret = true)
         {
             // verify that we have extended master secret before computing the keys
             if(!dtlsSecurityParameters.IsExtendedMasterSecret && requireExtendedMasterSecret)
@@ -122,7 +125,7 @@ namespace SharpSRTP.DTLSSRTP
                 sharedSecretLength >> 3
                 ).Extract();
 
-            SrtpKeys keys = new SrtpKeys(protectionProfile, mki);
+            DtlsSrtpKeys keys = new DtlsSrtpKeys(srtpSecurityParams, mki);
 
             Buffer.BlockCopy(sharedSecret, 0, keys.ClientWriteMasterKey, 0, keys.ClientWriteMasterKey.Length);
             Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length, keys.ServerWriteMasterKey, 0, keys.ServerWriteMasterKey.Length);
@@ -130,6 +133,11 @@ namespace SharpSRTP.DTLSSRTP
             Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length + keys.ServerWriteMasterKey.Length + keys.ClientWriteMasterSalt.Length, keys.ServerWriteMasterSalt, 0, keys.ServerWriteMasterSalt.Length);
 
             return keys;
+        }
+
+        public static byte[] GenerateMki(int length)
+        {
+            return SrtpProtocol.GenerateMki(length);
         }
     }
 }

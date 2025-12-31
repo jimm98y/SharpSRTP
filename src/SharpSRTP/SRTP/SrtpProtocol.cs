@@ -19,7 +19,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
+using Org.BouncyCastle.Security;
+using System;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace SharpSRTP.SRTP
 {
@@ -28,28 +31,36 @@ namespace SharpSRTP.SRTP
     /// </summary>
     public abstract class SrtpCryptoSuites
     {
-        public const int AES_CM_128_HMAC_SHA1_80 = 0xFF0001;
-        public const int AES_CM_128_HMAC_SHA1_32 = 0xFF0002;
-        public const int F8_128_HMAC_SHA1_80 = 0xFF0003;
-        public const int SEED_CTR_128_HMAC_SHA1_80 = 0xFF0004;
-        public const int SEED_128_CCM_80 = 0xFF0005;
-        public const int SEED_128_GCM_96 = 0xFF0006;
-        public const int AES_192_CM_HMAC_SHA1_80 = 0xFF0007;
-        public const int AES_192_CM_HMAC_SHA1_32 = 0xFF0008;
-        public const int AES_256_CM_HMAC_SHA1_80 = 0xFF0009;
-        public const int AES_256_CM_HMAC_SHA1_32 = 0xFF000A;
-        public const int AEAD_AES_128_GCM = 0xFF000B;
-        public const int AEAD_AES_256_GCM = 0xFF000C;
+        public const string AES_CM_128_HMAC_SHA1_80 = "AES_CM_128_HMAC_SHA1_80";
+        public const string AES_CM_128_HMAC_SHA1_32 = "AES_CM_128_HMAC_SHA1_32";
+        public const string F8_128_HMAC_SHA1_80 = "F8_128_HMAC_SHA1_80";
+        public const string SEED_CTR_128_HMAC_SHA1_80 = "SEED_CTR_128_HMAC_SHA1_80";
+        public const string SEED_128_CCM_80 = "SEED_128_CCM_80";
+        public const string SEED_128_GCM_96 = "SEED_128_GCM_96";
+        public const string AES_192_CM_HMAC_SHA1_80 = "AES_192_CM_HMAC_SHA1_80";
+        public const string AES_192_CM_HMAC_SHA1_32 = "AES_192_CM_HMAC_SHA1_32";
+        public const string AES_256_CM_HMAC_SHA1_80 = "AES_256_CM_HMAC_SHA1_80";
+        public const string AES_256_CM_HMAC_SHA1_32 = "AES_256_CM_HMAC_SHA1_32";
+        // duplicates because some specifications seem to use these incorrectly
+        public const string AES_CM_192_HMAC_SHA1_80 = "AES_CM_192_HMAC_SHA1_80";
+        public const string AES_CM_192_HMAC_SHA1_32 = "AES_CM_192_HMAC_SHA1_32";
+        public const string AES_CM_256_HMAC_SHA1_80 = "AES_CM_256_HMAC_SHA1_80";
+        public const string AES_CM_256_HMAC_SHA1_32 = "AES_CM_256_HMAC_SHA1_32";
+        public const string AEAD_AES_128_GCM = "AEAD_AES_128_GCM";
+        public const string AEAD_AES_256_GCM = "AEAD_AES_256_GCM";
+
     }
 
     public static class SrtpProtocol
     {
-        public static readonly Dictionary<int, SrtpProtectionProfileConfiguration> SrtpCryptoSuites;
+        private static SecureRandom _rand = new SecureRandom();
+
+        public static readonly Dictionary<string, SrtpProtectionProfileConfiguration> SrtpCryptoSuites;
 
         static SrtpProtocol()
         {
             // see https://www.iana.org/assignments/sdp-security-descriptions/sdp-security-descriptions.xhtml
-            SrtpCryptoSuites = new Dictionary<int, SrtpProtectionProfileConfiguration>()
+            SrtpCryptoSuites = new Dictionary<string, SrtpProtectionProfileConfiguration>()
             {
                 { SRTP.SrtpCryptoSuites.AEAD_AES_256_GCM, new SrtpProtectionProfileConfiguration(SrtpCiphers.AEAD_AES_256_GCM, 256, 96, int.MaxValue, SrtpAuth.NONE, 0, 128) },
                 { SRTP.SrtpCryptoSuites.AEAD_AES_128_GCM, new SrtpProtectionProfileConfiguration(SrtpCiphers.AEAD_AES_128_GCM, 128, 96, int.MaxValue, SrtpAuth.NONE, 0, 128) },
@@ -59,6 +70,11 @@ namespace SharpSRTP.SRTP
                 { SRTP.SrtpCryptoSuites.AES_256_CM_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
                 { SRTP.SrtpCryptoSuites.AES_192_CM_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
                 { SRTP.SrtpCryptoSuites.AES_192_CM_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
+
+                { SRTP.SrtpCryptoSuites.AES_CM_256_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
+                { SRTP.SrtpCryptoSuites.AES_CM_256_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
+                { SRTP.SrtpCryptoSuites.AES_CM_192_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
+                { SRTP.SrtpCryptoSuites.AES_CM_192_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
 
                 { SRTP.SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
                 { SRTP.SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
@@ -70,6 +86,36 @@ namespace SharpSRTP.SRTP
                 { SRTP.SrtpCryptoSuites.SEED_128_CCM_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.SEED_128_CCM, 128, 96, int.MaxValue, SrtpAuth.NONE, 0, 80) },
                 { SRTP.SrtpCryptoSuites.SEED_128_GCM_96, new SrtpProtectionProfileConfiguration(SrtpCiphers.SEED_128_GCM, 128, 96, int.MaxValue, SrtpAuth.NONE, 0, 96) },
             };
+        }
+
+        public static SrtpKeys GenerateMasterKeys(string cryptoSuite, byte[] mki = null)
+        {
+            var srtpSecurityParams = SrtpCryptoSuites[cryptoSuite];
+            int masterKeyLen = srtpSecurityParams.CipherKeyLength >> 3;
+            int masterSaltLen = srtpSecurityParams.CipherSaltLength >> 3;
+
+            // derive the master key + master salt to be sent in SDP crypto: attribute as per RFC 4568
+            byte[] masterKeySalt = new byte[masterKeyLen + masterSaltLen];
+            _rand.NextBytes(masterKeySalt);
+
+            SrtpKeys keys = new SrtpKeys(srtpSecurityParams, mki);
+            Buffer.BlockCopy(masterKeySalt, 0, keys.MasterKeySalt, 0, masterKeySalt.Length);
+
+            return keys;
+        }
+
+        public static byte[] GenerateMki(int length)
+        {
+            byte[] MKI = new byte[length];
+            if (length > 0)
+            {
+                // ensure positive value of the generated BigInteger
+                int mkiValue = _rand.Next(0, int.MaxValue);
+                BigInteger bi = new BigInteger(mkiValue);
+                byte[] mkiValueBytes = bi.ToByteArray();
+                Buffer.BlockCopy(mkiValueBytes, 0, MKI, 0, Math.Min(mkiValueBytes.Length, MKI.Length));
+            }
+            return MKI;
         }
     }
 }
