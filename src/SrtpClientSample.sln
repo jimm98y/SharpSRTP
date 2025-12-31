@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.1.11312.151 d18.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SrtpClientSample", "SrtpClientSample\SrtpClientSample.csproj", "{3133696A-524D-C084-4D14-5D3E88CE3251}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpRTSPClient", "..\..\SharpRealTimeStreaming\src\SharpRTSPClient\SharpRTSPClient.csproj", "{A0408782-2365-41B6-570A-9846A6E62875}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSRTP", "SharpSRTP\SharpSRTP.csproj", "{2D401AE9-A5A1-8084-B7E9-8E6A4C147B72}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3133696A-524D-C084-4D14-5D3E88CE3251}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3133696A-524D-C084-4D14-5D3E88CE3251}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3133696A-524D-C084-4D14-5D3E88CE3251}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3133696A-524D-C084-4D14-5D3E88CE3251}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0408782-2365-41B6-570A-9846A6E62875}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0408782-2365-41B6-570A-9846A6E62875}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0408782-2365-41B6-570A-9846A6E62875}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0408782-2365-41B6-570A-9846A6E62875}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D401AE9-A5A1-8084-B7E9-8E6A4C147B72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D401AE9-A5A1-8084-B7E9-8E6A4C147B72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D401AE9-A5A1-8084-B7E9-8E6A4C147B72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D401AE9-A5A1-8084-B7E9-8E6A4C147B72}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {33C9836D-24ED-48AF-894D-607353041B88}
+	EndGlobalSection
+EndGlobal
