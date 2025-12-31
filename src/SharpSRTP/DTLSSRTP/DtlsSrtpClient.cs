@@ -25,11 +25,12 @@ using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using SharpSRTP.DTLS;
+using SharpSRTP.SRTP;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpSRTP.SRTP
+namespace SharpSRTP.DTLSSRTP
 {
     public class DtlsSrtpClient : DtlsClient, IDtlsSrtpPeer
     {

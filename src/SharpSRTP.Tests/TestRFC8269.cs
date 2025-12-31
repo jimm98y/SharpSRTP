@@ -2,6 +2,7 @@
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Crypto.Modes;
+using SharpSRTP.DTLSSRTP;
 using SharpSRTP.SRTP;
 using SharpSRTP.SRTP.Authentication;
 using SharpSRTP.SRTP.Encryption;

@@ -21,8 +21,9 @@
 
 using Org.BouncyCastle.Tls;
 using SharpSRTP.DTLS;
+using SharpSRTP.SRTP;
 
-namespace SharpSRTP.SRTP
+namespace SharpSRTP.DTLSSRTP
 {
     public interface IDtlsSrtpPeer : IDtlsPeer
     {

@@ -20,11 +20,12 @@
 // SOFTWARE.
 
 using Org.BouncyCastle.Tls;
+using SharpSRTP.SRTP;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpSRTP.SRTP
+namespace SharpSRTP.DTLSSRTP
 {
     /// <summary>
     /// Currently registered DTLS-SRTP profiles: https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml#srtp-protection-1
