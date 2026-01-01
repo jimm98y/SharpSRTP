@@ -20,7 +20,6 @@
 // SOFTWARE.
 
 using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
@@ -70,6 +69,11 @@ namespace SharpSRTP.DTLSSRTP
                 ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_80,
                 ExtendedSrtpProtectionProfile.SRTP_NULL_HMAC_SHA1_32
             };
+        }
+
+        protected override string GetCertificateCommonName()
+        {
+            return "WebRTC";
         }
 
         public override void ProcessServerExtensions(IDictionary<int, byte[]> serverExtensions)

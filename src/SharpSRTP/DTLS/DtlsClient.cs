@@ -35,6 +35,8 @@ namespace SharpSRTP.DTLS
     {
         private TlsSession _session;
 
+        public bool AutogenerateCertificate { get; set; } = true;
+
         public int TimeoutMilliseconds { get; set; } = 20000;
         public Certificate Certificate { get; private set; }
         public AsymmetricKeyParameter CertificatePrivateKey { get; private set; }
@@ -60,22 +62,21 @@ namespace SharpSRTP.DTLS
 
         public virtual void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
         {
-            if (certificate == null || privateKey == null)
-            {
-                // generate default self-signed certificate - SRTP_AEAD_AES_256_GCM requires ECDsa
-                var cert = DtlsCertificateUtils.GenerateServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), false);
-                Certificate = cert.certificate;
-                CertificatePrivateKey = cert.key;
-                CertificateSignatureAlgorithm = SignatureAlgorithm.ecdsa;
-                CertificateHashAlgorithm = HashAlgorithm.sha256;
-            }
-            else
-            {
-                Certificate = certificate;
-                CertificatePrivateKey = privateKey;
-                CertificateSignatureAlgorithm = signatureAlgorithm;
-                CertificateHashAlgorithm = hashAlgorithm;
-            }
+            Certificate = certificate;
+            CertificatePrivateKey = privateKey;
+            CertificateSignatureAlgorithm = signatureAlgorithm;
+            CertificateHashAlgorithm = hashAlgorithm;
+        }
+
+        public virtual void AutogenerateClientCertificate(bool isRsa)
+        {
+            var cert = DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRsa);
+            SetCertificate(cert.certificate, cert.key, isRsa ? SignatureAlgorithm.rsa : SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
+        }
+
+        protected virtual string GetCertificateCommonName()
+        {
+            return "DTLS";
         }
 
         public override bool RequiresExtendedMasterSecret()
@@ -312,7 +313,16 @@ namespace SharpSRTP.DTLS
 
                 if(_client.Certificate == null || _client.CertificatePrivateKey == null)
                 {
-                    return null;
+                    if (_client.AutogenerateCertificate)
+                    {
+                        bool isRsa = IsServerCertificateRsa(_client.RemoteCertificate);
+                        _client.AutogenerateClientCertificate(isRsa);
+                    }
+                    else
+                    {
+                        // no client certificate
+                        return null;
+                    }
                 }
 
                 var clientSigAlgs = _context.SecurityParameters.ClientSigAlgs;
@@ -328,8 +338,36 @@ namespace SharpSRTP.DTLS
                     }
                 }
 
+                if(signatureAndHashAlgorithm == null)
+                {
+                    throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
+                }
+
                 return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(_context), (BcTlsCrypto)_context.Crypto, _client.CertificatePrivateKey, _client.Certificate, signatureAndHashAlgorithm);
             }
+        }
+
+        public static bool IsServerCertificateRsa(TlsServerCertificate serverCertificate)
+        {
+            if (serverCertificate == null || serverCertificate.Certificate == null || serverCertificate.Certificate.IsEmpty)
+                throw new ArgumentNullException(nameof(serverCertificate));
+
+            var certList = serverCertificate.Certificate.GetCertificateList();
+            if (certList == null || certList.Length == 0)
+                throw new ArgumentException("Server certificate chain is empty.", nameof(serverCertificate));
+
+            var firstCertificate = X509CertificateStructure.GetInstance(certList[0].GetEncoded());
+            var algOid = firstCertificate.SubjectPublicKeyInfo.Algorithm.Algorithm;
+
+            if (algOid.Equals(Org.BouncyCastle.Asn1.Pkcs.PkcsObjectIdentifiers.RsaEncryption))
+                return true;         
+
+            // Fallback: decode the public key and check its runtime type
+            var pubKey = Org.BouncyCastle.Security.PublicKeyFactory.CreateKey(firstCertificate.SubjectPublicKeyInfo);
+            if (pubKey is Org.BouncyCastle.Crypto.Parameters.RsaKeyParameters)
+                return true;
+            
+            return false;
         }
     }
 }

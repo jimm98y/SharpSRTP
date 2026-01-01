@@ -65,6 +65,11 @@ namespace SharpSRTP.DTLSSRTP
             };
         }
 
+        protected override string GetCertificateCommonName()
+        {
+            return "WebRTC";
+        }
+
         public override void ProcessClientExtensions(IDictionary<int, byte[]> clientExtensions)
         {
             base.ProcessClientExtensions(clientExtensions);

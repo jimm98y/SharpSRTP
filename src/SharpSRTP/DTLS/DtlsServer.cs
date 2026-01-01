@@ -50,27 +50,34 @@ namespace SharpSRTP.DTLS
 
         public DtlsServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
         {
-            SetCertificate(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm);
+            if (certificate == null || privateKey == null)
+            {
+                // generate default self-signed certificate - SRTP_AEAD_AES_256_GCM requires ECDsa
+                AutogenerateClientCertificate(false);
+            }
+            else
+            {
+                SetCertificate(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm);
+            }
         }
 
         public virtual void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
         {
-            if (certificate == null || privateKey == null)
-            {
-                // generate default self-signed certificate - SRTP_AEAD_AES_256_GCM requires ECDsa
-                var cert = DtlsCertificateUtils.GenerateServerCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), false);
-                Certificate = cert.certificate;
-                CertificatePrivateKey = cert.key;
-                CertificateSignatureAlgorithm = SignatureAlgorithm.ecdsa;
-                CertificateHashAlgorithm = HashAlgorithm.sha256;
-            }
-            else
-            {
-                Certificate = certificate;
-                CertificatePrivateKey = privateKey;
-                CertificateSignatureAlgorithm = signatureAlgorithm;
-                CertificateHashAlgorithm = hashAlgorithm;
-            }
+            Certificate = certificate;
+            CertificatePrivateKey = privateKey;
+            CertificateSignatureAlgorithm = signatureAlgorithm;
+            CertificateHashAlgorithm = hashAlgorithm;
+        }
+
+        public virtual void AutogenerateClientCertificate(bool isRsa)
+        {
+            var cert = DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), false);
+            SetCertificate(cert.certificate, cert.key, isRsa ? SignatureAlgorithm.rsa : SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
+        }
+
+        protected virtual string GetCertificateCommonName()
+        {
+            return "DTLS";
         }
 
         public override bool RequiresExtendedMasterSecret()
