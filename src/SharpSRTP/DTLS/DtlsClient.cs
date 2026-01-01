@@ -48,7 +48,8 @@ namespace SharpSRTP.DTLS
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
-        public DtlsClient(TlsSession session = null) : this(new BcTlsCrypto(), session)
+        public DtlsClient(TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
+            : this(new BcTlsCrypto(), session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         { }
 
         public DtlsClient(TlsCrypto crypto, TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
@@ -320,7 +321,7 @@ namespace SharpSRTP.DTLS
 
                 foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
                 {
-                    if (alg.Signature == _client.CertificateSignatureAlgorithm && alg.Hash == _client.CertificateSignatureAlgorithm)
+                    if (alg.Signature == _client.CertificateSignatureAlgorithm && alg.Hash == _client.CertificateHashAlgorithm)
                     {
                         signatureAndHashAlgorithm = alg;
                         break;
