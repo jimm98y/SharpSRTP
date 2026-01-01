@@ -23,8 +23,10 @@ using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Utilities.Encoders;
 using SharpSRTP.SRTP.Readers;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -405,6 +407,17 @@ namespace SharpSRTP.SRTP
                 default:
                     return ERROR_UNSUPPORTED_CIPHER;
             }
+                        
+            byte[] auth = null;
+            if (context.Auth != SrtpAuth.NONE)
+            {
+                payload[length + 0] = (byte)(roc >> 24);
+                payload[length + 1] = (byte)(roc >> 16);
+                payload[length + 2] = (byte)(roc >> 8);
+                payload[length + 3] = (byte)roc;
+
+                auth = SharpSRTP.SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, payload, 0, length + 4);
+            }
 
             byte[] mki = context.Mki;
             if (mki.Length > 0)
@@ -414,14 +427,8 @@ namespace SharpSRTP.SRTP
                 outputBufferLength += mki.Length;
             }
 
-            if (context.Auth != SrtpAuth.NONE)
+            if (auth != null)
             {
-                payload[length + 0] = (byte)(roc >> 24);
-                payload[length + 1] = (byte)(roc >> 16);
-                payload[length + 2] = (byte)(roc >> 8);
-                payload[length + 3] = (byte)roc;
-
-                byte[] auth = SharpSRTP.SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, payload, 0, length + 4);
                 System.Buffer.BlockCopy(auth, 0, payload, length, context.N_tag); // we don't append ROC in SRTP
                 length += context.N_tag;
                 outputBufferLength += context.N_tag;
@@ -460,9 +467,9 @@ namespace SharpSRTP.SRTP
             if (context.Auth != SrtpAuth.NONE)
             {
                 // TODO: optimize memory allocation - we could preallocate 4 byte array and add another GenerateAuthTag overload that processes 2 blocks
-                int authenticatedLen = length - context.N_tag - mki.Length;
+                int authenticatedLen = length - mki.Length - context.N_tag;
                 byte[] msgAuth = new byte[authenticatedLen + 4];
-                Buffer.BlockCopy(payload, 0, msgAuth, 0, msgAuth.Length);
+                Buffer.BlockCopy(payload, 0, msgAuth, 0, authenticatedLen);
                 msgAuth[authenticatedLen + 0] = (byte)(context.Roc >> 24);
                 msgAuth[authenticatedLen + 1] = (byte)(context.Roc >> 16);
                 msgAuth[authenticatedLen + 2] = (byte)(context.Roc >> 8);
@@ -471,7 +478,7 @@ namespace SharpSRTP.SRTP
                 byte[] auth = SharpSRTP.SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, msgAuth, 0, authenticatedLen + 4);
                 for (int i = 0; i < context.N_tag; i++)
                 {
-                    if (payload[length - context.N_tag + i] != auth[i])
+                    if (payload[authenticatedLen + mki.Length + i] != auth[i])
                     {
                         return ERROR_HMAC_CHECK_FAILED;
                     }

@@ -88,15 +88,23 @@ namespace SharpSRTP.SRTP
             };
         }
 
-        public static SrtpKeys GenerateMasterKeys(string cryptoSuite, byte[] mki = null)
+        public static SrtpKeys GenerateMasterKeys(string cryptoSuite, byte[] mki = null, byte[] masterKeySaltOverride = null)
         {
             var srtpSecurityParams = SrtpCryptoSuites[cryptoSuite];
             int masterKeyLen = srtpSecurityParams.CipherKeyLength >> 3;
             int masterSaltLen = srtpSecurityParams.CipherSaltLength >> 3;
 
-            // derive the master key + master salt to be sent in SDP crypto: attribute as per RFC 4568
-            byte[] masterKeySalt = new byte[masterKeyLen + masterSaltLen];
-            _rand.NextBytes(masterKeySalt);
+            byte[] masterKeySalt;
+            if (masterKeySaltOverride == null)
+            {
+                // derive the master key + master salt to be sent in SDP crypto: attribute as per RFC 4568
+                masterKeySalt = new byte[masterKeyLen + masterSaltLen];
+                _rand.NextBytes(masterKeySalt);
+            }
+            else
+            {
+                masterKeySalt = masterKeySaltOverride;
+            }
 
             SrtpKeys keys = new SrtpKeys(srtpSecurityParams, mki);
             Buffer.BlockCopy(masterKeySalt, 0, keys.MasterKeySalt, 0, masterKeySalt.Length);

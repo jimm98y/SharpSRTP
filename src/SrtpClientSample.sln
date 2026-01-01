@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpRTSPClient", "..\..\Sh
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSRTP", "SharpSRTP\SharpSRTP.csproj", "{2D401AE9-A5A1-8084-B7E9-8E6A4C147B72}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RTSP", "..\..\SharpRTSP\RTSP\RTSP.csproj", "{F134ABCD-8FF1-402F-7F37-D976239D6767}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{2D401AE9-A5A1-8084-B7E9-8E6A4C147B72}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D401AE9-A5A1-8084-B7E9-8E6A4C147B72}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D401AE9-A5A1-8084-B7E9-8E6A4C147B72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F134ABCD-8FF1-402F-7F37-D976239D6767}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F134ABCD-8FF1-402F-7F37-D976239D6767}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F134ABCD-8FF1-402F-7F37-D976239D6767}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F134ABCD-8FF1-402F-7F37-D976239D6767}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
