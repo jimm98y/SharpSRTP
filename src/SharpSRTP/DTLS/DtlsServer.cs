@@ -173,15 +173,15 @@ namespace SharpSRTP.DTLS
 
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)
         {
-            Log.Debug("DTLS server raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
+            if (Log.DebugEnabled) Log.Debug("DTLS server raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
             
             if (message != null)
             {
-                Log.Debug("> " + message);
+                if (Log.DebugEnabled) Log.Debug("> " + message);
             }
             if (cause != null)
             {
-                Log.Debug("", cause);
+                if (Log.DebugEnabled) Log.Debug("", cause);
             }
         }
 
@@ -228,11 +228,11 @@ namespace SharpSRTP.DTLS
         {
             TlsCertificate[] chain = clientCertificate.GetCertificateList();
 
-            Log.Debug("DTLS server received client certificate chain of length " + chain.Length);
+            if (Log.DebugEnabled) Log.Debug("DTLS server received client certificate chain of length " + chain.Length);
             for (int i = 0; i != chain.Length; i++)
             {
                 X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
-                Log.Debug("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
+                if (Log.DebugEnabled) Log.Debug("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
             }
         }
 
@@ -243,14 +243,14 @@ namespace SharpSRTP.DTLS
             ProtocolName protocolName = m_context.SecurityParameters.ApplicationProtocol;
             if (protocolName != null)
             {
-                Log.Debug("Server ALPN: " + protocolName.GetUtf8Decoding());
+                if (Log.DebugEnabled) Log.Debug("Server ALPN: " + protocolName.GetUtf8Decoding());
             }
 
             byte[] tlsServerEndPoint = m_context.ExportChannelBinding(ChannelBinding.tls_server_end_point);
-            Log.Debug("Server 'tls-server-end-point': " + ToHexString(tlsServerEndPoint));
+            if (Log.DebugEnabled) Log.Debug("Server 'tls-server-end-point': " + ToHexString(tlsServerEndPoint));
 
             byte[] tlsUnique = m_context.ExportChannelBinding(ChannelBinding.tls_unique);
-            Log.Debug("Server 'tls-unique': " + ToHexString(tlsUnique));
+            if (Log.DebugEnabled) Log.Debug("Server 'tls-unique': " + ToHexString(tlsUnique));
 
             OnHandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
