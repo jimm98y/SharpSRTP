@@ -318,10 +318,27 @@ namespace SharpSRTP.SRTP
         public const int ERROR_MASTER_KEY_ROTATION_REQUIRED = -5;
         public const int ERROR_MKI_CHECK_FAILED = -6;
 
+        public int CalculateRequiredSrtpPayloadLength(int rtpLen)
+        {
+            var context = this;
+            byte[] mki = context.Mki;
+            return rtpLen + mki.Length + context.N_tag;
+        }
+
         public int ProtectRtp(byte[] payload, int length, out int outputBufferLength)
         {
             var context = this;
             outputBufferLength = length;
+
+            if (payload == null)
+            {
+                throw new ArgumentNullException(nameof(payload));
+            }
+
+            if (payload.Length < CalculateRequiredSrtpPayloadLength(length))
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(ProtectRtp)} failed, {nameof(payload)} buffer is too small!");
+            }
 
             if (!context.IncrementMasterKeyUseCounter())
             {
@@ -416,6 +433,11 @@ namespace SharpSRTP.SRTP
         public int UnprotectRtp(byte[] payload, int length, out int outputBufferLength)
         {
             var context = this;
+
+            if (payload == null)
+            {
+                throw new ArgumentNullException(nameof(payload));
+            }
 
             byte[] mki = context.Mki;
             outputBufferLength = length - context.N_tag - mki.Length;
@@ -516,10 +538,27 @@ namespace SharpSRTP.SRTP
             return 0;
         }
 
+        public int CalculateRequiredSrtcpPayloadLength(int rtcpLen)
+        {
+            var context = this;
+            byte[] mki = context.Mki;
+            return rtcpLen + 4 + mki.Length + context.N_tag;
+        }
+
         public int ProtectRtcp(byte[] payload, int length, out int outputBufferLength)
         {
             var context = this;
             outputBufferLength = length;
+
+            if(payload == null)
+            {
+                throw new ArgumentNullException(nameof(payload));
+            }
+
+            if(payload.Length < CalculateRequiredSrtcpPayloadLength(length))
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(ProtectRtcp)} failed, {nameof(payload)} buffer is too small!");
+            }
 
             if (!context.IncrementMasterKeyUseCounter())
             {
@@ -604,6 +643,11 @@ namespace SharpSRTP.SRTP
         public int UnprotectRtcp(byte[] payload, int length, out int outputBufferLength)
         {
             var context = this;
+
+            if (payload == null)
+            {
+                throw new ArgumentNullException(nameof(payload));
+            }
 
             byte[] mki = context.Mki;
             outputBufferLength = length - 4 - context.N_tag - mki.Length;
