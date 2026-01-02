@@ -38,7 +38,7 @@ namespace SharpSRTP.Tests
             byte[] srtpBytes = rtpBytes.Concat(new byte[10]).ToArray();
 
             byte[] MKI = null;
-            var keys = SrtpProtocol.GenerateMasterKeys(SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_80, MKI, masterKeySaltBytes);
+            var keys = SrtpProtocol.CreateMasterKeys(SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_80, MKI, masterKeySaltBytes);
 
             var encodeRtpContext = new SrtpContext(keys.ProtectionProfile, MKI, keys.MasterKey, keys.MasterSalt, SrtpContextType.RTP);
             var encodeRtcpContext = new SrtpContext(keys.ProtectionProfile, MKI, keys.MasterKey, keys.MasterSalt, SrtpContextType.RTCP);

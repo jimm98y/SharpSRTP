@@ -99,13 +99,8 @@ namespace SharpSRTP.DTLSSRTP
                 throw new InvalidOperationException();
 
             int selectedProtectionProfile = _srtpData.ProtectionProfiles[0];
-            DtlsSrtpKeys keys = DtlsSrtpProtocol.GenerateMasterKeys(_srtpData.ProtectionProfiles[0], _srtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
-            var protectionProfile = DtlsSrtpProtocol.DtlsProtectionProfiles[selectedProtectionProfile];
-            var encodeRtpContext = new SrtpContext(protectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
-            var encodeRtcpContext = new SrtpContext(protectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
-            var decodeRtpContext = new SrtpContext(protectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
-            var decodeRtcpContext = new SrtpContext(protectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
-            return new SrtpSessionContext(encodeRtpContext, decodeRtpContext, encodeRtcpContext, decodeRtcpContext);
+            DtlsSrtpKeys keys = DtlsSrtpProtocol.CreateMasterKeys(_srtpData.ProtectionProfiles[0], _srtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
+            return DtlsSrtpProtocol.CreateSrtpServerSessionContext(keys);
         }
     }
 }

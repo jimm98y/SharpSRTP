@@ -19,7 +19,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
-using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Tls;
 using SharpSRTP.SRTP;
 using System;
@@ -48,8 +47,6 @@ namespace SharpSRTP.DTLSSRTP
 
     public static class DtlsSrtpProtocol
     {
-        private static readonly SecureRandom _rand = new SecureRandom();
-
         public static readonly Dictionary<int, SrtpProtectionProfileConfiguration> DtlsProtectionProfiles;
 
         static DtlsSrtpProtocol()
@@ -89,7 +86,7 @@ namespace SharpSRTP.DTLSSRTP
             };
         }
 
-        public static DtlsSrtpKeys GenerateMasterKeys(int protectionProfile, byte[] mki, SecurityParameters dtlsSecurityParameters, bool requireExtendedMasterSecret = true)
+        public static DtlsSrtpKeys CreateMasterKeys(int protectionProfile, byte[] mki, SecurityParameters dtlsSecurityParameters, bool requireExtendedMasterSecret = true)
         {
             // verify that we have extended master secret before computing the keys
             if(!dtlsSecurityParameters.IsExtendedMasterSecret && requireExtendedMasterSecret)
@@ -142,6 +139,26 @@ namespace SharpSRTP.DTLSSRTP
         public static byte[] GenerateMki(int length)
         {
             return SrtpProtocol.GenerateMki(length);
+        }
+
+        public static SrtpSessionContext CreateSrtpServerSessionContext(DtlsSrtpKeys keys)
+        {
+            var encodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
+            var encodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
+            var decodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
+            var decodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
+
+            return new SrtpSessionContext(encodeRtpContext, decodeRtpContext, encodeRtcpContext, decodeRtcpContext);
+        }
+
+        public static SrtpSessionContext CreateSrtpClientSessionContext(DtlsSrtpKeys keys)
+        {
+            var encodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
+            var encodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
+            var decodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
+            var decodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
+
+            return new SrtpSessionContext(encodeRtpContext, decodeRtpContext, encodeRtcpContext, decodeRtcpContext);
         }
     }
 }

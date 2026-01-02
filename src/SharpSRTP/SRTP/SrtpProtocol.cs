@@ -88,14 +88,14 @@ namespace SharpSRTP.SRTP
             };
         }
 
-        public static SrtpKeys GenerateMasterKeys(string cryptoSuite, byte[] mki = null, byte[] masterKeySaltOverride = null)
+        public static SrtpKeys CreateMasterKeys(string cryptoSuite, byte[] mki = null, byte[] useMasterKeySalt = null)
         {
             var srtpSecurityParams = SrtpCryptoSuites[cryptoSuite];
             int masterKeyLen = srtpSecurityParams.CipherKeyLength >> 3;
             int masterSaltLen = srtpSecurityParams.CipherSaltLength >> 3;
 
             byte[] masterKeySalt;
-            if (masterKeySaltOverride == null)
+            if (useMasterKeySalt == null)
             {
                 // derive the master key + master salt to be sent in SDP crypto: attribute as per RFC 4568
                 masterKeySalt = new byte[masterKeyLen + masterSaltLen];
@@ -103,7 +103,7 @@ namespace SharpSRTP.SRTP
             }
             else
             {
-                masterKeySalt = masterKeySaltOverride;
+                masterKeySalt = useMasterKeySalt;
             }
 
             SrtpKeys keys = new SrtpKeys(srtpSecurityParams, mki);
@@ -124,6 +124,16 @@ namespace SharpSRTP.SRTP
                 Buffer.BlockCopy(mkiValueBytes, 0, MKI, 0, Math.Min(mkiValueBytes.Length, MKI.Length));
             }
             return MKI;
+        }
+
+        public static SrtpSessionContext CreateSrtpSessionContext(SrtpKeys keys)
+        {
+            var encodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.MasterKey, keys.MasterSalt, SrtpContextType.RTP);
+            var encodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.MasterKey, keys.MasterSalt, SrtpContextType.RTCP);
+            var decodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.MasterKey, keys.MasterSalt, SrtpContextType.RTP);
+            var decodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.MasterKey, keys.MasterSalt, SrtpContextType.RTCP);
+
+            return new SrtpSessionContext(encodeRtpContext, decodeRtpContext, encodeRtcpContext, decodeRtcpContext);
         }
     }
 }
