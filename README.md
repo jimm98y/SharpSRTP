@@ -201,14 +201,12 @@ Create the DTLS-SRTP server:
 ```cs
 var server = new DtlsSrtpServer(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256)
 ```
-Subscribe for `OnHandshakeCompleted` and inside it call `server.CreateSessionContext(e.SecurityParameters)`, storing the result:
+Subscribe for `OnSessionStarted`:
 ```cs
-server.OnHandshakeCompleted += (sender, e) =>
+server.OnSessionStarted += (sender, e) =>
 {
-    SrtpSessionContext context = server.CreateSessionContext(e.SecurityParameters);
-    
-    // store the SRTP context for this session
-    this.Context = context;
+    var context = e.Context;
+    ...
 };
 ```
 Create the DTLS transport. Here we will use UDP on localhost, port 8888:
@@ -233,7 +231,7 @@ while(!isShutdown)
         });
 }
 ```
-After the `OnHandshakeCompleted` event is executed, you can use the `Context` to protect/unprotect data.
+After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data.
 ### Client
 Generate the TLS certificate, this time it will be ECDsa:
 ```cs
@@ -244,14 +242,12 @@ Create the DTLS-SRTP client:
 ```cs
 var client = new DtlsSrtpClient(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256)
 ```
-Subscribe for `OnHandshakeCompleted` and inside it call `server.CreateSessionContext(e.SecurityParameters)`, storing the result:
+Subscribe for `OnSessionStarted`:
 ```cs
-server.OnHandshakeCompleted += (sender, e) =>
+client.OnSessionStarted += (sender, e) =>
 {
-    SrtpSessionContext context = server.CreateSessionContext(e.SecurityParameters);
-    
-    // store the SRTP context for this session
-    this.Context = context;
+    var context = e.Context;
+    ...
 };
 ```
 Create the DTLS transport. Here we will use UDP on localhost, port 8888:
@@ -262,6 +258,6 @@ Connect the client:
 ```cs
 DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
 ```
-After the `OnHandshakeCompleted` event is executed, you can use the `Context` to protect/unprotect data.
+After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data.
 ## TODO
 1. Double Encryption Procedures for the Secure Real-Time Transport Protocol (SRTP) [RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)

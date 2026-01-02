@@ -35,14 +35,25 @@ namespace SharpSRTP.DTLSSRTP
     public class DtlsSrtpServer : DtlsServer, IDtlsSrtpPeer
     {
         private UseSrtpData _srtpData;
-        
+
+        public event EventHandler<DtlsSessionStartedEventArgs> OnSessionStarted;
+
         public DtlsSrtpServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
             : this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         { }
 
         public DtlsSrtpServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
             : base(crypto, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
-        { }
+        {
+            this.OnHandshakeCompleted += DtlsSrtpServer_OnHandshakeCompleted;
+        }
+
+        private void DtlsSrtpServer_OnHandshakeCompleted(object sender, DtlsHandshakeCompletedEventArgs e)
+        {
+            SrtpSessionContext context = CreateSessionContext(e.SecurityParameters);
+            Certificate peerCertificate = e.SecurityParameters.PeerCertificate;
+            OnSessionStarted?.Invoke(this, new DtlsSessionStartedEventArgs(context, peerCertificate));
+        }
 
         protected virtual int[] GetSupportedProtectionProfiles()
         {

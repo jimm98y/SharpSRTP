@@ -114,6 +114,11 @@ namespace SharpSRTP.SRTP
 
         public static byte[] GenerateMki(int length)
         {
+            if(length > 255)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }    
+
             byte[] MKI = new byte[length];
             if (length > 0)
             {

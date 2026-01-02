@@ -22,11 +22,25 @@
 using Org.BouncyCastle.Tls;
 using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
+using System;
 
 namespace SharpSRTP.DTLSSRTP
 {
+    public class DtlsSessionStartedEventArgs : EventArgs
+    {
+        public SrtpSessionContext Context { get; private set; }
+        public Certificate PeerCertificate { get; private set;  }
+
+        public DtlsSessionStartedEventArgs(SrtpSessionContext context, Certificate peerCertificate)
+        {
+            this.Context = context ?? throw new ArgumentNullException(nameof(context));
+            this.PeerCertificate = peerCertificate ?? throw new ArgumentNullException(nameof(peerCertificate));
+        }
+    }
+
     public interface IDtlsSrtpPeer : IDtlsPeer
     {
+        event EventHandler<DtlsSessionStartedEventArgs> OnSessionStarted;
         SrtpSessionContext CreateSessionContext(SecurityParameters securityParameters);
     }
 }

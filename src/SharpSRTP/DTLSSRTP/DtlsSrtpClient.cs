@@ -35,7 +35,8 @@ namespace SharpSRTP.DTLSSRTP
     {
         private UseSrtpData _srtpData;
 
-        public int MkiLength { get; protected set; } = 4;
+        public event EventHandler<DtlsSessionStartedEventArgs> OnSessionStarted;
+        public int MkiLength { get; private set; } = 0;
 
         public DtlsSrtpClient(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.rsa, short certificateHashAlgorithm = HashAlgorithm.sha256, TlsSession session = null) :
            this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm, session)
@@ -45,9 +46,39 @@ namespace SharpSRTP.DTLSSRTP
             base(crypto, session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         {
             int[] protectionProfiles = GetSupportedProtectionProfiles();
+            
             byte[] mki = DtlsSrtpProtocol.GenerateMki(MkiLength);
             this._srtpData = new UseSrtpData(protectionProfiles, mki);
-        }        
+
+            this.OnHandshakeCompleted += DtlsSrtpClient_OnHandshakeCompleted;
+        }
+
+        private void DtlsSrtpClient_OnHandshakeCompleted(object sender, DtlsHandshakeCompletedEventArgs e)
+        {
+            SrtpSessionContext context = CreateSessionContext(e.SecurityParameters);
+            Certificate peerCertificate = e.SecurityParameters.PeerCertificate;
+            OnSessionStarted?.Invoke(this, new DtlsSessionStartedEventArgs(context, peerCertificate));
+        }
+       
+        public void SetMKI(byte[] mki)
+        {
+            if(mki == null)
+            {
+                MkiLength = 0;
+                mki = new byte[0];
+            }
+            else
+            {
+                if (mki.Length > 255)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(mki));
+                }
+
+                MkiLength = mki.Length;
+            }
+
+            this._srtpData = new UseSrtpData(_srtpData.ProtectionProfiles, mki);
+        }
 
         protected virtual int[] GetSupportedProtectionProfiles()
         {
