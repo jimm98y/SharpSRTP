@@ -57,6 +57,10 @@ namespace SharpSRTP.DTLSSRTP
             // see https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml#srtp-protection-1
             DtlsProtectionProfiles = new Dictionary<int, SrtpProtectionProfileConfiguration>()
             {
+                // https://www.rfc-editor.org/rfc/rfc8723.txt
+                { ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM, new SrtpProtectionProfileConfiguration(SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM, 512, 192, int.MaxValue, SrtpAuth.NONE, 0, 256) },
+                { ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM, new SrtpProtectionProfileConfiguration(SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM, 256, 192, int.MaxValue, SrtpAuth.NONE, 0, 256) },
+                                
                 // https://datatracker.ietf.org/doc/html/rfc8269
                 { ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_256_GCM, new SrtpProtectionProfileConfiguration(SrtpCiphers.AEAD_ARIA_256_GCM, 256, 96, int.MaxValue, SrtpAuth.NONE, 0, 128) },
                 { ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_128_GCM, new SrtpProtectionProfileConfiguration(SrtpCiphers.AEAD_ARIA_128_GCM, 128, 96, int.MaxValue, SrtpAuth.NONE, 0, 128) },

@@ -48,7 +48,6 @@ namespace SharpSRTP.SRTP
         public const string AES_CM_256_HMAC_SHA1_32 = "AES_CM_256_HMAC_SHA1_32";
         public const string AEAD_AES_128_GCM = "AEAD_AES_128_GCM";
         public const string AEAD_AES_256_GCM = "AEAD_AES_256_GCM";
-
     }
 
     public static class SrtpProtocol
@@ -71,11 +70,6 @@ namespace SharpSRTP.SRTP
                 { SRTP.SrtpCryptoSuites.AES_192_CM_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
                 { SRTP.SrtpCryptoSuites.AES_192_CM_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
 
-                { SRTP.SrtpCryptoSuites.AES_CM_256_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
-                { SRTP.SrtpCryptoSuites.AES_CM_256_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
-                { SRTP.SrtpCryptoSuites.AES_CM_192_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
-                { SRTP.SrtpCryptoSuites.AES_CM_192_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
-
                 { SRTP.SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
                 { SRTP.SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_128_CM, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
 
@@ -85,6 +79,12 @@ namespace SharpSRTP.SRTP
                 { SRTP.SrtpCryptoSuites.SEED_CTR_128_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.SEED_128_CTR, 128, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
                 { SRTP.SrtpCryptoSuites.SEED_128_CCM_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.SEED_128_CCM, 128, 96, int.MaxValue, SrtpAuth.NONE, 0, 80) },
                 { SRTP.SrtpCryptoSuites.SEED_128_GCM_96, new SrtpProtectionProfileConfiguration(SrtpCiphers.SEED_128_GCM, 128, 96, int.MaxValue, SrtpAuth.NONE, 0, 96) },
+
+                // misspelled
+                { SRTP.SrtpCryptoSuites.AES_CM_256_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
+                { SRTP.SrtpCryptoSuites.AES_CM_256_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_256_CM, 256, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
+                { SRTP.SrtpCryptoSuites.AES_CM_192_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
+                { SRTP.SrtpCryptoSuites.AES_CM_192_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
             };
         }
 
