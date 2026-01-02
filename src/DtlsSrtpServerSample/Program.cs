@@ -21,12 +21,13 @@ server.OnSessionStarted += (sender, e) =>
         byte[] rtpBuffer = new byte[context.EncodeRtpContext.CalculateRequiredSrtpPayloadLength(rtp.Length)];
         Buffer.BlockCopy(rtp, 0, rtpBuffer, 0, rtp.Length);
 
-        Console.WriteLine($"Encrypting RTP: {Convert.ToHexString(rtp)}");
-        context.EncodeRtpContext.ProtectRtp(rtpBuffer, rtp.Length, out int length);
-        byte[] srtp = rtpBuffer.Take(length).ToArray();
-
-        Console.WriteLine($"Sending SRTP: {Convert.ToHexString(srtp)}");
-        clientTransport.Send(srtp);
+        Console.WriteLine($"Encrypted RTP: {Convert.ToHexString(rtp)}");
+        if (context.EncodeRtpContext.ProtectRtp(rtpBuffer, rtp.Length, out int length) == 0)
+        {
+            byte[] srtp = rtpBuffer.Take(length).ToArray();
+            Console.WriteLine($"Sent SRTP:     {Convert.ToHexString(srtp)}");
+            clientTransport.Send(srtp);
+        }
     });
 };
 UdpDatagramTransport udpServerTransport = new UdpDatagramTransport("127.0.0.1:8888", null); 
