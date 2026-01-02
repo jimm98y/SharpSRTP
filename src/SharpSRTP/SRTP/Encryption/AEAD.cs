@@ -25,21 +25,21 @@ using System;
 
 namespace SharpSRTP.SRTP.Encryption
 {
-    public static class AESGCM
+    public static class AEAD
     {
-        public static void Encrypt(GcmBlockCipher cipher, byte[] payload, int offset, int length, byte[] iv, byte[] K_e, int N_tag, byte[] associatedData)
+        public static void Encrypt(IAeadBlockCipher engine, byte[] payload, int offset, int length, byte[] iv, byte[] K_e, int N_tag, byte[] associatedData)
         {
             int payloadSize = length - offset;
 
-            int expectedLength = cipher.GetOutputSize(payloadSize);
+            int expectedLength = engine.GetOutputSize(payloadSize);
             if (offset + expectedLength > payload.Length)
                 throw new ArgumentOutOfRangeException("Payload is too small!");
 
             var parameters = new AeadParameters(new KeyParameter(K_e), N_tag << 3, iv, associatedData);
-            cipher.Init(true, parameters);
+            engine.Init(true, parameters);
 
-            int len = cipher.ProcessBytes(payload, offset, payloadSize, payload, offset);
-            cipher.DoFinal(payload, offset + len);
+            int len = engine.ProcessBytes(payload, offset, payloadSize, payload, offset);
+            engine.DoFinal(payload, offset + len);
         }
 
         public static byte[] GenerateMessageKeyIV(byte[] k_s, uint ssrc, ulong index)

@@ -19,18 +19,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
-using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto;
 using System;
 
 namespace SharpSRTP.SRTP.Encryption
 {
-    public static class ARIACTR
+    public static class CTR
     {
-        public const int ARIA_BLOCK_SIZE = 16;
+        public const int BLOCK_SIZE = 16;
 
         public static byte[] GenerateSessionKeyIV(byte[] masterSalt, ulong index, ulong kdr, byte label)
         {
-            byte[] iv = new byte[ARIA_BLOCK_SIZE];
+            byte[] iv = new byte[BLOCK_SIZE];
 
             // RFC 3711 - 4.3.1
             // Key derivation SHALL be defined as follows in terms of<label>, an
@@ -97,27 +97,27 @@ namespace SharpSRTP.SRTP.Encryption
             return iv;
         }
 
-        public static void Encrypt(AriaEngine aria, byte[] payload, int offset, int length, byte[] iv)
+        public static void Encrypt(IBlockCipher engine, byte[] payload, int offset, int length, byte[] iv)
         {
             int payloadSize = length - offset;
             byte[] cipher = new byte[payloadSize];
 
             int blockNo = 0;
-            for (int i = 0; i < payloadSize / ARIA_BLOCK_SIZE; i++)
+            for (int i = 0; i < payloadSize / BLOCK_SIZE; i++)
             {
                 iv[14] = (byte)((i >> 8) & 0xff);
                 iv[15] = (byte)(i & 0xff);
-                aria.ProcessBlock(iv, 0, cipher, ARIA_BLOCK_SIZE * blockNo);
+                engine.ProcessBlock(iv, 0, cipher, BLOCK_SIZE * blockNo);
                 blockNo++;
             }
 
-            if (payloadSize % ARIA_BLOCK_SIZE != 0)
+            if (payloadSize % BLOCK_SIZE != 0)
             {
                 iv[14] = (byte)((blockNo >> 8) & 0xff);
                 iv[15] = (byte)(blockNo & 0xff);
-                byte[] lastBlock = new byte[ARIA_BLOCK_SIZE];
-                aria.ProcessBlock(iv, 0, lastBlock, 0);
-                Buffer.BlockCopy(lastBlock, 0, cipher, ARIA_BLOCK_SIZE * blockNo, payloadSize % ARIA_BLOCK_SIZE);
+                byte[] lastBlock = new byte[BLOCK_SIZE];
+                engine.ProcessBlock(iv, 0, lastBlock, 0);
+                Buffer.BlockCopy(lastBlock, 0, cipher, BLOCK_SIZE * blockNo, payloadSize % BLOCK_SIZE);
             }
 
             for (int i = 0; i < payloadSize; i++)

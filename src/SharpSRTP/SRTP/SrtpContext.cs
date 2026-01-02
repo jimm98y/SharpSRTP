@@ -19,14 +19,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
+using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Crypto.Modes;
-using Org.BouncyCastle.Utilities.Encoders;
+using Org.BouncyCastle.Crypto.Parameters;
 using SharpSRTP.SRTP.Readers;
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -49,11 +49,9 @@ namespace SharpSRTP.SRTP
         public event EventHandler<EventArgs> OnRekeyingRequested;
 
         public HMac HMAC { get; private set; }
-        public AesEngine AES { get; private set; }
-        public AesEngine AESF8 { get; private set; }
-        public AriaEngine ARIA { get; private set; }
-        public GcmBlockCipher AESGCM { get; private set; }
-        public GcmBlockCipher ARIAGCM { get; private set; }
+        public IBlockCipher CTR { get; private set; }
+        public IBlockCipher F8 { get; private set; }
+        public IAeadBlockCipher AEAD { get; private set; }
 
         /// <summary>
         /// Receiver only - highest sequence number received.
@@ -177,79 +175,78 @@ namespace SharpSRTP.SRTP
             switch(Cipher)
             {
                 case SrtpCiphers.NULL:
+                case SrtpCiphers.AES_128_F8:
                 case SrtpCiphers.AES_128_CM:
                 case SrtpCiphers.AES_192_CM:
                 case SrtpCiphers.AES_256_CM:
-                    {
-                        var aes = new AesEngine();
-                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                        this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                        this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                        this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-
-                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
-                        this.AES = aes;
-                    }
-                    break;
-
-                case SrtpCiphers.AES_128_F8:
-                    {
-                        var aes = new AesEngine();
-
-                        // TODO: (!) Assuming the session key is still being derived using AES-CM...
-                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                        this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                        this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                        this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-
-                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
-                        this.AES = aes;
-
-                        this.AESF8 = new AesEngine();
-                    }
-                    break;
-
                 case SrtpCiphers.AEAD_AES_128_GCM:
                 case SrtpCiphers.AEAD_AES_256_GCM:
                     {
                         var aes = new AesEngine();
                         aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                        this.K_e = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                        this.K_a = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                        this.K_s = GenerateSessionKeyAES(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-                        this.AES = aes;
+                        this.K_e = GenerateSessionKey(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKey(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKey(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
 
-                        var cipher = new GcmBlockCipher(new AesEngine());
-                        this.AESGCM = cipher;
+                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+                        this.CTR = aes;
+
+                        if (Cipher == SrtpCiphers.AES_128_F8)
+                        {
+                            this.F8 = new AesEngine();
+                        }
+                        else if (Cipher == SrtpCiphers.AEAD_AES_128_GCM || Cipher == SrtpCiphers.AEAD_AES_256_GCM)
+                        {
+                            var cipher = new GcmBlockCipher(new AesEngine());
+                            this.AEAD = cipher;
+                        }
                     }
                     break;
 
                 case SrtpCiphers.ARIA_128_CTR:
                 case SrtpCiphers.ARIA_256_CTR:
-                    {
-                        var aria = new AriaEngine();
-                        aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                        this.K_e = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                        this.K_a = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                        this.K_s = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-
-                        aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
-                        this.ARIA = aria;
-                    }
-                    break;
-
                 case SrtpCiphers.AEAD_ARIA_128_GCM:
                 case SrtpCiphers.AEAD_ARIA_256_GCM:
                     {
                         var aria = new AriaEngine();
                         aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
-                        this.K_e = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                        this.K_a = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                        this.K_s = GenerateSessionKeyARIA(aria, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-                        this.ARIA = aria;
+                        this.K_e = GenerateSessionKey(aria, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKey(aria, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKey(aria, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
 
-                        var cipher = new GcmBlockCipher(new AriaEngine());
-                        this.ARIAGCM = cipher;
+                        aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+                        this.CTR = aria;
+
+                        if (Cipher == SrtpCiphers.AEAD_ARIA_128_GCM || Cipher == SrtpCiphers.AEAD_ARIA_256_GCM)
+                        {
+                            var cipher = new GcmBlockCipher(new AriaEngine());
+                            this.AEAD = cipher;
+                        }
+                    }
+                    break;
+
+                case SrtpCiphers.SEED_128_CTR:
+                case SrtpCiphers.SEED_128_CCM:
+                case SrtpCiphers.SEED_128_GCM:
+                    {
+                        var seed = new SeedEngine();
+                        seed.Init(true, new KeyParameter(MasterKey));
+
+                        this.K_e = GenerateSessionKey(seed, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKey(seed, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKey(seed, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                        this.CTR = seed;
+
+                        if(Cipher == SrtpCiphers.SEED_128_CCM)
+                        {
+                            var cipher = new CcmBlockCipher(new SeedEngine());
+                            this.AEAD = cipher;
+                        }
+                        else if(Cipher == SrtpCiphers.SEED_128_GCM)
+                        {
+                            var cipher = new GcmBlockCipher(new SeedEngine());
+                            this.AEAD = cipher;
+                        }
                     }
                     break;
 
@@ -276,7 +273,7 @@ namespace SharpSRTP.SRTP
             }
         }
 
-        public static byte[] GenerateSessionKeyAES(AesEngine aes, SrtpCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
+        public static byte[] GenerateSessionKey(IBlockCipher engine, SrtpCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
         {
             byte[] key = new byte[length];
             switch (cipher)
@@ -288,9 +285,16 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.AES_256_CM:
                 case SrtpCiphers.AEAD_AES_128_GCM:
                 case SrtpCiphers.AEAD_AES_256_GCM:
+                case SrtpCiphers.ARIA_128_CTR:
+                case SrtpCiphers.ARIA_256_CTR:
+                case SrtpCiphers.AEAD_ARIA_128_GCM:
+                case SrtpCiphers.AEAD_ARIA_256_GCM:
+                case SrtpCiphers.SEED_128_CTR:
+                case SrtpCiphers.SEED_128_CCM:
+                case SrtpCiphers.SEED_128_GCM:
                     {
-                        byte[] iv = Encryption.AESCM.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
-                        Encryption.AESCM.Encrypt(aes, key, 0, length, iv);
+                        byte[] iv = Encryption.CTR.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
+                        Encryption.CTR.Encrypt(engine, key, 0, length, iv);
                     }
                     break;
 
@@ -298,28 +302,6 @@ namespace SharpSRTP.SRTP
                     throw new NotSupportedException($"Unsupported cipher {cipher.ToString()}!");
             }
             
-            return key;
-        }
-
-        public static byte[] GenerateSessionKeyARIA(AriaEngine aria, SrtpCiphers cipher, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
-        {
-            byte[] key = new byte[length];
-            switch (cipher)
-            {
-                case SrtpCiphers.ARIA_128_CTR:
-                case SrtpCiphers.ARIA_256_CTR:
-                case SrtpCiphers.AEAD_ARIA_128_GCM:
-                case SrtpCiphers.AEAD_ARIA_256_GCM:
-                    {
-                        byte[] iv = Encryption.ARIACTR.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
-                        Encryption.ARIACTR.Encrypt(aria, key, 0, length, iv);
-                    }
-                    break;
-
-                default:
-                    throw new NotSupportedException($"Unsupported cipher {cipher.ToString()}!");
-            }
-
             return key;
         }
 
@@ -360,45 +342,33 @@ namespace SharpSRTP.SRTP
 
                 case SrtpCiphers.AES_128_F8:
                     {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.AESF8.GenerateRtpMessageKeyIV(context.AESF8, context.K_e, context.K_s, payload, roc);
-                        SharpSRTP.SRTP.Encryption.AESF8.Encrypt(context.AES, payload, offset, length, iv);
+                        byte[] iv = SharpSRTP.SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.F8, context.K_e, context.K_s, payload, roc);
+                        SharpSRTP.SRTP.Encryption.F8.Encrypt(context.CTR, payload, offset, length, iv);
                     }
                     break;
 
                 case SrtpCiphers.AES_128_CM:
                 case SrtpCiphers.AES_192_CM:
                 case SrtpCiphers.AES_256_CM:
+                case SrtpCiphers.ARIA_128_CTR:
+                case SrtpCiphers.ARIA_256_CTR:
+                case SrtpCiphers.SEED_128_CTR:
                     {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.AESCM.GenerateMessageKeyIV(context.K_s, ssrc, index);
-                        SharpSRTP.SRTP.Encryption.AESCM.Encrypt(context.AES, payload, offset, length, iv);
+                        byte[] iv = SharpSRTP.SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
+                        SharpSRTP.SRTP.Encryption.CTR.Encrypt(context.CTR, payload, offset, length, iv);
                     }
                     break;
 
                 case SrtpCiphers.AEAD_AES_128_GCM:
                 case SrtpCiphers.AEAD_AES_256_GCM:
-                    {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.AESGCM.GenerateMessageKeyIV(context.K_s, ssrc, index);
-                        byte[] associatedData = payload.Take(offset).ToArray();
-                        SharpSRTP.SRTP.Encryption.AESGCM.Encrypt(context.AESGCM, payload, offset, length, iv, context.K_e, context.N_tag, associatedData);
-                        length += context.N_tag;
-                        outputBufferLength += context.N_tag;
-                    }
-                    break;
-
-                case SrtpCiphers.ARIA_128_CTR:
-                case SrtpCiphers.ARIA_256_CTR:
-                    {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.ARIACTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
-                        SharpSRTP.SRTP.Encryption.ARIACTR.Encrypt(context.ARIA, payload, offset, length, iv);
-                    }
-                    break;
-
                 case SrtpCiphers.AEAD_ARIA_128_GCM:
                 case SrtpCiphers.AEAD_ARIA_256_GCM:
+                case SrtpCiphers.SEED_128_CCM:
+                case SrtpCiphers.SEED_128_GCM:
                     {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.ARIAGCM.GenerateMessageKeyIV(context.K_s, ssrc, index);
+                        byte[] iv = SharpSRTP.SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, index);
                         byte[] associatedData = payload.Take(offset).ToArray();
-                        SharpSRTP.SRTP.Encryption.ARIAGCM.Encrypt(context.ARIAGCM, payload, offset, length, iv, context.K_e, context.N_tag, associatedData);
+                        SharpSRTP.SRTP.Encryption.AEAD.Encrypt(context.AEAD, payload, offset, length, iv, context.K_e, context.N_tag, associatedData);
                         length += context.N_tag;
                         outputBufferLength += context.N_tag;
                     }
@@ -509,43 +479,33 @@ namespace SharpSRTP.SRTP
 
                 case SrtpCiphers.AES_128_F8:
                     {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.AESF8.GenerateRtpMessageKeyIV(context.AESF8, context.K_e, context.K_s, payload, roc);
-                        SharpSRTP.SRTP.Encryption.AESF8.Encrypt(context.AES, payload, offset, outputBufferLength, iv);
+                        byte[] iv = SharpSRTP.SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.F8, context.K_e, context.K_s, payload, roc);
+                        SharpSRTP.SRTP.Encryption.F8.Encrypt(context.CTR, payload, offset, outputBufferLength, iv);
                     }
                     break;
 
                 case SrtpCiphers.AES_128_CM:
                 case SrtpCiphers.AES_192_CM:
                 case SrtpCiphers.AES_256_CM:
+                case SrtpCiphers.ARIA_128_CTR:
+                case SrtpCiphers.ARIA_256_CTR:
+                case SrtpCiphers.SEED_128_CTR:
                     {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.AESCM.GenerateMessageKeyIV(context.K_s, ssrc, index);
-                        SharpSRTP.SRTP.Encryption.AESCM.Encrypt(context.AES, payload, offset, outputBufferLength, iv);
+                        byte[] iv = SharpSRTP.SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
+                        SharpSRTP.SRTP.Encryption.CTR.Encrypt(context.CTR, payload, offset, outputBufferLength, iv);
                     }
                     break;
 
                 case SrtpCiphers.AEAD_AES_128_GCM:
                 case SrtpCiphers.AEAD_AES_256_GCM:
-                    {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.AESGCM.GenerateMessageKeyIV(context.K_s, ssrc, index);
-                        byte[] associatedData = payload.Take(offset).ToArray();
-                        SharpSRTP.SRTP.Encryption.AESGCM.Encrypt(context.AESGCM, payload, offset, outputBufferLength, iv, context.K_e, context.N_tag, associatedData);
-                    }
-                    break;
-
-                case SrtpCiphers.ARIA_128_CTR:
-                case SrtpCiphers.ARIA_256_CTR:
-                    {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.ARIACTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
-                        SharpSRTP.SRTP.Encryption.ARIACTR.Encrypt(context.ARIA, payload, offset, outputBufferLength, iv);
-                    }
-                    break;
-
                 case SrtpCiphers.AEAD_ARIA_128_GCM:
                 case SrtpCiphers.AEAD_ARIA_256_GCM:
+                case SrtpCiphers.SEED_128_CCM:
+                case SrtpCiphers.SEED_128_GCM:
                     {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.ARIAGCM.GenerateMessageKeyIV(context.K_s, ssrc, index);
+                        byte[] iv = SharpSRTP.SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, index);
                         byte[] associatedData = payload.Take(offset).ToArray();
-                        SharpSRTP.SRTP.Encryption.ARIAGCM.Encrypt(context.ARIAGCM, payload, offset, outputBufferLength, iv, context.K_e, context.N_tag, associatedData);
+                        SharpSRTP.SRTP.Encryption.AEAD.Encrypt(context.AEAD, payload, offset, outputBufferLength, iv, context.K_e, context.N_tag, associatedData);
                     }
                     break;
 
@@ -577,45 +537,33 @@ namespace SharpSRTP.SRTP
 
                 case SrtpCiphers.AES_128_F8:
                     {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.AESF8.GenerateRtcpMessageKeyIV(context.AESF8, context.K_e, context.K_s, payload, index);
-                        SharpSRTP.SRTP.Encryption.AESF8.Encrypt(context.AES, payload, offset, length, iv);
+                        byte[] iv = SharpSRTP.SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.F8, context.K_e, context.K_s, payload, index);
+                        SharpSRTP.SRTP.Encryption.F8.Encrypt(context.CTR, payload, offset, length, iv);
                     }
                     break;
 
                 case SrtpCiphers.AES_128_CM:
                 case SrtpCiphers.AES_192_CM:
                 case SrtpCiphers.AES_256_CM:
+                case SrtpCiphers.ARIA_128_CTR:
+                case SrtpCiphers.ARIA_256_CTR:
+                case SrtpCiphers.SEED_128_CTR:
                     {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.AESCM.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
-                        SharpSRTP.SRTP.Encryption.AESCM.Encrypt(context.AES, payload, offset, length, iv);
+                        byte[] iv = SharpSRTP.SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
+                        SharpSRTP.SRTP.Encryption.CTR.Encrypt(context.CTR, payload, offset, length, iv);
                     }
                     break;
 
                 case SrtpCiphers.AEAD_AES_128_GCM:
                 case SrtpCiphers.AEAD_AES_256_GCM:
-                    {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.AESGCM.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
-                        byte[] associatedData = payload.Take(offset).Concat(new byte[] { (byte)(index >> 24), (byte)(index >> 16), (byte)(index >> 8), (byte)index }).ToArray(); // associatedData include also index
-                        SharpSRTP.SRTP.Encryption.AESGCM.Encrypt(context.AESGCM, payload, offset, length, iv, context.K_e, context.N_tag, associatedData);
-                        length += context.N_tag;
-                        outputBufferLength += context.N_tag;
-                    }
-                    break;
-
-                case SrtpCiphers.ARIA_128_CTR:
-                case SrtpCiphers.ARIA_256_CTR:
-                    {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.ARIACTR.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
-                        SharpSRTP.SRTP.Encryption.ARIACTR.Encrypt(context.ARIA, payload, offset, length, iv);
-                    }
-                    break;
-
                 case SrtpCiphers.AEAD_ARIA_128_GCM:
                 case SrtpCiphers.AEAD_ARIA_256_GCM:
+                case SrtpCiphers.SEED_128_CCM:
+                case SrtpCiphers.SEED_128_GCM:
                     {
-                        byte[] iv = SharpSRTP.SRTP.Encryption.ARIAGCM.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
+                        byte[] iv = SharpSRTP.SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
                         byte[] associatedData = payload.Take(offset).Concat(new byte[] { (byte)(index >> 24), (byte)(index >> 16), (byte)(index >> 8), (byte)index }).ToArray(); // associatedData include also index
-                        SharpSRTP.SRTP.Encryption.ARIAGCM.Encrypt(context.ARIAGCM, payload, offset, length, iv, context.K_e, context.N_tag, associatedData);
+                        SharpSRTP.SRTP.Encryption.AEAD.Encrypt(context.AEAD, payload, offset, length, iv, context.K_e, context.N_tag, associatedData);
                         length += context.N_tag;
                         outputBufferLength += context.N_tag;
                     }
@@ -708,43 +656,33 @@ namespace SharpSRTP.SRTP
 
                     case SrtpCiphers.AES_128_F8:
                         {
-                            byte[] iv = SharpSRTP.SRTP.Encryption.AESF8.GenerateRtcpMessageKeyIV(context.AESF8, context.K_e, context.K_s, payload, index);
-                            SharpSRTP.SRTP.Encryption.AESF8.Encrypt(context.AES, payload, offset, outputBufferLength, iv);
+                            byte[] iv = SharpSRTP.SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.F8, context.K_e, context.K_s, payload, index);
+                            SharpSRTP.SRTP.Encryption.F8.Encrypt(context.CTR, payload, offset, outputBufferLength, iv);
                         }
                         break;
 
                     case SrtpCiphers.AES_128_CM:
                     case SrtpCiphers.AES_192_CM:
                     case SrtpCiphers.AES_256_CM:
+                    case SrtpCiphers.ARIA_128_CTR:
+                    case SrtpCiphers.ARIA_256_CTR:
+                    case SrtpCiphers.SEED_128_CTR:
                         {
-                            byte[] iv = SharpSRTP.SRTP.Encryption.AESCM.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
-                            SharpSRTP.SRTP.Encryption.AESCM.Encrypt(context.AES, payload, offset, outputBufferLength, iv);
+                            byte[] iv = SharpSRTP.SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
+                            SharpSRTP.SRTP.Encryption.CTR.Encrypt(context.CTR, payload, offset, outputBufferLength, iv);
                         }
                         break;
 
                     case SrtpCiphers.AEAD_AES_128_GCM:
                     case SrtpCiphers.AEAD_AES_256_GCM:
-                        {
-                            byte[] iv = SharpSRTP.SRTP.Encryption.AESGCM.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
-                            byte[] associatedData = payload.Take(offset).Concat(payload.Skip(length - 4).Take(4)).ToArray(); // associatedData include also index
-                            SharpSRTP.SRTP.Encryption.AESGCM.Encrypt(context.AESGCM, payload, offset, outputBufferLength, iv, context.K_e, context.N_tag, associatedData);
-                        }
-                        break;
-
-                    case SrtpCiphers.ARIA_128_CTR:
-                    case SrtpCiphers.ARIA_256_CTR:
-                        {
-                            byte[] iv = SharpSRTP.SRTP.Encryption.ARIACTR.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
-                            SharpSRTP.SRTP.Encryption.ARIACTR.Encrypt(context.ARIA, payload, offset, outputBufferLength, iv);
-                        }
-                        break;
-
                     case SrtpCiphers.AEAD_ARIA_128_GCM:
                     case SrtpCiphers.AEAD_ARIA_256_GCM:
+                    case SrtpCiphers.SEED_128_CCM:
+                    case SrtpCiphers.SEED_128_GCM:
                         {
-                            byte[] iv = SharpSRTP.SRTP.Encryption.ARIAGCM.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
+                            byte[] iv = SharpSRTP.SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, context.S_l);
                             byte[] associatedData = payload.Take(offset).Concat(payload.Skip(length - 4).Take(4)).ToArray(); // associatedData include also index
-                            SharpSRTP.SRTP.Encryption.ARIAGCM.Encrypt(context.ARIAGCM, payload, offset, outputBufferLength, iv, context.K_e, context.N_tag, associatedData);
+                            SharpSRTP.SRTP.Encryption.AEAD.Encrypt(context.AEAD, payload, offset, outputBufferLength, iv, context.K_e, context.N_tag, associatedData);
                         }
                         break;
 

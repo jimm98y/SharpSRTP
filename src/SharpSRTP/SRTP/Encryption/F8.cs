@@ -19,25 +19,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
-using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto;
 using System;
 
 namespace SharpSRTP.SRTP.Encryption
 {
-    public static class AESF8
+    public static class F8
     {
-        public const int AES_BLOCK_SIZE = 16;
+        public const int BLOCK_SIZE = 16;
 
-        public static byte[] GenerateRtpMessageKeyIV(AesEngine aes, byte[] k_e, byte[] k_s, byte[] rtpPacket, uint ROC)
+        public static byte[] GenerateRtpMessageKeyIV(IBlockCipher engine, byte[] k_e, byte[] k_s, byte[] rtpPacket, uint ROC)
         {
             byte[] iv = GenerateRtpIV(rtpPacket, ROC);            
-            byte[] iv2 = GenerateIV2(aes, k_e, k_s, iv);
+            byte[] iv2 = GenerateIV2(engine, k_e, k_s, iv);
             return iv2;
         }
 
         private static byte[] GenerateRtpIV(byte[] rtpPacket, uint ROC)
         {
-            byte[] iv = new byte[AES_BLOCK_SIZE];
+            byte[] iv = new byte[BLOCK_SIZE];
             iv[0] = 0;
 
             // M + PT + SEQ + TS + SSRC
@@ -51,16 +51,16 @@ namespace SharpSRTP.SRTP.Encryption
             return iv;
         }
 
-        public static byte[] GenerateRtcpMessageKeyIV(AesEngine aes, byte[] k_e, byte[] k_s, byte[] rtcpPacket, uint index)
+        public static byte[] GenerateRtcpMessageKeyIV(IBlockCipher engine, byte[] k_e, byte[] k_s, byte[] rtcpPacket, uint index)
         {
             byte[] iv = GenerateRtcpIV(rtcpPacket, index);
-            byte[] iv2 = GenerateIV2(aes, k_e, k_s, iv);
+            byte[] iv2 = GenerateIV2(engine, k_e, k_s, iv);
             return iv2;
         }
 
         private static byte[] GenerateRtcpIV(byte[] rtcpPacket, uint index)
         {
-            byte[] iv = new byte[AES_BLOCK_SIZE];
+            byte[] iv = new byte[BLOCK_SIZE];
 
             // 0..0
             iv[0] = 0;
@@ -75,19 +75,19 @@ namespace SharpSRTP.SRTP.Encryption
             iv[7] = (byte)(index & 0xFF);
 
             // V + P + RC + PT + L + SSRC
-            Buffer.BlockCopy(rtcpPacket, 0, iv, AES_BLOCK_SIZE - 8, 8);
+            Buffer.BlockCopy(rtcpPacket, 0, iv, BLOCK_SIZE - 8, 8);
             return iv;
         }
 
-        private static byte[] GenerateIV2(AesEngine aes, byte[] k_e, byte[] k_s, byte[] iv)
+        private static byte[] GenerateIV2(IBlockCipher engine, byte[] k_e, byte[] k_s, byte[] iv)
         {
-            byte[] iv2 = new byte[AES_BLOCK_SIZE];
+            byte[] iv2 = new byte[BLOCK_SIZE];
             
             // IV' = E(k_e XOR m, IV)
             Buffer.BlockCopy(k_e, 0, iv2, 0, k_e.Length);
 
             // m = k_s || 0x555..5
-            for (int i = 0; i < AES_BLOCK_SIZE; i++)
+            for (int i = 0; i < BLOCK_SIZE; i++)
             {
                 if (i < k_s.Length)
                 {
@@ -99,17 +99,17 @@ namespace SharpSRTP.SRTP.Encryption
                 }
             }
 
-            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(iv2));
-            aes.ProcessBlock(iv, 0, iv2, 0);
+            engine.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(iv2));
+            engine.ProcessBlock(iv, 0, iv2, 0);
 
             return iv2;
         }
 
-        public static void Encrypt(AesEngine aes, byte[] payload, int offset, int length, byte[] iv)
+        public static void Encrypt(IBlockCipher aes, byte[] payload, int offset, int length, byte[] iv)
         {
             int payloadSize = length - offset;
-            int blockCount = payloadSize / AES_BLOCK_SIZE + payloadSize % AES_BLOCK_SIZE;
-            byte[] cipher = new byte[blockCount * AES_BLOCK_SIZE];
+            int blockCount = payloadSize / BLOCK_SIZE + payloadSize % BLOCK_SIZE;
+            byte[] cipher = new byte[blockCount * BLOCK_SIZE];
 
             int blockNo = 0;
             byte[] iv2 = new byte[iv.Length];
@@ -126,14 +126,14 @@ namespace SharpSRTP.SRTP.Encryption
                 // IV' xor S(-1) xor j
                 if (blockNo > 0)
                 {
-                    int previousBlockIndex = AES_BLOCK_SIZE * (blockNo - 1);
-                    for (int i = 0; i < AES_BLOCK_SIZE; i++)
+                    int previousBlockIndex = BLOCK_SIZE * (blockNo - 1);
+                    for (int i = 0; i < BLOCK_SIZE; i++)
                     {
                         iv2[i] = (byte)(iv2[i] ^ cipher[previousBlockIndex + i]);
                     }
                 }
 
-                aes.ProcessBlock(iv2, 0, cipher, AES_BLOCK_SIZE * blockNo);
+                aes.ProcessBlock(iv2, 0, cipher, BLOCK_SIZE * blockNo);
                 blockNo++;
             }
 
