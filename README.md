@@ -164,7 +164,7 @@ To encrypt RTP and create SRTP:
 ```cs
 byte[] rtp = ...
 byte[] rtpBuffer = new byte[context.EncodeRtpContext.CalculateRequiredSrtpPayloadLength(rtp.Length)];
-Buffer.BlockCopy(rtp, 0, rtpBuffer, 0, rtp.Length];
+Buffer.BlockCopy(rtp, 0, rtpBuffer, 0, rtp.Length);
 context.EncodeRtpContext.ProtectRtp(rtpBuffer, rtp.Length, out int length);
 byte[] srtp = rtpBuffer.Take(length).ToArray();
 ```
@@ -199,7 +199,7 @@ var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("WebRTC", DateTi
 ```
 Create the DTLS-SRTP server:
 ```cs
-var server = new DtlsSrtpServer(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256)
+var server = new DtlsSrtpServer(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
 ```
 Subscribe for `OnSessionStarted`:
 ```cs
