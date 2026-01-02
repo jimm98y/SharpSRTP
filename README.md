@@ -42,9 +42,96 @@ Implemented [DTLS-SRTP protection profiles](https://www.iana.org/assignments/srt
 The current DTLS implementation is based upon BouncyCastle and supports DTLS 1.2 only.
 
 ### DTLS Server
-
+Start with generating the TLS certificate. Self-signed RSA SHA256 certificate can be generated as follows:
+```cs
+var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), true);
+```
+Create the DTLS server and subscribe the OnHandshakeCompleted event to get notified when a client connects:
+```cs
+DtlsServer server = new DtlsServer(rsaCertificate.certificate, rsaCertificate.key, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
+server.OnHandshakeCompleted += (sender, e) =>
+{
+    ...
+};
+````
+Create the DTLS transport. Here we will use UDP on localhost, port 8888:
+```cs
+UdpDatagramTransport udpServerTransport = new UdpDatagramTransport("127.0.0.1:8888", null);
+```
+Wait for the client and perform DTLS handshake:
+```cs
+bool isShutdown = false;
+while(!isShutdown)
+{
+    DtlsTransport dtlsTransport = server.DoHandshake(
+        out string error,
+        udpServerTransport, 
+        () =>
+        {
+            return udpServerTransport.RemoteEndPoint.ToString();
+        },
+        (remoteEndpoint) =>
+        {
+            return new UdpDatagramTransport(null, remoteEndpoint);
+        });
+        
+        var session = Task.Run(() =>
+        {
+            ...
+        });
+}
+```
+Receive data from the client:
+```cs
+byte[] buffer = new byte[dtlsTransport.GetReceiveLimit()];
+int receivedLength = dtlsTransport.Receive(buffer, 0, buffer.Length, 100);
+```
+Send data to the client:
+```cs
+dtlsTransport.Send(buffer, 0, buffer.Length);
+```
+To modify the offered crypto suites for the DTLS handshake, simply override `GetSupportedCipherSuites` and return a different set of crypto suites. To support a different version of DTLS, override `GetSupportedVersions` and return a different version. Note that as of January 2026, BouncyCastle still does not support DTLS 1.3.
 ### DTLS Client
-
+Start with creating the TLS certificate. Certificate type of the client must match the certificate type on the server, meaning if the server uses RSA certificate, the client has to use RSA certificate as well:
+```cs
+var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), true);
+```
+Create the DTLS client:
+```cs
+DtlsClient client = new DtlsClient(null, rsaCertificate.certificate, rsaCertificate.key, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
+```
+Optionally, you can let the client auto-generate the matching certificate:
+```cs
+DtlsClient client = new DtlsClient();
+```
+Subscribe for `OnHandshakeCompleted`:
+```cs
+client.OnHandshakeCompleted += (sender, e) =>
+{
+    ...
+};
+```
+Create the DTLS transport. Here we will use UDP on localhost, port 8888:
+```cs
+UdpDatagramTransport udpServerTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
+```
+Connect the client:
+```cs
+DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
+```
+Receive data to the server:
+```cs
+dtlsTransport.Send(buffer, 0, buffer.Length);
+```
+Receive data from the server:
+```cs
+byte[] buffer = new byte[dtlsTransport.GetReceiveLimit()];
+int receivedLength = dtlsTransport.Receive(buffer, 0, buffer.Length, 100);
+```
+Close the transport:
+```cs
+dtlsTransport.Close();
+```
 ## SRTP
 ### SRTP Server
 
@@ -56,4 +143,4 @@ The current DTLS implementation is based upon BouncyCastle and supports DTLS 1.2
 ### DTLS-SRTP Client
 
 ## TODO
-1. Double Encryption Procedures for the Secure Real-Time Transport Protocol (SRTP) [RFC 8723](https://datatracker.ietf.org/doc/html/rfc8723)
+1. Double Encryption Procedures for the Secure Real-Time Transport Protocol (SRTP) [RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)

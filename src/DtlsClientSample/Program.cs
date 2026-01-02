@@ -11,18 +11,18 @@ client.OnHandshakeCompleted += (sender, e) =>
 };
 
 UdpDatagramTransport udpClientTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
-DtlsTransport dtlsClientTransport = client.DoHandshake(out string error, udpClientTransport);
+DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
 
 byte counter = 0;
 
 while (true)
 {
     byte[] data = new byte[] { counter };
-    dtlsClientTransport.Send(data, 0, data.Length);
+    dtlsTransport.Send(data, 0, data.Length);
     counter++;
 
-    byte[] buf = new byte[dtlsClientTransport.GetReceiveLimit()];
-    int ret = dtlsClientTransport.Receive(buf, 0, buf.Length, 100);
+    byte[] buf = new byte[dtlsTransport.GetReceiveLimit()];
+    int ret = dtlsTransport.Receive(buf, 0, buf.Length, 100);
     if (ret < 0) break;
     if (ret > 0)
     {
@@ -32,4 +32,4 @@ while (true)
     Thread.Sleep(1000);
 }
 
-dtlsClientTransport.Close();
+dtlsTransport.Close();
