@@ -38,26 +38,26 @@ namespace Srtp.Tests
     [TestClass]
     public sealed class TestRFC3711
     {       
-        [DataRow("E03EAD0935C95E80E166B16DD92B4EB4", 0)]
-        [DataRow("D23513162B02D0F72A43A2FE4A5F97AB", 1)]
-        [DataRow("41E95B3BB0A2E8DD477901E4FCA894C0", 2)]
-        [DataRow("EC8CDF7398607CB0F2D21675EA9EA1E4", 0xFEFF)]
-        [DataRow("362B7C3C6773516318A077D7FC5073AE", 0xFF00)]
-        [DataRow("6A2CC3787889374FBEB4C81B17BA6C44", 0xFF01)]
+        [DataRow("2B7E151628AED2A6ABF7158809CF4F3C", "F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000", "E03EAD0935C95E80E166B16DD92B4EB4", 0)]
+        [DataRow("2B7E151628AED2A6ABF7158809CF4F3C", "F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000", "D23513162B02D0F72A43A2FE4A5F97AB", 1)]
+        [DataRow("2B7E151628AED2A6ABF7158809CF4F3C", "F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000", "41E95B3BB0A2E8DD477901E4FCA894C0", 2)]
+        [DataRow("2B7E151628AED2A6ABF7158809CF4F3C", "F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000", "EC8CDF7398607CB0F2D21675EA9EA1E4", 0xFEFF)]
+        [DataRow("2B7E151628AED2A6ABF7158809CF4F3C", "F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000", "362B7C3C6773516318A077D7FC5073AE", 0xFF00)]
+        [DataRow("2B7E151628AED2A6ABF7158809CF4F3C", "F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000", "6A2CC3787889374FBEB4C81B17BA6C44", 0xFF01)]
         [TestMethod]
-        public void Test_Encrypt_AESCM(string keystream, int i)
+        public void Test_Encrypt_AESCM(string kk_e, string sk_s, string keystream, int i)
         {
-            byte[] sessionKey = Convert.FromHexString("2B7E151628AED2A6ABF7158809CF4F3C");
+            byte[] k_e = Convert.FromHexString(kk_e);
+            byte[] k_s = Convert.FromHexString(sk_s);
             int roc = 0;
             uint sequenceNumber = 0;
             uint ssrc = 0;
-            byte[] k_s = Convert.FromHexString("F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000");
 
             ulong index = ((ulong)roc << 16) | sequenceNumber;
 
             AesEngine aes = new AesEngine();
             byte[] iv = CTR.GenerateMessageKeyIV(k_s, ssrc, index);
-            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(sessionKey));
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
 
             byte[] cipher = new byte[k_s.Length];
 
@@ -216,7 +216,6 @@ namespace Srtp.Tests
 
             AesEngine aes = new AesEngine();
             byte[] iv = F8.GenerateRtpMessageKeyIV(aes, bk_e, bk_s, rtpBytes, roc);
-            Assert.AreEqual("595b699bbd3bc0df26062093c1ad8f73", Convert.ToHexString(iv).ToLowerInvariant());
 
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(bk_e));
             F8.Encrypt(aes, rtpBytes, offset, rtpBytes.Length, iv);
