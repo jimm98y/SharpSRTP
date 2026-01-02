@@ -9,7 +9,7 @@ DTLS, DTLS-SRTP and SRTP/SRTCP client and server written in C#. Implements the f
 1. The ARIA Algorithm and Its Use with the Secure Real-Time Transport Protocol (SRTP) [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
 
 ## SRTP Crypto Suites
-Implemented [SRTP Crypto Suites](https://www.iana.org/assignments/sdp-security-descriptions/sdp-security-descriptions.xhtml) are:
+Currently implemented [SRTP Crypto Suites](https://www.iana.org/assignments/sdp-security-descriptions/sdp-security-descriptions.xhtml) are:
 1. AES_CM_128_HMAC_SHA1_80 [RFC4568](https://datatracker.ietf.org/doc/html/rfc4568)
 1. AES_CM_128_HMAC_SHA1_32 [RFC4568](https://datatracker.ietf.org/doc/html/rfc4568)
 1. F8_128_HMAC_SHA1_80 [RFC4568](https://datatracker.ietf.org/doc/html/rfc4568)
@@ -24,7 +24,7 @@ Implemented [SRTP Crypto Suites](https://www.iana.org/assignments/sdp-security-d
 1. AEAD_AES_256_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
 
 ## DTLS-SRTP Protection Profiles
-Implemented [DTLS-SRTP protection profiles](https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml) are:
+Currently implemented [DTLS-SRTP protection profiles](https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml) are:
 1. SRTP_AES128_CM_HMAC_SHA1_80 [RFC5764](https://www.rfc-editor.org/rfc/rfc5764)
 1. SRTP_AES128_CM_HMAC_SHA1_32 [RFC5764](https://www.rfc-editor.org/rfc/rfc5764)
 1. SRTP_NULL_HMAC_SHA1_80 [RFC5764](https://www.rfc-editor.org/rfc/rfc5764)
@@ -44,11 +44,12 @@ The current DTLS implementation is based upon BouncyCastle and supports DTLS 1.2
 ### DTLS Server
 Start with generating the TLS certificate. Self-signed RSA SHA256 certificate can be generated as follows:
 ```cs
-var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), true);
+bool isRSA = true;
+var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRSA);
 ```
 Create the DTLS server and subscribe the OnHandshakeCompleted event to get notified when a client connects:
 ```cs
-DtlsServer server = new DtlsServer(rsaCertificate.certificate, rsaCertificate.key, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
+DtlsServer server = new DtlsServer(rsaCertificate.Certificate, rsaCertificate.PrivateKey, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
 server.OnHandshakeCompleted += (sender, e) =>
 {
     ...
@@ -133,15 +134,134 @@ Close the transport:
 dtlsTransport.Close();
 ```
 ## SRTP
-### SRTP Server
-
-
-### SRTP Client
-
+SRTP implementation is designed to take RTP/RTCP and convert it to SRTP/SRTCP while maintaining the SRTP context. RTP/RTSP server and clients are out of the scope of this library, but for a fully working example based upon [SharpRTSP](https://github.com/ngraziano/SharpRTSP) please refer to the examples.
+### Server
+Generate a random SRTP master key for AES_CM_128_HMAC_SHA1_80 on the server:
+```cs
+string cryptoSuite = SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_80;
+byte[] MKI = null;
+SrtpKeys keys = SrtpProtocol.CreateMasterKeys(cryptoSuite, MKI);
+```
+Obtain the generated master key + master salt to send it to the client:
+```cs
+byte[] masterKeySalt = keys.MasterKeySalt;
+```
+Create a new SRTP context using those keys:
+```cs
+SrtpSessionContext context = SrtpProtocol.CreateSrtpSessionContext(keys);
+```
+### Client
+Create a new SRTP context using existing keys from the server:
+```cs
+string cryptoSuite = SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_80;
+byte[] masterKeySalt = ...
+byte[] MKI = null;
+SrtpKeys keys = SrtpProtocol.CreateMasterKeys(cryptoSuite, MKI, masterKeySalt);
+SrtpSessionContext context = SrtpProtocol.CreateSrtpSessionContext(keys);
+```
+### RTP
+To encrypt RTP and create SRTP:
+```cs
+byte[] rtp = ...
+byte[] rtpBuffer = new byte[context.EncodeRtpContext.CalculateRequiredSrtpPayloadLength(rtp.Length)];
+Buffer.BlockCopy(rtp, 0, rtpBuffer, 0, rtp.Length];
+context.EncodeRtpContext.ProtectRtp(rtpBuffer, rtp.Length, out int length);
+byte[] srtp = rtpBuffer.Take(length).ToArray();
+```
+To decrypt SRTP and create RTP:
+```cs
+byte[] srtp = ...
+context.DecodeRtpContext.UnprotectRtp(srtp, srtp.Length, out int length);
+byte[] rtp = srtp.Take(length).ToArray();
+```
+### RTCP
+To encrypt RTCP and create SRTCP:
+```cs
+byte[] rtcp = ...
+byte[] rtcpBuffer = new byte[context.EncodeRtcpContext.CalculateRequiredSrtcpPayloadLength(rtcp.Length)];
+Buffer.BlockCopy(rtcp, 0, rtcpBuffer, 0, rtcp.Length];
+context.EncodeRtcpContext.ProtectRtcp(rtcpBuffer, rtcp.Length, out int length);
+byte[] srtcp = rtcpBuffer.Take(length).ToArray();
+```
+To decrypt SRTCP and create RTCP:
+```cs
+byte[] srtcp = ...
+context.DecodeRtcpContext.UnprotectRtcp(srtcp, srtcp.Length, out int length);
+byte[] rtcp = srtcp.Take(length).ToArray();
+```
 ## DTLS-SRTP
-### DTLS-SRTP Server
-
-### DTLS-SRTP Client
-
+DTLS-SRTP uses a modified DTLS client/server with the "use_srtp" extension to negotiate the SRTP encryption parameters and derive the corresponding SRTP keys.
+### Server
+First generate the TLS certificate, this time it will be ECDsa:
+```cs
+bool isRSA = false;
+var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRSA);
+```
+Create the DTLS-SRTP server:
+```cs
+var server = new DtlsSrtpServer(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256)
+```
+Subscribe for `OnHandshakeCompleted` and inside it call `server.CreateSessionContext(e.SecurityParameters)`, storing the result:
+```cs
+server.OnHandshakeCompleted += (sender, e) =>
+{
+    SrtpSessionContext context = server.CreateSessionContext(e.SecurityParameters);
+    
+    // store the SRTP context for this session
+    this.Context = context;
+};
+```
+Create the DTLS transport. Here we will use UDP on localhost, port 8888:
+```cs
+UdpDatagramTransport udpServerTransport = new UdpDatagramTransport("127.0.0.1:8888", null);
+```
+Wait for the client and perform DTLS handshake:
+```cs
+bool isShutdown = false;
+while(!isShutdown)
+{
+    DtlsTransport dtlsTransport = server.DoHandshake(
+        out string error,
+        udpServerTransport, 
+        () =>
+        {
+            return udpServerTransport.RemoteEndPoint.ToString();
+        },
+        (remoteEndpoint) =>
+        {
+            return new UdpDatagramTransport(null, remoteEndpoint);
+        });
+}
+```
+After the `OnHandshakeCompleted` event is executed, you can use the `Context` to protect/unprotect data.
+### Client
+Generate the TLS certificate, this time it will be ECDsa:
+```cs
+bool isRSA = false;
+var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRSA);
+```
+Create the DTLS-SRTP client:
+```cs
+var client = new DtlsSrtpClient(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256)
+```
+Subscribe for `OnHandshakeCompleted` and inside it call `server.CreateSessionContext(e.SecurityParameters)`, storing the result:
+```cs
+server.OnHandshakeCompleted += (sender, e) =>
+{
+    SrtpSessionContext context = server.CreateSessionContext(e.SecurityParameters);
+    
+    // store the SRTP context for this session
+    this.Context = context;
+};
+```
+Create the DTLS transport. Here we will use UDP on localhost, port 8888:
+```cs
+UdpDatagramTransport udpServerTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
+```
+Connect the client:
+```cs
+DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
+```
+After the `OnHandshakeCompleted` event is executed, you can use the `Context` to protect/unprotect data.
 ## TODO
 1. Double Encryption Procedures for the Secure Real-Time Transport Protocol (SRTP) [RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)
