@@ -72,7 +72,7 @@ namespace SharpSRTP.DTLS
         public virtual void AutogenerateClientCertificate(bool isRsa)
         {
             var cert = DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), false);
-            SetCertificate(cert.certificate, cert.key, isRsa ? SignatureAlgorithm.rsa : SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
+            SetCertificate(cert.Certificate, cert.PrivateKey, isRsa ? SignatureAlgorithm.rsa : SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
         }
 
         protected virtual string GetCertificateCommonName()

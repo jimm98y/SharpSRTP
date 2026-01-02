@@ -41,7 +41,7 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsCertificateUtils
     {
-        public static (Certificate certificate, AsymmetricKeyParameter key) GenerateCertificate(
+        public static (Certificate Certificate, AsymmetricKeyParameter PrivateKey) GenerateCertificate(
             string name,
             DateTime notBefore,
             DateTime notAfter,
@@ -57,7 +57,7 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public static (Certificate certificate, AsymmetricKeyParameter key) GenerateRSACertificate(
+        public static (Certificate Certificate, AsymmetricKeyParameter PrivateKey) GenerateRSACertificate(
             string name,
             DateTime notBefore,
             DateTime notAfter,
