@@ -134,7 +134,7 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint = null)
+        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint = null, Func<string, DatagramTransport> createClientDatagramTransport = null)
         {
             DtlsTransport transport = null;
                         

@@ -10,9 +10,8 @@ client.OnHandshakeCompleted += (sender, e) =>
     Console.WriteLine("DTLS client connected");
 };
 
-DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
 UdpDatagramTransport udpClientTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
-DtlsTransport dtlsClientTransport = clientProtocol.Connect(client, udpClientTransport);
+DtlsTransport dtlsClientTransport = client.DoHandshake(out string error, udpClientTransport);
 
 byte counter = 0;
 

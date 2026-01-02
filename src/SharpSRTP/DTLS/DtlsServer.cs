@@ -115,14 +115,21 @@ namespace SharpSRTP.DTLS
             };
         }
 
-        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint = null)
+        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint, Func<string, DatagramTransport> createClientDatagramTransport)
         {
+            if (datagramTransport == null)
+                throw new ArgumentNullException(nameof(datagramTransport));
+
+            if (createClientDatagramTransport == null)
+                throw new ArgumentNullException(nameof(createClientDatagramTransport));
+
             DtlsTransport transport = null;
 
             try
             {
                 DtlsServerProtocol serverProtocol = new DtlsServerProtocol();
                 DtlsRequest request = null;
+                string remoteEndpoint = null;
 
                 if (getRemoteEndpoint != null)
                 {
@@ -138,7 +145,7 @@ namespace SharpSRTP.DTLS
                         int length = datagramTransport.Receive(buf, 0, receiveLimit, RECEIVE_TIMEOUT);
                         if (length > 0)
                         {
-                            var remoteEndpoint = getRemoteEndpoint();
+                            remoteEndpoint = getRemoteEndpoint();
                             if(string.IsNullOrEmpty(remoteEndpoint))
                                 throw new InvalidOperationException();
 
@@ -159,7 +166,8 @@ namespace SharpSRTP.DTLS
                     while (request == null);
                 }
 
-                transport = serverProtocol.Accept(this, datagramTransport, request);
+                var clientDatagramTransport = createClientDatagramTransport(remoteEndpoint);
+                transport = serverProtocol.Accept(this, clientDatagramTransport, request);
             }
             catch (Exception ex)
             {
