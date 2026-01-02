@@ -15,16 +15,18 @@ client.OnSessionStarted += (sender, e) =>
     var context = e.Context;
     var session = Task.Run(async () =>
     {
+        byte[] receiveBuffer = new byte[2048];
         while (!isShutdown)
         {
-            byte[] srtp = new byte[2048];
-            int receivedLen = udpServerTransport.Receive(srtp, 100);
+            int receivedLen = udpServerTransport.Receive(receiveBuffer, 100);
             if (receivedLen != 0)
             {
-                context.DecodeRtpContext.UnprotectRtp(srtp, srtp.Length, out int length);
-                byte[] rtp = srtp.Take(length).ToArray();
-                Console.WriteLine(Convert.ToHexString(rtp));
-                break;
+                if (context.DecodeRtpContext.UnprotectRtp(receiveBuffer, receivedLen, out int length) == 0)
+                {
+                    byte[] rtp = receiveBuffer.Take(length).ToArray();
+                    Console.WriteLine(Convert.ToHexString(rtp));
+                    break;
+                }
             }
             await Task.Delay(1000);
         }
