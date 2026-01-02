@@ -21,10 +21,12 @@ client.OnSessionStarted += (sender, e) =>
             int receivedLen = udpServerTransport.Receive(receiveBuffer, 100);
             if (receivedLen != 0)
             {
+                Console.WriteLine($"Received SRTP: {Convert.ToHexString(receiveBuffer.Take(receivedLen).ToArray())}");
+
                 if (context.DecodeRtpContext.UnprotectRtp(receiveBuffer, receivedLen, out int length) == 0)
                 {
                     byte[] rtp = receiveBuffer.Take(length).ToArray();
-                    Console.WriteLine(Convert.ToHexString(rtp));
+                    Console.WriteLine($"Decrypted RTP: {Convert.ToHexString(rtp)}");
                     break;
                 }
             }
