@@ -28,7 +28,7 @@ using SharpSRTP.SRTP.Readers;
 using System;
 using System.Linq;
 
-namespace Srtp.Tests
+namespace SharpSRTP.Tests
 {
     /// <summary>
     /// RFC 7714 tests. https://www.rfc-editor.org/rfc/rfc7714

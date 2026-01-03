@@ -31,7 +31,7 @@ using SharpSRTP.SRTP.Readers;
 using System;
 using System.Linq;
 
-namespace Srtp.Tests
+namespace SharpSRTP.Tests
 {
     /// <summary>
     /// RFC 8269 tests. https://datatracker.ietf.org/doc/html/rfc8269

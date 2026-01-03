@@ -32,6 +32,9 @@ using System.Linq;
 
 namespace SharpSRTP.Tests
 {
+    /// <summary>
+    /// RFC5699 https://www.rfc-editor.org/rfc/rfc5669.txt
+    /// </summary>
     [TestClass]
     public class TestRFC5669
     {

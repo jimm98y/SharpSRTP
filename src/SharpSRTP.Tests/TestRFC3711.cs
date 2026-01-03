@@ -30,7 +30,7 @@ using SharpSRTP.SRTP.Readers;
 using System;
 using System.Linq;
 
-namespace Srtp.Tests
+namespace SharpSRTP.Tests
 {
     /// <summary>
     /// RFC 3711 tests. https://datatracker.ietf.org/doc/html/rfc3711
@@ -65,11 +65,11 @@ namespace Srtp.Tests
             Assert.AreEqual(keystream, payloadString);
         }
 
-        [DataRow(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, SrtpContextType.RTP, "72db0646db1e98b02a0056ef700c6cb2", "45111565691aa9d235afee475b12", "57dca73c834ac313d7fdbe58f4df5d93", "a0482b8914db8219f0ec4e54c2f32c4f854eeacf", "8666bc4b1ec16deb3e28fed64da3", true, false)]
-        [DataRow(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, SrtpContextType.RTP, "bf75d35600e7ebf8e32abbc946095224", "c573d00b2acbfd25292b1a5ce3fb", "530e566d05b76f7f14b557a27651a47a", "baac16ae6c3215c44089029e229e3507c25377c9", "97090496db451c9464dce1d0ce03", true, false)]
-        [DataRow(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, SrtpContextType.RTP, "e2d05f16f1128c2dbe5aa1138f312670", "1938ad696ebe161712592d9ec63a", "2d4f0386508113f7cf8d2267fe765d5c", "19b01657c4d9e88267f251f1939ed4bbb4f2ee8c", "9f36b51b79f849e18c3abb3cae82", true, false)]
+        [DataRow(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, SrtpContextType.RTP, "72db0646db1e98b02a0056ef700c6cb2", "45111565691aa9d235afee475b12", "57dca73c834ac313d7fdbe58f4df5d93", "a0482b8914db8219f0ec4e54c2f32c4f854eeacf", "8666bc4b1ec16deb3e28fed64da3")]
+        [DataRow(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, SrtpContextType.RTP, "bf75d35600e7ebf8e32abbc946095224", "c573d00b2acbfd25292b1a5ce3fb", "530e566d05b76f7f14b557a27651a47a", "baac16ae6c3215c44089029e229e3507c25377c9", "97090496db451c9464dce1d0ce03")]
+        [DataRow(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, SrtpContextType.RTP, "e2d05f16f1128c2dbe5aa1138f312670", "1938ad696ebe161712592d9ec63a", "2d4f0386508113f7cf8d2267fe765d5c", "19b01657c4d9e88267f251f1939ed4bbb4f2ee8c", "9f36b51b79f849e18c3abb3cae82")]
         [TestMethod]
-        public void Test_Session_Keys_AESCM(int dtlsProtectionProfile, SrtpContextType strpContextType, string masterKey, string masterSalt, string sk_e, string sk_a, string sk_s, bool isRtp, bool isClient)
+        public void Test_Session_Keys_AESCM(int dtlsProtectionProfile, SrtpContextType strpContextType, string masterKey, string masterSalt, string sk_e, string sk_a, string sk_s)
         {
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
