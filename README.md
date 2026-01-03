@@ -260,4 +260,5 @@ DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTran
 ```
 After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data.
 ## TODO
+1. Encryption of Header Extensions in the Secure Real-time Transport Protocol (SRTP) [RFC6904](https://datatracker.ietf.org/doc/html/rfc6904)
 1. Double Encryption Procedures for the Secure Real-Time Transport Protocol (SRTP) [RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)
