@@ -5,6 +5,7 @@ DTLS, DTLS-SRTP and SRTP/SRTCP client and server written in C#. Implements the f
 1. The SEED Cipher Algorithm and Its Use with the Secure Real-Time Transport Protocol (SRTP) [RFC5669](https://datatracker.ietf.org/doc/html/rfc5669)
 1. Datagram Transport Layer Security (DTLS) Extension to Establish Keys for the Secure Real-time Transport Protocol (SRTP) [RFC5764](https://www.rfc-editor.org/rfc/rfc5764)
 1. The Use of AES-192 and AES-256 in Secure RTP [RFC6188](https://datatracker.ietf.org/doc/html/rfc6188)
+1. Encryption of Header Extensions in the Secure Real-time Transport Protocol (SRTP) [RFC6904](https://datatracker.ietf.org/doc/html/rfc6904)
 1. AES-GCM Authenticated Encryption in the Secure Real-time Transport Protocol (SRTP) [RFC7714](https://datatracker.ietf.org/doc/html/rfc7714)
 1. The ARIA Algorithm and Its Use with the Secure Real-Time Transport Protocol (SRTP) [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
 
@@ -260,5 +261,4 @@ DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTran
 ```
 After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data.
 ## TODO
-1. Encryption of Header Extensions in the Secure Real-time Transport Protocol (SRTP) [RFC6904](https://datatracker.ietf.org/doc/html/rfc6904)
 1. Double Encryption Procedures for the Secure Real-Time Transport Protocol (SRTP) [RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)

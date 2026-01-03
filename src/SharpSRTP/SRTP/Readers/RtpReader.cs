@@ -19,6 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
+using System;
+using System.Linq;
+
 namespace SharpSRTP.SRTP.Readers
 {
     public static class RtpReader
@@ -35,13 +38,32 @@ namespace SharpSRTP.SRTP.Readers
 
         public static int ReadHeaderLen(byte[] payload)
         {
-            int length = 12 + 4 * (payload[0] & 0xf);
+            return ReadHeaderLenWithoutExtensions(payload) + ReadExtensionsLength(payload);
+        }
+
+        public static int ReadExtensionsLength(byte[] payload)
+        {
+            int length = ReadHeaderLenWithoutExtensions(payload);
             if ((payload[0] & 0x10) == 0x10)
             {
-                int extLen = (payload[length + 2] << 8) | payload[length + 3];
-                length += 4 + extLen;
+                return 4 + (payload[length + 2] << 8) | payload[length + 3];
             }
-            return length;
+            else
+            {
+                return 0;
+            }
+        }
+
+        public static int ReadHeaderLenWithoutExtensions(byte[] payload)
+        {
+            return 12 + 4 * (payload[0] & 0xf);
+        }
+
+        public static byte[] ReadHeaderExtensions(byte[] payload)
+        {
+            int length = ReadHeaderLenWithoutExtensions(payload);
+            int extLen = ReadExtensionsLength(payload);
+            return payload.Skip(length).Take(extLen).ToArray();
         }
     }
 }
