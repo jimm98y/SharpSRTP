@@ -124,7 +124,7 @@ namespace SharpSRTP.SRTP
         public byte[] K_s { get; set; }
 
         /// <summary>
-        /// Session key for header encyption.
+        /// Session key for RTP header encyption. Not used in RTCP.
         /// </summary>
         public byte[] K_he { get; set; }
 
@@ -210,8 +210,8 @@ namespace SharpSRTP.SRTP
                         this.K_e = GenerateSessionKey(aes, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
                         this.K_a = GenerateSessionKey(aes, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
                         this.K_s = GenerateSessionKey(aes, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-                        this.K_he = GenerateSessionKey(aes, Cipher, MasterSalt, N_e, labelBaseValue + 6, index, KeyDerivationRate);
-                        this.K_hs = GenerateSessionKey(aes, Cipher, MasterSalt, N_s, labelBaseValue + 7, index, KeyDerivationRate);
+                        this.K_he = GenerateSessionKey(aes, Cipher, MasterSalt, N_e, 6, index, KeyDerivationRate);
+                        this.K_hs = GenerateSessionKey(aes, Cipher, MasterSalt, N_s, 7, index, KeyDerivationRate);
 
                         aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
                         this.PayloadCTR = aes;
@@ -243,8 +243,8 @@ namespace SharpSRTP.SRTP
                         this.K_e = GenerateSessionKey(aria, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
                         this.K_a = GenerateSessionKey(aria, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
                         this.K_s = GenerateSessionKey(aria, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-                        this.K_he = GenerateSessionKey(aria, Cipher, MasterSalt, N_e, labelBaseValue + 6, index, KeyDerivationRate);
-                        this.K_hs = GenerateSessionKey(aria, Cipher, MasterSalt, N_s, labelBaseValue + 7, index, KeyDerivationRate);
+                        this.K_he = GenerateSessionKey(aria, Cipher, MasterSalt, N_e, 6, index, KeyDerivationRate);
+                        this.K_hs = GenerateSessionKey(aria, Cipher, MasterSalt, N_s, 7, index, KeyDerivationRate);
 
                         aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
                         this.PayloadCTR = aria;
@@ -271,8 +271,8 @@ namespace SharpSRTP.SRTP
                         this.K_e = GenerateSessionKey(seed, Cipher, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
                         this.K_a = GenerateSessionKey(seed, Cipher, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
                         this.K_s = GenerateSessionKey(seed, Cipher, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-                        this.K_he = GenerateSessionKey(seed, Cipher, MasterSalt, N_e, labelBaseValue + 6, index, KeyDerivationRate);
-                        this.K_hs = GenerateSessionKey(seed, Cipher, MasterSalt, N_s, labelBaseValue + 7, index, KeyDerivationRate);
+                        this.K_he = GenerateSessionKey(seed, Cipher, MasterSalt, N_e, 6, index, KeyDerivationRate);
+                        this.K_hs = GenerateSessionKey(seed, Cipher, MasterSalt, N_s, 7, index, KeyDerivationRate);
                         this.PayloadCTR = seed;
 
                         var seedHeader = new AriaEngine();
@@ -500,7 +500,7 @@ namespace SharpSRTP.SRTP
             switch (context.Cipher)
             {
                 case SrtpCiphers.NULL:
-                    break;
+                    return 0;
 
                 case SrtpCiphers.AES_128_F8:
                     {
