@@ -21,7 +21,7 @@
 
 using Org.BouncyCastle.Tls;
 using System;
-#if NETFRAMEWORK || NETSTANDARD
+#if !NET6_0_OR_GREATER
 using System.Globalization;
 #endif
 using System.Net;
@@ -47,20 +47,20 @@ namespace SharpSRTP.UDP
             }
             else
             {
-#if NETFRAMEWORK || NETSTANDARD
-                var endpoint = IPEndPointExtensions.Parse(localEndpoint);
-#else
+#if NET6_0_OR_GREATER
                 var endpoint = IPEndPoint.Parse(localEndpoint);
+#else
+                var endpoint = IPEndPointExtensions.Parse(localEndpoint);
 #endif
                 this._udpClient = new UdpClient(endpoint);
             }
 
             if (!string.IsNullOrEmpty(remoteEndpoint))
             {
-#if NETFRAMEWORK || NETSTANDARD
-                _remote = IPEndPointExtensions.Parse(remoteEndpoint);
-#else
+#if NET6_0_OR_GREATER
                 _remote = IPEndPoint.Parse(remoteEndpoint);
+#else
+                _remote = IPEndPointExtensions.Parse(remoteEndpoint);
 #endif
             }
         }
@@ -95,10 +95,10 @@ namespace SharpSRTP.UDP
 
         public virtual void Send(ReadOnlySpan<byte> buffer)
         {
-#if NETFRAMEWORK || NETSTANDARD
-            _udpClient.Send(buffer.ToArray(), buffer.Length, _remote);
-#else
+#if NET6_0_OR_GREATER
             _udpClient.Send(buffer, _remote);
+#else
+            _udpClient.Send(buffer.ToArray(), buffer.Length, _remote);
 #endif
         }
 
@@ -108,7 +108,8 @@ namespace SharpSRTP.UDP
         }
     }
 
-#if NETFRAMEWORK || NETSTANDARD
+#if !NET6_0_OR_GREATER
+
     public static class IPEndPointExtensions
     {
         public static bool TryParse(string s, out IPEndPoint result)
