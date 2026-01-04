@@ -9,17 +9,19 @@ using System.Threading.Tasks;
 bool isShutdown = false;
 var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLSSRTP", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), false);
 var client = new DtlsSrtpClient(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
-UdpDatagramTransport udpServerTransport = null;
+
 client.OnSessionStarted += (sender, e) =>
 {
     var context = e.Context;
+    var clientTransport = e.ClientDatagramTransport;
+
     var session = Task.Run(async () =>
     {
         Console.WriteLine($"SRTP cipher:   {context.DecodeRtpContext.ProtectionProfile.Cipher}, auth: {context.DecodeRtpContext.ProtectionProfile.Auth}");
         byte[] receiveBuffer = new byte[2048];
         while (!isShutdown)
         {
-            int receivedLen = udpServerTransport.Receive(receiveBuffer, 100);
+            int receivedLen = clientTransport.Receive(receiveBuffer, 100);
             if (receivedLen != 0)
             {
                 Console.WriteLine($"Received SRTP: {Convert.ToHexString(receiveBuffer.Take(receivedLen).ToArray())}");
@@ -35,7 +37,8 @@ client.OnSessionStarted += (sender, e) =>
         }
     });
 };
-udpServerTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
+
+UdpDatagramTransport udpServerTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
 DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpServerTransport);
 
 Console.ReadKey();

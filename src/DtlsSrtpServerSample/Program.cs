@@ -10,12 +10,11 @@ bool isShutdown = false;
 var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLSSRTP", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), false);
 var server = new DtlsSrtpServer(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
 
-UdpDatagramTransport currentClientTransport = null;
 server.OnSessionStarted += (sender, e) =>
 {
-    var context = e.Context;
-    
-    var clientTransport = currentClientTransport;
+    var context = e.Context;    
+    var clientTransport = e.ClientDatagramTransport;
+
     var session = Task.Run(async () =>
     {
         Console.WriteLine($"SRTP cipher:   {context.EncodeRtpContext.ProtectionProfile.Cipher}, auth: {context.EncodeRtpContext.ProtectionProfile.Auth}");
@@ -45,7 +44,6 @@ while (!isShutdown)
         },
         (remoteEndpoint) =>
         {
-            currentClientTransport = new UdpDatagramTransport(null, remoteEndpoint);
-            return currentClientTransport;
+            return new UdpDatagramTransport(null, remoteEndpoint);
         });
 }

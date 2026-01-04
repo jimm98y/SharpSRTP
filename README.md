@@ -208,6 +208,7 @@ Subscribe for `OnSessionStarted`:
 server.OnSessionStarted += (sender, e) =>
 {
     var context = e.Context;
+    var clientTransport = e.ClientDatagramTransport;
     ...
 };
 ```
@@ -233,7 +234,7 @@ while(!isShutdown)
         });
 }
 ```
-After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data.
+After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data and `clientTransport` to send/receive SRTP.
 ### Client
 Generate the TLS certificate, this time it will be ECDsa:
 ```cs
@@ -249,6 +250,7 @@ Subscribe for `OnSessionStarted`:
 client.OnSessionStarted += (sender, e) =>
 {
     var context = e.Context;
+    var clientTransport = e.ClientDatagramTransport;
     ...
 };
 ```
@@ -260,4 +262,4 @@ Connect the client:
 ```cs
 DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
 ```
-After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data.
+After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data and `clientTransport` to send/receive SRTP.
