@@ -133,10 +133,10 @@ namespace SharpSRTP.SRTP
 
         public static SrtpSessionContext CreateSrtpSessionContext(SrtpKeys keys)
         {
-            var encodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.MasterKey, keys.MasterSalt, SrtpContextType.RTP);
-            var encodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.MasterKey, keys.MasterSalt, SrtpContextType.RTCP);
-            var decodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.MasterKey, keys.MasterSalt, SrtpContextType.RTP);
-            var decodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.MasterKey, keys.MasterSalt, SrtpContextType.RTCP);
+            var encodeRtpContext = new SrtpContext(SrtpContextType.RTP, keys.ProtectionProfile, keys.MasterKey, keys.MasterSalt, keys.Mki);
+            var encodeRtcpContext = new SrtpContext(SrtpContextType.RTCP, keys.ProtectionProfile, keys.MasterKey, keys.MasterSalt, keys.Mki);
+            var decodeRtpContext = new SrtpContext(SrtpContextType.RTP, keys.ProtectionProfile, keys.MasterKey, keys.MasterSalt, keys.Mki);
+            var decodeRtcpContext = new SrtpContext(SrtpContextType.RTCP, keys.ProtectionProfile, keys.MasterKey, keys.MasterSalt, keys.Mki);
 
             return new SrtpSessionContext(encodeRtpContext, decodeRtpContext, encodeRtcpContext, decodeRtcpContext);
         }

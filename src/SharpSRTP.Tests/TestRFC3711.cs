@@ -75,7 +75,7 @@ namespace SharpSRTP.Tests
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
             var protectionProfile = DtlsSrtpProtocol.DtlsProtectionProfiles[dtlsProtectionProfile];
-            var context = new SrtpContext(protectionProfile, null, masterKeyBytes, masterSaltBytes, strpContextType);
+            var context = new SrtpContext(strpContextType, protectionProfile, masterKeyBytes, masterSaltBytes, null);
 
             string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
             string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();
@@ -98,7 +98,7 @@ namespace SharpSRTP.Tests
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
             var protectionProfile = DtlsSrtpProtocol.DtlsProtectionProfiles[dtlsProtectionProfile];
-            var context = new SrtpContext(protectionProfile, null, masterKeyBytes, masterSaltBytes, strpContextType);
+            var context = new SrtpContext(strpContextType, protectionProfile, masterKeyBytes, masterSaltBytes, null);
 
             string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
             string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();
@@ -153,7 +153,7 @@ namespace SharpSRTP.Tests
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
             var protectionProfile = DtlsSrtpProtocol.DtlsProtectionProfiles[dtlsProtectionProfile];
-            var context = new SrtpContext(protectionProfile, null, masterKeyBytes, masterSaltBytes, strpContextType);
+            var context = new SrtpContext(strpContextType, protectionProfile, masterKeyBytes, masterSaltBytes, null);
 
             string sgk_e = Convert.ToHexString(context.K_e);
             string sgk_a = Convert.ToHexString(context.K_a);

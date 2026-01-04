@@ -178,20 +178,20 @@ namespace SharpSRTP.DTLSSRTP
 
         public static SrtpSessionContext CreateSrtpServerSessionContext(DtlsSrtpKeys keys)
         {
-            var encodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
-            var encodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
-            var decodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
-            var decodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
+            var encodeRtpContext = new SrtpContext(SrtpContextType.RTP, keys.ProtectionProfile, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, keys.Mki);
+            var encodeRtcpContext = new SrtpContext(SrtpContextType.RTCP, keys.ProtectionProfile, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, keys.Mki);
+            var decodeRtpContext = new SrtpContext(SrtpContextType.RTP, keys.ProtectionProfile, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, keys.Mki);
+            var decodeRtcpContext = new SrtpContext(SrtpContextType.RTCP, keys.ProtectionProfile, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, keys.Mki);
 
             return new SrtpSessionContext(encodeRtpContext, decodeRtpContext, encodeRtcpContext, decodeRtcpContext);
         }
 
         public static SrtpSessionContext CreateSrtpClientSessionContext(DtlsSrtpKeys keys)
         {
-            var encodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTP);
-            var encodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, SrtpContextType.RTCP);
-            var decodeRtpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTP);
-            var decodeRtcpContext = new SrtpContext(keys.ProtectionProfile, keys.Mki, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, SrtpContextType.RTCP);
+            var encodeRtpContext = new SrtpContext(SrtpContextType.RTP, keys.ProtectionProfile, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, keys.Mki);
+            var encodeRtcpContext = new SrtpContext(SrtpContextType.RTCP, keys.ProtectionProfile, keys.ClientWriteMasterKey, keys.ClientWriteMasterSalt, keys.Mki);
+            var decodeRtpContext = new SrtpContext(SrtpContextType.RTP, keys.ProtectionProfile, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, keys.Mki);
+            var decodeRtcpContext = new SrtpContext(SrtpContextType.RTCP, keys.ProtectionProfile, keys.ServerWriteMasterKey, keys.ServerWriteMasterSalt, keys.Mki);
 
             return new SrtpSessionContext(encodeRtpContext, decodeRtpContext, encodeRtcpContext, decodeRtcpContext);
         }

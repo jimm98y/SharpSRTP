@@ -40,11 +40,21 @@ namespace SharpSRTP.SRTP
 
     public class SrtpContext
     {
-        private const int REPLAY_WINDOW_SIZE = 64; // Minumum is 64 according to the RFC, our current implmentation is using a bit mask, so it won't allow more than 64.
+        public const int ERROR_GENERIC = -1;
+        public const int ERROR_UNSUPPORTED_CIPHER = -2;
+        public const int ERROR_HMAC_CHECK_FAILED = -3;
+        public const int ERROR_REPLAY_CHECK_FAILED = -4;
+        public const int ERROR_MASTER_KEY_ROTATION_REQUIRED = -5;
+        public const int ERROR_MKI_CHECK_FAILED = -6;
+
+        public const uint E_FLAG = 0x80000000;
+        public const int REPLAY_WINDOW_SIZE = 64; // Minumum is 64 according to the RFC, our current implmentation is using a bit mask, so it won't allow more than 64.
 
         private ulong _bitmap = 0; /* session state - must be 32 bits */
         private uint _lastSeq = 0; /* session state */
+        
         private readonly SrtpContextType _contextType;
+        public SrtpContextType ContextType { get { return _contextType; } }
 
         public event EventHandler<EventArgs> OnRekeyingRequested;
 
@@ -74,8 +84,6 @@ namespace SharpSRTP.SRTP
         /// </summary>
         public uint Roc { get; set; } = 0;
 
-        #region TODO Master key lifespan
-
         private long _masterKeySentCounter = 0;
 
         /// <summary>
@@ -86,7 +94,7 @@ namespace SharpSRTP.SRTP
         /// <summary>
         /// Key derivation rate.
         /// </summary>
-        public ulong KeyDerivationRate { get; set; } = 0;
+        public ulong KeyDerivationRate { get; set; }
 
         /// <summary>
         /// From, To values, specifying the lifetime for a master key.
@@ -99,14 +107,10 @@ namespace SharpSRTP.SRTP
         /// </summary>
         public byte[] Mki { get; private set; }
 
-        #endregion // TODO Master key lifespan
-
-        #region Session key parameters
-
         /// <summary>
         /// The byte-length of the session keys for encryption.
         /// </summary>
-        public int N_e { get; set; } = 16;
+        public int N_e { get; set; }
 
         /// <summary>
         /// Session key for encryption.
@@ -116,7 +120,7 @@ namespace SharpSRTP.SRTP
         /// <summary>
         /// The byte-length of k_s.
         /// </summary>
-        public int N_s { get; set; } = 14;
+        public int N_s { get; set; }
 
         /// <summary>
         /// Session salting key.
@@ -133,24 +137,16 @@ namespace SharpSRTP.SRTP
         /// </summary>
         public byte[] K_hs { get; set; }
 
-        #endregion // Session key parameters
-
-        #region RTP Header Encryption
-
         /// <summary>
         /// Gets or sets the encryption mask applied to RTP header extensions.
         /// </summary>
         /// <remarks>The encryption mask is used to protect the contents of RTP header extensions. If set to null, header extensions will not be encrypted.</remarks>
         public byte[] RtpHeaderExtensionsEncryptionMask { get; set; } = null;
 
-        #endregion // RTP Header Encryption
-
-        #region Authentication parameters
-
         /// <summary>
         /// The byte-length of the session keys for authentication.
         /// </summary>
-        public int N_a { get; set; } = 20;
+        public int N_a { get; set; }
 
         /// <summary>
         /// The session message authentication key.
@@ -160,23 +156,20 @@ namespace SharpSRTP.SRTP
         /// <summary>
         /// The byte-length of the output authentication tag.
         /// </summary>
-        public int N_tag { get; set; } = 10;
+        public int N_tag { get; set; }
 
         /// <summary>
         /// SRTP_PREFIX_LENGTH SHALL be zero for HMAC-SHA1.
         /// </summary>
         public int SRTP_PREFIX_LENGTH { get; set; } = 0;
 
-        #endregion // Authentication parameters
-
-        public SrtpContext(SrtpProtectionProfileConfiguration protectionProfile, byte[] mki, byte[] masterKey, byte[] masterSalt, SrtpContextType type)
+        public SrtpContext(SrtpContextType contextType, SrtpProtectionProfileConfiguration protectionProfile, byte[] masterKey, byte[] masterSalt, byte[] mki = null)
         {
-            this._contextType = type;
-
+            this._contextType = contextType;
             this.ProtectionProfile = protectionProfile ?? throw new ArgumentNullException(nameof(protectionProfile));
+            this.MasterKey = masterKey ?? throw new ArgumentNullException(nameof(masterKey));
+            this.MasterSalt = masterSalt ?? throw new ArgumentNullException(nameof(masterSalt));
             this.Mki = mki ?? new byte[0];
-            this.MasterKey = masterKey;
-            this.MasterSalt = masterSalt;
 
             Cipher = protectionProfile.Cipher;
             Auth = protectionProfile.Auth;
@@ -188,8 +181,6 @@ namespace SharpSRTP.SRTP
 
             DeriveSessionKeys();
         }
-
-        #region Session key derivation
 
         public virtual void DeriveSessionKeys(ulong index = 0)
         {
@@ -207,31 +198,49 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM:
                 case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
                     {
-                        var aes = new AesEngine();
-                        this.K_e = GenerateSessionKey(aes, Cipher, MasterKey, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                        this.K_a = GenerateSessionKey(aes, Cipher, MasterKey, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                        this.K_s = GenerateSessionKey(aes, Cipher, MasterKey, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-                        this.K_he = GenerateSessionKey(aes, Cipher, MasterKey, MasterSalt, N_e, 6, index, KeyDerivationRate);
-                        this.K_hs = GenerateSessionKey(aes, Cipher, MasterKey, MasterSalt, N_s, 7, index, KeyDerivationRate);
+                        var aesKeys = new AesEngine();
+                        this.K_e = GenerateSessionKey(aesKeys, Cipher, MasterKey, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKey(aesKeys, Cipher, MasterKey, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKey(aesKeys, Cipher, MasterKey, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                        this.K_he = GenerateSessionKey(aesKeys, Cipher, MasterKey, MasterSalt, N_e, 6, index, KeyDerivationRate);
+                        this.K_hs = GenerateSessionKey(aesKeys, Cipher, MasterKey, MasterSalt, N_s, 7, index, KeyDerivationRate);
 
-                        aes.Init(true, new KeyParameter(K_e));
-                        this.PayloadCTR = aes;
+                        if (Cipher >= SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM)
+                        {
+                            byte[] outerK_e = K_e.Skip(K_e.Length / 2).ToArray();
+                            byte[] outerK_he = K_he.Skip(K_he.Length / 2).ToArray();
 
-                        var aesHeader = new AesEngine();
-                        aesHeader.Init(true, new KeyParameter(K_he));
-                        this.HeaderCTR = aesHeader;
+                            var aesPayload = new AesEngine();
+                            aesPayload.Init(true, new KeyParameter(outerK_e));
+                            this.PayloadCTR = aesPayload;
+
+                            var aesHeader = new AesEngine();
+                            aesHeader.Init(true, new KeyParameter(outerK_he));
+                            this.HeaderCTR = aesHeader;
+                        }
+                        else
+                        {
+                            var aesPayload = new AesEngine();
+                            aesPayload.Init(true, new KeyParameter(K_e));
+                            this.PayloadCTR = aesPayload;
+
+                            var aesHeader = new AesEngine();
+                            aesHeader.Init(true, new KeyParameter(K_he));
+                            this.HeaderCTR = aesHeader;
+                        }
 
                         if (Cipher == SrtpCiphers.AES_128_F8)
                         {
                             this.PayloadF8 = new AesEngine();
                             this.HeaderF8 = new AesEngine();
                         }
-                        else if (
-                            Cipher == SrtpCiphers.AEAD_AES_128_GCM || Cipher == SrtpCiphers.AEAD_AES_256_GCM ||
-                            Cipher >= SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM)
+                        else if (Cipher == SrtpCiphers.AEAD_AES_128_GCM || Cipher == SrtpCiphers.AEAD_AES_256_GCM) 
                         {
-                            var cipher = new GcmBlockCipher(new AesEngine());
-                            this.PayloadAEAD = cipher;
+                            this.PayloadAEAD = new GcmBlockCipher(new AesEngine());
+                        }
+                        else if (Cipher == SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM || Cipher == SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM)
+                        {
+                            this.PayloadAEAD = new GcmBlockCipher(new AesEngine());
                         }
                     }
                     break;
@@ -241,15 +250,16 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.AEAD_ARIA_128_GCM:
                 case SrtpCiphers.AEAD_ARIA_256_GCM:
                     {
-                        var aria = new AriaEngine();
-                        this.K_e = GenerateSessionKey(aria, Cipher, MasterKey, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                        this.K_a = GenerateSessionKey(aria, Cipher, MasterKey, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                        this.K_s = GenerateSessionKey(aria, Cipher, MasterKey, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-                        this.K_he = GenerateSessionKey(aria, Cipher, MasterKey, MasterSalt, N_e, 6, index, KeyDerivationRate);
-                        this.K_hs = GenerateSessionKey(aria, Cipher, MasterKey, MasterSalt, N_s, 7, index, KeyDerivationRate);
+                        var ariaKeys = new AriaEngine();
+                        this.K_e = GenerateSessionKey(ariaKeys, Cipher, MasterKey, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKey(ariaKeys, Cipher, MasterKey, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKey(ariaKeys, Cipher, MasterKey, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                        this.K_he = GenerateSessionKey(ariaKeys, Cipher, MasterKey, MasterSalt, N_e, 6, index, KeyDerivationRate);
+                        this.K_hs = GenerateSessionKey(ariaKeys, Cipher, MasterKey, MasterSalt, N_s, 7, index, KeyDerivationRate);
 
-                        aria.Init(true, new KeyParameter(K_e));
-                        this.PayloadCTR = aria;
+                        var ariaPayload = new AriaEngine();
+                        ariaPayload.Init(true, new KeyParameter(K_e));
+                        this.PayloadCTR = ariaPayload;
 
                         var ariaHeader = new AriaEngine();
                         ariaHeader.Init(true, new KeyParameter(K_he));
@@ -257,8 +267,7 @@ namespace SharpSRTP.SRTP
 
                         if (Cipher == SrtpCiphers.AEAD_ARIA_128_GCM || Cipher == SrtpCiphers.AEAD_ARIA_256_GCM)
                         {
-                            var cipher = new GcmBlockCipher(new AriaEngine());
-                            this.PayloadAEAD = cipher;
+                            this.PayloadAEAD = new GcmBlockCipher(new AriaEngine());
                         }
                     }
                     break;
@@ -267,15 +276,16 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.SEED_128_CCM:
                 case SrtpCiphers.SEED_128_GCM:
                     {
-                        var seed = new SeedEngine();
-                        this.K_e = GenerateSessionKey(seed, Cipher, MasterKey, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
-                        this.K_a = GenerateSessionKey(seed, Cipher, MasterKey, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
-                        this.K_s = GenerateSessionKey(seed, Cipher, MasterKey, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
-                        this.K_he = GenerateSessionKey(seed, Cipher, MasterKey, MasterSalt, N_e, 6, index, KeyDerivationRate);
-                        this.K_hs = GenerateSessionKey(seed, Cipher, MasterKey, MasterSalt, N_s, 7, index, KeyDerivationRate);
+                        var seedKeys = new SeedEngine();
+                        this.K_e = GenerateSessionKey(seedKeys, Cipher, MasterKey, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
+                        this.K_a = GenerateSessionKey(seedKeys, Cipher, MasterKey, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
+                        this.K_s = GenerateSessionKey(seedKeys, Cipher, MasterKey, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
+                        this.K_he = GenerateSessionKey(seedKeys, Cipher, MasterKey, MasterSalt, N_e, 6, index, KeyDerivationRate);
+                        this.K_hs = GenerateSessionKey(seedKeys, Cipher, MasterKey, MasterSalt, N_s, 7, index, KeyDerivationRate);
 
-                        seed.Init(true, new KeyParameter(K_e));
-                        this.PayloadCTR = seed;
+                        var seedPayload = new SeedEngine();
+                        seedPayload.Init(true, new KeyParameter(K_e));
+                        this.PayloadCTR = seedPayload;
 
                         var seedHeader = new AriaEngine();
                         seedHeader.Init(true, new KeyParameter(K_he));
@@ -283,13 +293,11 @@ namespace SharpSRTP.SRTP
 
                         if (Cipher == SrtpCiphers.SEED_128_CCM)
                         {
-                            var cipher = new CcmBlockCipher(new SeedEngine());
-                            this.PayloadAEAD = cipher;
+                            this.PayloadAEAD = new CcmBlockCipher(new SeedEngine());
                         }
                         else if(Cipher == SrtpCiphers.SEED_128_GCM)
                         {
-                            var cipher = new GcmBlockCipher(new SeedEngine());
-                            this.PayloadAEAD = cipher;
+                            this.PayloadAEAD = new GcmBlockCipher(new SeedEngine());
                         }
                     }
                     break;
@@ -317,7 +325,7 @@ namespace SharpSRTP.SRTP
             }
         }
 
-        public static byte[] GenerateSessionKey(IBlockCipher engine, SrtpCiphers cipher, byte[] masterKey, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
+        public static byte[] GenerateSessionKey(IBlockCipher engineKeys, SrtpCiphers cipher, byte[] masterKey, byte[] masterSalt, int length, int label, ulong index, ulong kdr)
         {
             byte[] key = new byte[length];
             switch (cipher)
@@ -337,9 +345,9 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.SEED_128_CCM:
                 case SrtpCiphers.SEED_128_GCM:
                     {
-                        engine.Init(true, new KeyParameter(masterKey));
+                        engineKeys.Init(true, new KeyParameter(masterKey));
                         byte[] iv = Encryption.CTR.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
-                        Encryption.CTR.Encrypt(engine, key, 0, length, iv);
+                        Encryption.CTR.Encrypt(engineKeys, key, 0, length, iv);
                     }
                     break;
 
@@ -350,14 +358,14 @@ namespace SharpSRTP.SRTP
                         byte[] innerSalt = masterSalt.Take(masterSalt.Length / 2).ToArray();
                         byte[] innerKey = masterKey.Take(masterKey.Length / 2).ToArray();
                         byte[] innerIv = Encryption.CTR.GenerateSessionKeyIV(innerSalt, index, kdr, (byte)label);
-                        engine.Init(true, new KeyParameter(innerKey));
-                        Encryption.CTR.Encrypt(engine, key, 0, key.Length / 2, innerIv);
+                        engineKeys.Init(true, new KeyParameter(innerKey));
+                        Encryption.CTR.Encrypt(engineKeys, key, 0, key.Length / 2, innerIv);
 
                         byte[] outerSalt = masterSalt.Skip(masterSalt.Length / 2).ToArray();
                         byte[] outerKey = masterKey.Skip(masterKey.Length / 2).ToArray();
                         byte[] outerIv = Encryption.CTR.GenerateSessionKeyIV(outerSalt, index, kdr, (byte)label);
-                        engine.Init(true, new KeyParameter(outerKey));
-                        Encryption.CTR.Encrypt(engine, key, key.Length / 2, key.Length, outerIv);
+                        engineKeys.Init(true, new KeyParameter(outerKey));
+                        Encryption.CTR.Encrypt(engineKeys, key, key.Length / 2, key.Length, outerIv);
                     }
                     break;
 
@@ -367,19 +375,6 @@ namespace SharpSRTP.SRTP
             
             return key;
         }
-
-        #endregion // Session key derivation
-
-        #region Encryption
-
-        public const uint E_FLAG = 0x80000000;
-
-        public const int ERROR_GENERIC = -1;
-        public const int ERROR_UNSUPPORTED_CIPHER = -2;
-        public const int ERROR_HMAC_CHECK_FAILED = -3;
-        public const int ERROR_REPLAY_CHECK_FAILED = -4;
-        public const int ERROR_MASTER_KEY_ROTATION_REQUIRED = -5;
-        public const int ERROR_MKI_CHECK_FAILED = -6;
 
         public virtual int CalculateRequiredSrtpPayloadLength(int rtpLen)
         {
@@ -593,6 +588,15 @@ namespace SharpSRTP.SRTP
                     {
                         byte[] iv = SharpSRTP.SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_hs, ssrc, index);
                         SharpSRTP.SRTP.Encryption.CTR.Encrypt(context.HeaderCTR, rtpExtensionsEncrypted, 0, rtpExtensionsEncrypted.Length, iv);
+                    }
+                    break;
+
+                case SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM:
+                case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
+                    {
+                        byte[] outerK_hs = context.K_hs.Skip(context.K_hs.Length / 2).ToArray();
+                        byte[] outerIv = SharpSRTP.SRTP.Encryption.CTR.GenerateMessageKeyIV(outerK_hs, ssrc, index);
+                        SharpSRTP.SRTP.Encryption.CTR.Encrypt(context.HeaderCTR, rtpExtensionsEncrypted, 0, rtpExtensionsEncrypted.Length, outerIv);
                     }
                     break;
 
@@ -1100,8 +1104,6 @@ namespace SharpSRTP.SRTP
             // i = 2 ^ 16 * ROC + SEQ
             return ((ulong)ROC << 16) | SEQ;
         }
-
-        #endregion // Encryption
 
         /// <summary>
         /// Checks and updates the replay window for the given sequence number.

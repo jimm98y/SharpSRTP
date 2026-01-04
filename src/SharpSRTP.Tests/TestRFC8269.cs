@@ -127,7 +127,7 @@ namespace SharpSRTP.Tests
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
 
-            var context = new SrtpContext(protectionProfile, null, masterKeyBytes, masterSaltBytes, srtpContextType);
+            var context = new SrtpContext(srtpContextType, protectionProfile, masterKeyBytes, masterSaltBytes, null);
 
             string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
             string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();
