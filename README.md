@@ -33,6 +33,8 @@ Currently implemented [DTLS-SRTP protection profiles](https://www.iana.org/assig
 1. SRTP_NULL_HMAC_SHA1_32 [RFC5764](https://www.rfc-editor.org/rfc/rfc5764)
 1. SRTP_AEAD_AES_128_GCM [RFC7714](https://datatracker.ietf.org/doc/html/rfc7714)
 1. SRTP_AEAD_AES_256_GCM [RFC7714](https://datatracker.ietf.org/doc/html/rfc7714)
+1. DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM	[RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)
+1. DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM	[RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)
 1. SRTP_ARIA_128_CTR_HMAC_SHA1_80 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
 1. SRTP_ARIA_128_CTR_HMAC_SHA1_32 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
 1. SRTP_ARIA_256_CTR_HMAC_SHA1_80 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
