@@ -59,6 +59,9 @@ namespace SharpSRTP.DTLSSRTP
         {
             return new int[] 
             {
+                ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM,
+                ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM,
+
                 ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_256_GCM,
                 ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM,
                 ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80,

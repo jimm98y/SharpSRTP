@@ -38,9 +38,9 @@ namespace SharpSRTP.SRTP
         AEAD_ARIA_128_GCM = 12,
         AEAD_ARIA_256_GCM = 13,
 
-        // TODO: https://datatracker.ietf.org/doc/html/rfc8723
-        DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 14,
-        DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 15,
+        // double ciphers are numbered from 128 upwards
+        DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 128,
+        DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 129,
     }
 
     public enum SrtpAuth

@@ -39,6 +39,8 @@ namespace SharpSRTP.SRTP.Encryption
             engine.Init(true, parameters);
 
             int len = engine.ProcessBytes(payload, offset, payloadSize, payload, offset);
+            
+            // throws when the MAC fails to match
             engine.DoFinal(payload, offset + len);
         }
 
