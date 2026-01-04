@@ -214,11 +214,11 @@ namespace SharpSRTP.SRTP
                         this.K_he = GenerateSessionKey(aes, Cipher, MasterKey, MasterSalt, N_e, 6, index, KeyDerivationRate);
                         this.K_hs = GenerateSessionKey(aes, Cipher, MasterKey, MasterSalt, N_s, 7, index, KeyDerivationRate);
 
-                        aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+                        aes.Init(true, new KeyParameter(K_e));
                         this.PayloadCTR = aes;
 
                         var aesHeader = new AesEngine();
-                        aesHeader.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_he));
+                        aesHeader.Init(true, new KeyParameter(K_he));
                         this.HeaderCTR = aesHeader;
 
                         if (Cipher == SrtpCiphers.AES_128_F8)
@@ -242,18 +242,17 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.AEAD_ARIA_256_GCM:
                     {
                         var aria = new AriaEngine();
-                        aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(MasterKey));
                         this.K_e = GenerateSessionKey(aria, Cipher, MasterKey, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
                         this.K_a = GenerateSessionKey(aria, Cipher, MasterKey, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
                         this.K_s = GenerateSessionKey(aria, Cipher, MasterKey, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
                         this.K_he = GenerateSessionKey(aria, Cipher, MasterKey, MasterSalt, N_e, 6, index, KeyDerivationRate);
                         this.K_hs = GenerateSessionKey(aria, Cipher, MasterKey, MasterSalt, N_s, 7, index, KeyDerivationRate);
 
-                        aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_e));
+                        aria.Init(true, new KeyParameter(K_e));
                         this.PayloadCTR = aria;
 
                         var ariaHeader = new AriaEngine();
-                        ariaHeader.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_he));
+                        ariaHeader.Init(true, new KeyParameter(K_he));
                         this.HeaderCTR = ariaHeader;
 
                         if (Cipher == SrtpCiphers.AEAD_ARIA_128_GCM || Cipher == SrtpCiphers.AEAD_ARIA_256_GCM)
@@ -269,17 +268,17 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.SEED_128_GCM:
                     {
                         var seed = new SeedEngine();
-                        seed.Init(true, new KeyParameter(MasterKey));
-
                         this.K_e = GenerateSessionKey(seed, Cipher, MasterKey, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
                         this.K_a = GenerateSessionKey(seed, Cipher, MasterKey, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
                         this.K_s = GenerateSessionKey(seed, Cipher, MasterKey, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
                         this.K_he = GenerateSessionKey(seed, Cipher, MasterKey, MasterSalt, N_e, 6, index, KeyDerivationRate);
                         this.K_hs = GenerateSessionKey(seed, Cipher, MasterKey, MasterSalt, N_s, 7, index, KeyDerivationRate);
+
+                        seed.Init(true, new KeyParameter(K_e));
                         this.PayloadCTR = seed;
 
                         var seedHeader = new AriaEngine();
-                        seedHeader.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_he));
+                        seedHeader.Init(true, new KeyParameter(K_he));
                         this.HeaderCTR = seedHeader;
 
                         if (Cipher == SrtpCiphers.SEED_128_CCM)
@@ -308,7 +307,7 @@ namespace SharpSRTP.SRTP
                 case SrtpAuth.HMAC_SHA1:
                     {
                         var hmac = new HMac(new Sha1Digest());
-                        hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(K_a));
+                        hmac.Init(new KeyParameter(K_a));
                         this.HMAC = hmac;
                     }
                     break;
@@ -338,7 +337,7 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.SEED_128_CCM:
                 case SrtpCiphers.SEED_128_GCM:
                     {
-                        engine.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(masterKey));
+                        engine.Init(true, new KeyParameter(masterKey));
                         byte[] iv = Encryption.CTR.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label);
                         Encryption.CTR.Encrypt(engine, key, 0, length, iv);
                     }
@@ -351,13 +350,13 @@ namespace SharpSRTP.SRTP
                         byte[] innerSalt = masterSalt.Take(masterSalt.Length / 2).ToArray();
                         byte[] innerKey = masterKey.Take(masterKey.Length / 2).ToArray();
                         byte[] innerIv = Encryption.CTR.GenerateSessionKeyIV(innerSalt, index, kdr, (byte)label);
-                        engine.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(innerKey));
+                        engine.Init(true, new KeyParameter(innerKey));
                         Encryption.CTR.Encrypt(engine, key, 0, key.Length / 2, innerIv);
 
                         byte[] outerSalt = masterSalt.Skip(masterSalt.Length / 2).ToArray();
                         byte[] outerKey = masterKey.Skip(masterKey.Length / 2).ToArray();
                         byte[] outerIv = Encryption.CTR.GenerateSessionKeyIV(outerSalt, index, kdr, (byte)label);
-                        engine.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(outerKey));
+                        engine.Init(true, new KeyParameter(outerKey));
                         Encryption.CTR.Encrypt(engine, key, key.Length / 2, key.Length, outerIv);
                     }
                     break;
