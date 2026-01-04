@@ -15,6 +15,7 @@ client.OnSessionStarted += (sender, e) =>
     var context = e.Context;
     var session = Task.Run(async () =>
     {
+        Console.WriteLine($"SRTP cipher:   {context.DecodeRtpContext.ProtectionProfile.Cipher}, auth: {context.DecodeRtpContext.ProtectionProfile.Auth}");
         byte[] receiveBuffer = new byte[2048];
         while (!isShutdown)
         {
@@ -23,7 +24,7 @@ client.OnSessionStarted += (sender, e) =>
             {
                 Console.WriteLine($"Received SRTP: {Convert.ToHexString(receiveBuffer.Take(receivedLen).ToArray())}");
 
-                if (context.DecodeRtpContext.UnprotectRtp(receiveBuffer, receivedLen, out int length) == 0)
+                if (context.UnprotectRtp(receiveBuffer, receivedLen, out int length) == 0)
                 {
                     byte[] rtp = receiveBuffer.Take(length).ToArray();
                     Console.WriteLine($"Decrypted RTP: {Convert.ToHexString(rtp)}");

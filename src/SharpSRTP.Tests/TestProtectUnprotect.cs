@@ -45,7 +45,7 @@ namespace SharpSRTP.Tests
             string srtpString = Convert.ToHexString(srtpBytes.Take(len).ToArray()).ToLowerInvariant();
             Assert.AreEqual(srtp, srtpString);
 
-            context.DecodeRtpContext.UnprotectRtp(srtpBytes, srtpBytes.Length, out int olen);
+            context.UnprotectRtp(srtpBytes, srtpBytes.Length, out int olen);
 
             string rtpString = Convert.ToHexString(srtpBytes.Take(olen).ToArray()).ToLowerInvariant();
             Assert.AreEqual(rtp, rtpString);

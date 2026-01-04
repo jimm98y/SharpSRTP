@@ -14,9 +14,12 @@ UdpDatagramTransport currentClientTransport = null;
 server.OnSessionStarted += (sender, e) =>
 {
     var context = e.Context;
+    
     var clientTransport = currentClientTransport;
     var session = Task.Run(async () =>
     {
+        Console.WriteLine($"SRTP cipher:   {context.DecodeRtpContext.ProtectionProfile.Cipher}, auth: {context.DecodeRtpContext.ProtectionProfile.Auth}");
+
         byte[] rtp = Convert.FromHexString("80e1000103cb6bc84218a6a3001006c8");
         byte[] rtpBuffer = new byte[context.CalculateRequiredSrtpPayloadLength(rtp.Length)];
         Buffer.BlockCopy(rtp, 0, rtpBuffer, 0, rtp.Length);
