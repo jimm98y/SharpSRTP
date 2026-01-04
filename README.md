@@ -1,5 +1,9 @@
 # SharpSRTP
-DTLS, DTLS-SRTP and SRTP/SRTCP client and server written in C#. Implements the following RFCs:
+DTLS, DTLS-SRTP and SRTP/SRTCP client and server written in C#. 
+
+[![NuGet version](https://img.shields.io/nuget/v/SharpSRTP.svg?style=flat-square)](https://www.nuget.org/packages/SharpSRTP)
+
+Implements the following RFCs:
 1. The Secure Real-time Transport Protocol (SRTP) [RFC3711](https://www.rfc-editor.org/rfc/rfc3711)
 1. Session Description Protocol (SDP) Security Descriptions for Media Streams [RFC4568](https://datatracker.ietf.org/doc/html/rfc4568)
 1. The SEED Cipher Algorithm and Its Use with the Secure Real-Time Transport Protocol (SRTP) [RFC5669](https://datatracker.ietf.org/doc/html/rfc5669)
