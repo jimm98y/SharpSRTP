@@ -142,8 +142,7 @@ namespace SharpSRTP.Tests
             Buffer.BlockCopy(rtcpBytes, 0, srtcp, 0, rtcpBytes.Length);
 
             var cipher = new GcmBlockCipher(new AesEngine());
-            const uint E_FLAG = 0x80000000;
-            uint index = idx | E_FLAG;
+            uint index = idx | SrtpContext.E_FLAG;
             byte[] associatedData = srtcp.Take(offset).Concat(new byte[] { (byte)(index >> 24), (byte)(index >> 16), (byte)(index >> 8), (byte)index }).ToArray(); // associatedData include also index
             AEAD.Encrypt(cipher, srtcp, offset, rtcpBytes.Length, iv, k_e, n_tag, associatedData);
 
@@ -170,8 +169,7 @@ namespace SharpSRTP.Tests
             uint ssrc = RtcpReader.ReadSsrc(srtcpBytes);
             uint idx = RtcpReader.SrtcpReadIndex(srtcpBytes, 0);
             
-            const uint E_FLAG = 0x80000000;
-            uint index = idx & ~E_FLAG;
+            uint index = idx & ~SrtpContext.E_FLAG;
             int offset = RtcpReader.GetHeaderLen();
 
             byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);

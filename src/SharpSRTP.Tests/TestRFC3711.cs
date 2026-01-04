@@ -169,8 +169,7 @@ namespace SharpSRTP.Tests
             Buffer.BlockCopy(payloadRaw, 0, payload, 0, length);
 
             uint ssrc = RtcpReader.ReadSsrc(payload);
-            const uint E_FLAG = 0x80000000;
-            uint index = S_l | E_FLAG;
+            uint index = S_l | SrtpContext.E_FLAG;
 
             int offset = RtcpReader.GetHeaderLen();
             byte[] iv = CTR.GenerateMessageKeyIV(context.K_s, ssrc, S_l);
