@@ -23,7 +23,7 @@ Currently implemented [SRTP Crypto Suites](https://www.iana.org/assignments/sdp-
 1. AES_256_CM_HMAC_SHA1_80 [RFC6188](https://datatracker.ietf.org/doc/html/rfc6188)
 1. AES_256_CM_HMAC_SHA1_32 [RFC6188](https://datatracker.ietf.org/doc/html/rfc6188)
 1. AEAD_AES_128_GCM [RFC7714](https://datatracker.ietf.org/doc/html/rfc7714)
-1. AEAD_AES_256_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
+1. AEAD_AES_256_GCM [RFC7714](https://datatracker.ietf.org/doc/html/rfc7714)
 
 ## DTLS-SRTP Protection Profiles
 Currently implemented [DTLS-SRTP protection profiles](https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml) are:
