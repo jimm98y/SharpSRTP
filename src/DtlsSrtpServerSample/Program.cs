@@ -18,11 +18,11 @@ server.OnSessionStarted += (sender, e) =>
     var session = Task.Run(async () =>
     {
         byte[] rtp = Convert.FromHexString("80e1000103cb6bc84218a6a3001006c8");
-        byte[] rtpBuffer = new byte[context.EncodeRtpContext.CalculateRequiredSrtpPayloadLength(rtp.Length)];
+        byte[] rtpBuffer = new byte[context.CalculateRequiredSrtpPayloadLength(rtp.Length)];
         Buffer.BlockCopy(rtp, 0, rtpBuffer, 0, rtp.Length);
 
         Console.WriteLine($"Encrypted RTP: {Convert.ToHexString(rtp)}");
-        if (context.EncodeRtpContext.ProtectRtp(rtpBuffer, rtp.Length, out int length) == 0)
+        if (context.ProtectRtp(rtpBuffer, rtp.Length, out int length) == 0)
         {
             byte[] srtp = rtpBuffer.Take(length).ToArray();
             Console.WriteLine($"Sent SRTP:     {Convert.ToHexString(srtp)}");

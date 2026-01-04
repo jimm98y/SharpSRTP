@@ -38,7 +38,10 @@ namespace SharpSRTP.SRTP
         RTCP
     }
 
-    public class SrtpContext
+    /// <summary>
+    /// SRTP context used for protecting/unprotecting RTP/RTCP packets as defined in RFC 3711.
+    /// </summary>
+    public class SrtpContext : ISrtpContext
     {
         public const int ERROR_GENERIC = -1;
         public const int ERROR_UNSUPPORTED_CIPHER = -2;
@@ -73,8 +76,8 @@ namespace SharpSRTP.SRTP
         public bool S_l_set { get; set; } = false;
 
         public SrtpProtectionProfileConfiguration ProtectionProfile { get; set; }
-        public SrtpCiphers Cipher { get; set; } = SrtpCiphers.AES_128_CM;
-        public SrtpAuth Auth { get; set; } = SrtpAuth.HMAC_SHA1;
+        public SrtpCiphers Cipher { get; set; }
+        public SrtpAuth Auth { get; set; }
 
         public byte[] MasterKey { get; set; }
         public byte[] MasterSalt { get; set; }

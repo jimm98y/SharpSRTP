@@ -165,30 +165,30 @@ SrtpSessionContext context = SrtpProtocol.CreateSrtpSessionContext(keys);
 To encrypt RTP and create SRTP:
 ```cs
 byte[] rtp = ...
-byte[] rtpBuffer = new byte[context.EncodeRtpContext.CalculateRequiredSrtpPayloadLength(rtp.Length)];
+byte[] rtpBuffer = new byte[context.CalculateRequiredSrtpPayloadLength(rtp.Length)];
 Buffer.BlockCopy(rtp, 0, rtpBuffer, 0, rtp.Length);
-context.EncodeRtpContext.ProtectRtp(rtpBuffer, rtp.Length, out int length);
+context.ProtectRtp(rtpBuffer, rtp.Length, out int length);
 byte[] srtp = rtpBuffer.Take(length).ToArray();
 ```
 To decrypt SRTP and create RTP:
 ```cs
 byte[] srtp = ...
-context.DecodeRtpContext.UnprotectRtp(srtp, srtp.Length, out int length);
+context.UnprotectRtp(srtp, srtp.Length, out int length);
 byte[] rtp = srtp.Take(length).ToArray();
 ```
 ### RTCP
 To encrypt RTCP and create SRTCP:
 ```cs
 byte[] rtcp = ...
-byte[] rtcpBuffer = new byte[context.EncodeRtcpContext.CalculateRequiredSrtcpPayloadLength(rtcp.Length)];
+byte[] rtcpBuffer = new byte[context.CalculateRequiredSrtcpPayloadLength(rtcp.Length)];
 Buffer.BlockCopy(rtcp, 0, rtcpBuffer, 0, rtcp.Length];
-context.EncodeRtcpContext.ProtectRtcp(rtcpBuffer, rtcp.Length, out int length);
+context.ProtectRtcp(rtcpBuffer, rtcp.Length, out int length);
 byte[] srtcp = rtcpBuffer.Take(length).ToArray();
 ```
 To decrypt SRTCP and create RTCP:
 ```cs
 byte[] srtcp = ...
-context.DecodeRtcpContext.UnprotectRtcp(srtcp, srtcp.Length, out int length);
+context.UnprotectRtcp(srtcp, srtcp.Length, out int length);
 byte[] rtcp = srtcp.Take(length).ToArray();
 ```
 ## DTLS-SRTP

@@ -21,7 +21,7 @@
 
 namespace SharpSRTP.SRTP
 {
-    public class SrtpSessionContext
+    public class SrtpSessionContext : ISrtpContext
     {
         public SrtpContext EncodeRtpContext { get; private set; }
         public SrtpContext EncodeRtcpContext { get; private set; }
@@ -34,6 +34,36 @@ namespace SharpSRTP.SRTP
             this.DecodeRtpContext = decodeRtpContext;
             this.EncodeRtcpContext = encodeRtcpContext;
             this.DecodeRtcpContext = decodeRtcpContext;
+        }
+
+        public int CalculateRequiredSrtpPayloadLength(int rtpLen)
+        {
+            return EncodeRtpContext.CalculateRequiredSrtpPayloadLength(rtpLen);
+        }
+
+        public int ProtectRtp(byte[] payload, int length, out int outputBufferLength)
+        {
+            return EncodeRtpContext.ProtectRtp(payload, length, out outputBufferLength);
+        }
+
+        public int UnprotectRtp(byte[] payload, int length, out int outputBufferLength)
+        {
+            return DecodeRtpContext.UnprotectRtp(payload, length, out outputBufferLength);
+        }
+
+        public int CalculateRequiredSrtcpPayloadLength(int rtpLen)
+        {
+            return EncodeRtcpContext.CalculateRequiredSrtcpPayloadLength(rtpLen);
+        }
+
+        public int ProtectRtcp(byte[] payload, int length, out int outputBufferLength)
+        {
+            return EncodeRtcpContext.ProtectRtcp(payload, length, out outputBufferLength);
+        }
+
+        public int UnprotectRtcp(byte[] payload, int length, out int outputBufferLength)
+        {
+            return DecodeRtcpContext.UnprotectRtcp(payload, length, out outputBufferLength);
         }
     }
 }
