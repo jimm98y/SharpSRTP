@@ -33,7 +33,9 @@ namespace SharpSRTP.SRTP.Encryption
 
             int expectedLength = engine.GetOutputSize(payloadSize);
             if (offset + expectedLength > payload.Length)
+            {
                 throw new ArgumentOutOfRangeException("Payload is too small!");
+            }
 
             var parameters = new AeadParameters(new KeyParameter(K_e), N_tag << 3, iv, associatedData);
             engine.Init(true, parameters);

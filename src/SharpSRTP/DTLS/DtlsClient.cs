@@ -167,20 +167,32 @@ namespace SharpSRTP.DTLS
 
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)
         {
-            if (Log.DebugEnabled) Log.Debug("DTLS client raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
+            if (Log.DebugEnabled)
+            {
+                Log.Debug("DTLS client raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
+            }
             if (message != null)
             {
-                if (Log.DebugEnabled) Log.Debug("> " + message);
+                if (Log.DebugEnabled)
+                {
+                    Log.Debug("> " + message);
+                }
             }
             if (cause != null)
             {
-                if (Log.DebugEnabled) Log.Debug("", cause);
+                if (Log.DebugEnabled)
+                {
+                    Log.Debug("", cause);
+                }
             }
         }
 
         public override void NotifyAlertReceived(short level, short alertDescription)
         {
-            if (Log.DebugEnabled) Log.Debug("DTLS client received alert: " + AlertLevel.GetText(level) + ", " + AlertDescription.GetText(alertDescription));
+            if (Log.DebugEnabled)
+            {
+                Log.Debug("DTLS client received alert: " + AlertLevel.GetText(level) + ", " + AlertDescription.GetText(alertDescription));
+            }
 
             TlsAlertTypesEnum alertType = TlsAlertTypesEnum.Unassigned;
             if (Enum.IsDefined(typeof(TlsAlertTypesEnum), (int)alertDescription))
@@ -201,7 +213,10 @@ namespace SharpSRTP.DTLS
         {
             base.NotifyServerVersion(serverVersion);
 
-            if(Log.DebugEnabled) Log.Debug("DTLS client negotiated " + serverVersion);
+            if (Log.DebugEnabled)
+            {
+                Log.Debug("DTLS client negotiated " + serverVersion);
+            }
         }
 
         public override TlsAuthentication GetAuthentication()
@@ -216,7 +231,10 @@ namespace SharpSRTP.DTLS
             ProtocolName protocolName = m_context.SecurityParameters.ApplicationProtocol;
             if (protocolName != null)
             {
-                if (Log.DebugEnabled) Log.Debug("Client ALPN: " + protocolName.GetUtf8Decoding());
+                if (Log.DebugEnabled)
+                {
+                    Log.Debug("Client ALPN: " + protocolName.GetUtf8Decoding());
+                }
             }
 
             TlsSession newSession = m_context.Session;
@@ -229,11 +247,17 @@ namespace SharpSRTP.DTLS
 
                     if (_session != null && Arrays.AreEqual(_session.SessionID, newSessionID))
                     {
-                        if (Log.DebugEnabled) Log.Debug("Client resumed session: " + hex);
+                        if (Log.DebugEnabled)
+                        {
+                            Log.Debug("Client resumed session: " + hex);
+                        }
                     }
                     else
                     {
-                        if (Log.DebugEnabled) Log.Debug("Client established session: " + hex);
+                        if (Log.DebugEnabled)
+                        {
+                            Log.Debug("Client established session: " + hex);
+                        }
                     }
 
                     this._session = newSession;
@@ -242,11 +266,17 @@ namespace SharpSRTP.DTLS
                 byte[] tlsServerEndPoint = m_context.ExportChannelBinding(ChannelBinding.tls_server_end_point);
                 if (null != tlsServerEndPoint)
                 {
-                    if (Log.DebugEnabled) Log.Debug("Client 'tls-server-end-point': " + ToHexString(tlsServerEndPoint));
+                    if (Log.DebugEnabled)
+                    {
+                        Log.Debug("Client 'tls-server-end-point': " + ToHexString(tlsServerEndPoint));
+                    }
                 }
 
                 byte[] tlsUnique = m_context.ExportChannelBinding(ChannelBinding.tls_unique);
-                if (Log.DebugEnabled) Log.Debug("Client 'tls-unique': " + ToHexString(tlsUnique));
+                if (Log.DebugEnabled)
+                {
+                    Log.Debug("Client 'tls-unique': " + ToHexString(tlsUnique));
+                }
             }
 
             OnHandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
@@ -255,7 +285,9 @@ namespace SharpSRTP.DTLS
         public override IDictionary<int, byte[]> GetClientExtensions()
         {
             if (m_context.SecurityParameters.ClientRandom == null)
+            {
                 throw new TlsFatalAlert(AlertDescription.internal_error);
+            }
 
             return base.GetClientExtensions();
         }
@@ -263,7 +295,9 @@ namespace SharpSRTP.DTLS
         public override void ProcessServerExtensions(IDictionary<int, byte[]> serverExtensions)
         {
             if (m_context.SecurityParameters.ServerRandom == null)
+            {
                 throw new TlsFatalAlert(AlertDescription.internal_error);
+            }
 
             base.ProcessServerExtensions(serverExtensions);
         }
@@ -288,17 +322,25 @@ namespace SharpSRTP.DTLS
             {
                 TlsCertificate[] chain = serverCertificate.Certificate.GetCertificateList();
 
-                if (Log.DebugEnabled) Log.Debug("DTLS client received server certificate chain of length " + chain.Length);
+                if (Log.DebugEnabled)
+                {
+                    Log.Debug("DTLS client received server certificate chain of length " + chain.Length);
+                }
                 for (int i = 0; i != chain.Length; i++)
                 {
                     X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
-                    if (Log.DebugEnabled) Log.Debug("DTLS client fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
+                    if (Log.DebugEnabled)
+                    {
+                        Log.Debug("DTLS client fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
+                    }
                 }
 
                 bool isEmpty = serverCertificate == null || serverCertificate.Certificate == null || serverCertificate.Certificate.IsEmpty;
 
                 if (isEmpty)
+                {
                     throw new TlsFatalAlert(AlertDescription.bad_certificate);
+                }
 
                 TlsCertificate[] certPath = chain;
 
@@ -355,22 +397,30 @@ namespace SharpSRTP.DTLS
         public static bool IsServerCertificateRsa(TlsServerCertificate serverCertificate)
         {
             if (serverCertificate == null || serverCertificate.Certificate == null || serverCertificate.Certificate.IsEmpty)
+            {
                 throw new ArgumentNullException(nameof(serverCertificate));
+            }
 
             var certList = serverCertificate.Certificate.GetCertificateList();
             if (certList == null || certList.Length == 0)
+            {
                 throw new ArgumentException("Server certificate chain is empty.", nameof(serverCertificate));
+            }
 
             var firstCertificate = X509CertificateStructure.GetInstance(certList[0].GetEncoded());
             var algOid = firstCertificate.SubjectPublicKeyInfo.Algorithm.Algorithm;
 
             if (algOid.Equals(Org.BouncyCastle.Asn1.Pkcs.PkcsObjectIdentifiers.RsaEncryption))
-                return true;         
+            {
+                return true;
+            }
 
             // Fallback: decode the public key and check its runtime type
             var pubKey = Org.BouncyCastle.Security.PublicKeyFactory.CreateKey(firstCertificate.SubjectPublicKeyInfo);
             if (pubKey is Org.BouncyCastle.Crypto.Parameters.RsaKeyParameters)
+            {
                 return true;
+            }
             
             return false;
         }

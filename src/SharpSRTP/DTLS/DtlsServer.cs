@@ -134,10 +134,14 @@ namespace SharpSRTP.DTLS
         public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint, Func<string, DatagramTransport> createClientDatagramTransport)
         {
             if (datagramTransport == null)
+            {
                 throw new ArgumentNullException(nameof(datagramTransport));
+            }
 
             if (createClientDatagramTransport == null)
+            {
                 throw new ArgumentNullException(nameof(createClientDatagramTransport));
+            }
 
             DtlsTransport transport = null;
 
@@ -162,8 +166,10 @@ namespace SharpSRTP.DTLS
                         if (length > 0)
                         {
                             remoteEndpoint = getRemoteEndpoint();
-                            if(string.IsNullOrEmpty(remoteEndpoint))
+                            if (string.IsNullOrEmpty(remoteEndpoint))
+                            {
                                 throw new InvalidOperationException();
+                            }
 
                             byte[] clientID = Encoding.UTF8.GetBytes(remoteEndpoint);
                             request = verifier.VerifyRequest(clientID, buf, 0, length, datagramTransport);
@@ -204,21 +210,33 @@ namespace SharpSRTP.DTLS
 
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)
         {
-            if (Log.DebugEnabled) Log.Debug("DTLS server raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
-            
+            if (Log.DebugEnabled)
+            {
+                Log.Debug("DTLS server raised alert: " + AlertLevel.GetText(alertLevel) + ", " + AlertDescription.GetText(alertDescription));
+            }
+
             if (message != null)
             {
-                if (Log.DebugEnabled) Log.Debug("> " + message);
+                if (Log.DebugEnabled)
+                {
+                    Log.Debug("> " + message);
+                }
             }
             if (cause != null)
             {
-                if (Log.DebugEnabled) Log.Debug("", cause);
+                if (Log.DebugEnabled)
+                {
+                    Log.Debug("", cause);
+                }
             }
         }
 
         public override void NotifyAlertReceived(short level, short alertDescription)
         {
-            if(Log.DebugEnabled) Log.Debug("DTLS server received alert: " + AlertLevel.GetText(level) + ", " + AlertDescription.GetText(alertDescription));
+            if (Log.DebugEnabled)
+            {
+                Log.Debug("DTLS server received alert: " + AlertLevel.GetText(level) + ", " + AlertDescription.GetText(alertDescription));
+            }
 
             TlsAlertTypesEnum alertType = TlsAlertTypesEnum.Unassigned;
             if (Enum.IsDefined(typeof(TlsAlertTypesEnum), (int)alertDescription))
@@ -238,7 +256,10 @@ namespace SharpSRTP.DTLS
         public override ProtocolVersion GetServerVersion()
         {
             ProtocolVersion serverVersion = base.GetServerVersion();
-            if (Log.DebugEnabled) Log.Debug("DTLS server negotiated " + serverVersion);
+            if (Log.DebugEnabled)
+            {
+                Log.Debug("DTLS server negotiated " + serverVersion);
+            }
             return serverVersion;
         }
 
@@ -259,11 +280,18 @@ namespace SharpSRTP.DTLS
         {
             TlsCertificate[] chain = clientCertificate.GetCertificateList();
 
-            if (Log.DebugEnabled) Log.Debug("DTLS server received client certificate chain of length " + chain.Length);
+            if (Log.DebugEnabled)
+            {
+                Log.Debug("DTLS server received client certificate chain of length " + chain.Length);
+            }
+
             for (int i = 0; i != chain.Length; i++)
             {
                 X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
-                if (Log.DebugEnabled) Log.Debug("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
+                if (Log.DebugEnabled)
+                {
+                    Log.Debug("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
+                }
             }
         }
 
@@ -274,14 +302,23 @@ namespace SharpSRTP.DTLS
             ProtocolName protocolName = m_context.SecurityParameters.ApplicationProtocol;
             if (protocolName != null)
             {
-                if (Log.DebugEnabled) Log.Debug("Server ALPN: " + protocolName.GetUtf8Decoding());
+                if (Log.DebugEnabled)
+                {
+                    Log.Debug("Server ALPN: " + protocolName.GetUtf8Decoding());
+                }
             }
 
             byte[] tlsServerEndPoint = m_context.ExportChannelBinding(ChannelBinding.tls_server_end_point);
-            if (Log.DebugEnabled) Log.Debug("Server 'tls-server-end-point': " + ToHexString(tlsServerEndPoint));
+            if (Log.DebugEnabled)
+            {
+                Log.Debug("Server 'tls-server-end-point': " + ToHexString(tlsServerEndPoint));
+            }
 
             byte[] tlsUnique = m_context.ExportChannelBinding(ChannelBinding.tls_unique);
-            if (Log.DebugEnabled) Log.Debug("Server 'tls-unique': " + ToHexString(tlsUnique));
+            if (Log.DebugEnabled)
+            {
+                Log.Debug("Server 'tls-unique': " + ToHexString(tlsUnique));
+            }
 
             OnHandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
         }
@@ -289,15 +326,19 @@ namespace SharpSRTP.DTLS
         public override void ProcessClientExtensions(IDictionary<int, byte[]> clientExtensions)
         {
             if (m_context.SecurityParameters.ClientRandom == null)
+            {
                 throw new TlsFatalAlert(AlertDescription.internal_error);
-            
+            }
+
             base.ProcessClientExtensions(clientExtensions);
         }
 
         public override IDictionary<int, byte[]> GetServerExtensions()
         {
             if (m_context.SecurityParameters.ServerRandom == null)
+            {
                 throw new TlsFatalAlert(AlertDescription.internal_error);
+            }
 
             return base.GetServerExtensions();
         }
@@ -305,7 +346,9 @@ namespace SharpSRTP.DTLS
         public override void GetServerExtensionsForConnection(IDictionary<int, byte[]> serverExtensions)
         {
             if (m_context.SecurityParameters.ServerRandom == null)
+            {
                 throw new TlsFatalAlert(AlertDescription.internal_error);
+            }
 
             base.GetServerExtensionsForConnection(serverExtensions);
         }

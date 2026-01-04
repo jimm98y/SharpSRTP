@@ -66,9 +66,13 @@ namespace SharpSRTP.SRTP.Encryption
         private static ulong DIV(ulong x, ulong y)
         {
             if (y == 0)
+            {
                 return 0;
+            }
             else
+            {
                 return x / y;
+            }
         }
 
         public static byte[] GenerateMessageKeyIV(byte[] salt, uint ssrc, ulong index)

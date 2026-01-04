@@ -120,16 +120,22 @@ namespace SharpSRTP.DTLSSRTP
             // verify that the server has selected exactly 1 profile
             int[] clientSupportedProfiles = GetSupportedProtectionProfiles();
             if (serverSrtpExtension.ProtectionProfiles.Length != 1)
+            {
                 throw new TlsFatalAlert(AlertDescription.internal_error);
+            }
 
             // verify that the server has selected a profile we support
             int selectedProfile = serverSrtpExtension.ProtectionProfiles[0];
             if (!clientSupportedProfiles.Contains(selectedProfile))
+            {
                 throw new TlsFatalAlert(AlertDescription.internal_error);
+            }
 
             // verify the mki sent by the server matches our mki
             if (_srtpData.Mki != null && serverSrtpExtension.Mki != null && !Enumerable.SequenceEqual(_srtpData.Mki, serverSrtpExtension.Mki))
+            {
                 throw new TlsFatalAlert(AlertDescription.illegal_parameter);
+            }
 
             // store the server extension as it contains the selected profile
             _srtpData = serverSrtpExtension;
@@ -146,7 +152,9 @@ namespace SharpSRTP.DTLSSRTP
         {
             // this should only be called from OnHandshakeCompleted so we should still have _srtpData from the connection
             if (m_context == null)
+            {
                 throw new InvalidOperationException();
+            }
 
             int selectedProtectionProfile = _srtpData.ProtectionProfiles[0];
             DtlsSrtpKeys keys = DtlsSrtpProtocol.CreateMasterKeys(selectedProtectionProfile, _srtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
