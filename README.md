@@ -197,6 +197,8 @@ byte[] srtcp = ...
 context.UnprotectRtcp(srtcp, srtcp.Length, out int length);
 byte[] rtcp = srtcp.Take(length).ToArray();
 ```
+### Samples
+SRTP samples can be found in the [SharpRealtimeStreaming](https://github.com/jimm98y/SharpRealTimeStreaming) repo.
 ## DTLS-SRTP
 DTLS-SRTP uses a modified DTLS client/server with the "use_srtp" extension to negotiate the SRTP encryption parameters and derive the corresponding SRTP keys.
 ### Server
