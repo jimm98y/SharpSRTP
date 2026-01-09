@@ -4,9 +4,9 @@ using SharpSRTP.UDP;
 using System;
 using System.Threading.Tasks;
 
-var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), true);
+var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), false);
 
-DtlsServer server = new DtlsServer(rsaCertificate.Certificate, rsaCertificate.PrivateKey, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
+DtlsServer server = new DtlsServer(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
 server.OnHandshakeCompleted += (sender, e) =>
 {
     Console.WriteLine("DTLS Client connected");
