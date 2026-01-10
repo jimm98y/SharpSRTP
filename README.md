@@ -46,6 +46,9 @@ Currently implemented [DTLS-SRTP protection profiles](https://www.iana.org/assig
 1. SRTP_AEAD_ARIA_128_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
 1. SRTP_AEAD_ARIA_256_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
 
+## Thread Safety
+SharpSRTP is not thread-safe. If multiple threads need to access the same SRTP context, proper synchronization mechanisms must be implemented by the user.
+
 ## DTLS
 The current DTLS implementation is based upon BouncyCastle and supports DTLS 1.2 only.
 
