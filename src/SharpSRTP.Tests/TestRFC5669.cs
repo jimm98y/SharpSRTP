@@ -117,7 +117,7 @@ namespace SharpSRTP.Tests
 
             var cipher = new GcmBlockCipher(new SeedEngine());
             byte[] associatedData = result.Take(offset).ToArray();
-            AEAD.Encrypt(cipher, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
+            AEAD.Encrypt(cipher, true, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
 
             string encryptedRTP = Convert.ToHexString(result).ToLowerInvariant();
             Assert.AreEqual(expectedEncryptedRTP, encryptedRTP);
@@ -147,7 +147,7 @@ namespace SharpSRTP.Tests
 
             var cipher = new CcmBlockCipher(new SeedEngine());
             byte[] associatedData = result.Take(offset).ToArray();
-            AEAD.Encrypt(cipher, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
+            AEAD.Encrypt(cipher, true, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
 
             string encryptedRTP = Convert.ToHexString(result).ToLowerInvariant();
             Assert.AreEqual(expectedEncryptedRTP, encryptedRTP);

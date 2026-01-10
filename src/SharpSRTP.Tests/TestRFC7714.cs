@@ -77,7 +77,7 @@ namespace SharpSRTP.Tests
 
             var cipher = new GcmBlockCipher(new AesEngine());
             byte[] associatedData = result.Take(offset).ToArray();
-            AEAD.Encrypt(cipher, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
+            AEAD.Encrypt(cipher, true, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
 
             string encryptedRTP = Convert.ToHexString(result).ToLowerInvariant();
             Assert.AreEqual(expectedSrtp, encryptedRTP);
@@ -104,7 +104,7 @@ namespace SharpSRTP.Tests
 
             var cipher = new GcmBlockCipher(new AesEngine());
             byte[] associatedData = srtpBytes.Take(offset).ToArray();
-            AEAD.Encrypt(cipher, srtpBytes, offset, srtpBytes.Length - n_tag, iv, k_e, n_tag, associatedData);
+            AEAD.Encrypt(cipher, false, srtpBytes, offset, srtpBytes.Length, iv, k_e, n_tag, associatedData);
 
             string result = Convert.ToHexString(srtpBytes.Take(srtpBytes.Length - n_tag).ToArray()).ToLowerInvariant();
             Assert.AreEqual(expectedRtp, result);
@@ -144,7 +144,7 @@ namespace SharpSRTP.Tests
             var cipher = new GcmBlockCipher(new AesEngine());
             uint index = idx | SrtpContext.E_FLAG;
             byte[] associatedData = srtcp.Take(offset).Concat(new byte[] { (byte)(index >> 24), (byte)(index >> 16), (byte)(index >> 8), (byte)index }).ToArray(); // associatedData include also index
-            AEAD.Encrypt(cipher, srtcp, offset, rtcpBytes.Length, iv, k_e, n_tag, associatedData);
+            AEAD.Encrypt(cipher, true, srtcp, offset, rtcpBytes.Length, iv, k_e, n_tag, associatedData);
 
             srtcp[rtcpBytes.Length + n_tag + 0] = (byte)(index >> 24);
             srtcp[rtcpBytes.Length + n_tag + 1] = (byte)(index >> 16);
@@ -176,7 +176,7 @@ namespace SharpSRTP.Tests
 
             var cipher = new GcmBlockCipher(new AesEngine());
             byte[] associatedData = srtcpBytes.Take(offset).Concat(srtcpBytes.Skip(srtcpBytes.Length - 4).Take(4)).ToArray(); // associatedData include also index
-            AEAD.Encrypt(cipher, srtcpBytes, offset, srtcpBytes.Length - 4 - n_tag, iv, k_e, n_tag, associatedData);
+            AEAD.Encrypt(cipher, false, srtcpBytes, offset, srtcpBytes.Length - 4, iv, k_e, n_tag, associatedData);
 
             string result = Convert.ToHexString(srtcpBytes.Take(srtcpBytes.Length - 4 - n_tag).ToArray()).ToLowerInvariant();
             Assert.AreEqual(expectedRtcp, result);

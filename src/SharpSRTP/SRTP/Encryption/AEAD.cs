@@ -27,7 +27,7 @@ namespace SharpSRTP.SRTP.Encryption
 {
     public static class AEAD
     {
-        public static void Encrypt(IAeadBlockCipher engine, byte[] payload, int offset, int length, byte[] iv, byte[] K_e, int N_tag, byte[] associatedData)
+        public static void Encrypt(IAeadBlockCipher engine, bool encrypt, byte[] payload, int offset, int length, byte[] iv, byte[] K_e, int N_tag, byte[] associatedData)
         {
             int payloadSize = length - offset;
 
@@ -38,7 +38,7 @@ namespace SharpSRTP.SRTP.Encryption
             }
 
             var parameters = new AeadParameters(new KeyParameter(K_e), N_tag << 3, iv, associatedData);
-            engine.Init(true, parameters);
+            engine.Init(encrypt, parameters);
 
             int len = engine.ProcessBytes(payload, offset, payloadSize, payload, offset);
             

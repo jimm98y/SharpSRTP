@@ -111,7 +111,7 @@ namespace SharpSRTP.Tests
 
             var cipher = new GcmBlockCipher(new AriaEngine());
             byte[] associatedData = result.Take(offset).ToArray();
-            AEAD.Encrypt(cipher, result, offset, rtpBytes.Length, iv, bk_e, n_tag, associatedData);
+            AEAD.Encrypt(cipher, true, result, offset, rtpBytes.Length, iv, bk_e, n_tag, associatedData);
 
             string srtpResult = Convert.ToHexString(result).ToLowerInvariant();
             Assert.AreEqual(expectedSrtp, srtpResult);
