@@ -34,15 +34,23 @@ namespace SharpSRTP.DTLSSRTP
     // Useful link for troubleshooting WebRTC in Chrome/Edge: https://learn.microsoft.com/en-us/azure/communication-services/resources/troubleshooting/voice-video-calling/references/how-to-collect-browser-verbose-log
     public class DtlsSrtpServer : DtlsServer, IDtlsSrtpPeer
     {
+        /// <summary>
+        /// Used in WebRTC to tell the server to not use MKI even if the client requested it.
+        /// </summary>
+        /// <remarks>
+        /// RFC 8827 states: An SRTP Master Key Identifier (MKI) MUST NOT be used.
+        /// </remarks>
+        public bool ForceDisableMKI { get; set; } = false;
+
         private UseSrtpData _srtpData;
 
         public event EventHandler<DtlsSessionStartedEventArgs> OnSessionStarted;
 
-        public DtlsSrtpServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
+        public DtlsSrtpServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256)
             : this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         { }
 
-        public DtlsSrtpServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
+        public DtlsSrtpServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256)
             : base(crypto, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         {
             this.OnHandshakeCompleted += DtlsSrtpServer_OnHandshakeCompleted;
@@ -57,7 +65,7 @@ namespace SharpSRTP.DTLSSRTP
 
         protected virtual int[] GetSupportedProtectionProfiles()
         {
-            return new int[] 
+            return new int[]
             {
                 ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM,
                 ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM,
@@ -66,7 +74,7 @@ namespace SharpSRTP.DTLSSRTP
                 ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM,
                 ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80,
                 ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_32,
-                
+
                 ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_256_GCM,
                 ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_128_GCM,
                 ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_80,
@@ -98,7 +106,7 @@ namespace SharpSRTP.DTLSSRTP
             }
 
             int selectedProfile = mutuallySupportedProfiles.OrderBy(x => Array.IndexOf(serverSupportedProfiles, x)).First(); // Choose the highest priority profile supported by the server
-            _srtpData = new UseSrtpData(new int[] { selectedProfile }, clientSrtpExtension.Mki); // Server must return only a single selected profile
+            _srtpData = new UseSrtpData(new int[] { selectedProfile }, ForceDisableMKI ? new byte[0] : clientSrtpExtension.Mki); // Server must return only a single selected profile
         }
 
         public override IDictionary<int, byte[]> GetServerExtensions()
