@@ -8,88 +8,112 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
-var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("WebRTC", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), false);
-
-object serverLock = new object();
-DtlsServer server = new DtlsServer(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
-server.OnHandshakeCompleted += (sender, e) =>
-{
-    Console.WriteLine("DTLS Client connected");
-};
-
+DtlsServer server = new DtlsServer();
 TlsCrypto serverCrypto = new BcTlsCrypto();
 DtlsVerifier verifier = new DtlsVerifier(serverCrypto);
-DtlsRequest request = null;
 Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-int receiveLimit = UdpTransport.MTU;
-byte[] buf = new byte[receiveLimit];
+ConcurrentDictionary<string, UdpTransport> activeSessions = new ConcurrentDictionary<string, UdpTransport>();
+byte[] buffer = new byte[UdpTransport.MTU];
+EndPoint localEndpoint = IPEndPointExtensions.Parse("0.0.0.0:8888");
+EndPoint remoteEndpoint = new IPEndPoint(IPAddress.Any, 0);
 bool isShutdown = false;
 bool isHelloVerifyEnabled = true;
 
+const int SessionTimeout = 60000;
+Timer sessionCleanup = new Timer((o) =>
+{
+    UdpTransport[] currentSessions = activeSessions.Values.ToArray();
+    for (int i = 0; i < currentSessions.Length; i++)
+    {
+        var session = currentSessions[i];
+        if (DateTime.UtcNow.Subtract(session.LastUsed).TotalMilliseconds > SessionTimeout)
+        {
+            session.Close();
+            Console.WriteLine($"Closed inactive session with {session.RemoteEndpoint}");
+        }
+    }
+}, null, SessionTimeout, SessionTimeout / 2);
+
 try
 {
-    IPEndPoint local = IPEndPointExtensions.Parse("0.0.0.0:8888");
-    listenSocket.Bind(local);
-    Console.WriteLine($"Server is listening on {local}");
-    ConcurrentDictionary<string, UdpTransport> sessions = new ConcurrentDictionary<string, UdpTransport>();
-    EndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+    listenSocket.Bind(localEndpoint);
+    Console.WriteLine($"DTLS Server is listening on {localEndpoint}");
 
     while (!isShutdown)
     {
         int length = 0;
         try
         {
-            length = listenSocket.ReceiveFrom(buf, ref remote);
+            length = listenSocket.ReceiveFrom(buffer, ref remoteEndpoint);
         }
         catch(SocketException ex)
         {
-            System.Diagnostics.Debug.WriteLine(ex.Message);
+            Console.WriteLine(ex.Message);
         }
 
         if (length > 0)
         {
-            if (sessions.TryGetValue(remote.ToString(), out var transport))
+            if (activeSessions.TryGetValue(remoteEndpoint.ToString(), out var transport))
             {
                 // current session
-                transport.TryAddToReceiveQueue(buf.ToArray());
+                transport.TryAddToReceiveQueue(buffer.ToArray());
             }
             else
             {
                 // new session
+                DtlsRequest request = null;
+
+                // optionally start with HelloVerify
                 if (isHelloVerifyEnabled)
                 {
-                    var clientID = remote.Serialize().Buffer.ToArray();
-                    request = verifier.VerifyRequest(clientID, buf, 0, length, new UdpSender(listenSocket, remote, UdpTransport.MTU));
+                    var clientID = remoteEndpoint.Serialize().Buffer.ToArray();
+                    request = verifier.VerifyRequest(clientID, buffer, 0, length, new UdpSender(listenSocket, remoteEndpoint, UdpTransport.MTU));
+
+                    if (request == null)
+                    {
+                        Console.WriteLine($"Sent HelloVerify to {remoteEndpoint}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"HelloVerify from {remoteEndpoint} succeeded");
+                    }
                 }
 
+                // negotiate DTLS
                 if (request != null || !isHelloVerifyEnabled)
                 {
-                    UdpTransport udpServerTransport = new UdpTransport(listenSocket, remote, (transport) => sessions.TryRemove(transport.RemoteEndpoint, out _));
-                    if (sessions.TryAdd(remote.ToString(), udpServerTransport))
+                    UdpTransport udpServerTransport = new UdpTransport(listenSocket, remoteEndpoint, (transport) => activeSessions.TryRemove(transport.RemoteEndpoint, out _));
+                    if (activeSessions.TryAdd(remoteEndpoint.ToString(), udpServerTransport))
                     {
                         var session = Task.Run(() =>
                         {
-                            DtlsTransport dtlsTransport = null;
-                            lock (serverLock)
-                            {
-                                dtlsTransport = server.DoHandshake(out string error, udpServerTransport, request);
-                            }
+                            Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
+                            DtlsTransport dtlsTransport = server.DoHandshake(out string error, udpServerTransport, request);
+                            
                             if (dtlsTransport != null)
                             {
-                                byte[] bbuf = new byte[dtlsTransport.GetReceiveLimit()];
+                                Console.WriteLine($"DTLS connected");
+                                byte[] receiveBuffer = new byte[dtlsTransport.GetReceiveLimit()];
+
                                 while (!isShutdown)
                                 {
-                                    int length = dtlsTransport.Receive(bbuf, 0, bbuf.Length, 1000);
+                                    int length = dtlsTransport.Receive(receiveBuffer, 0, receiveBuffer.Length, 1000);
                                     if (length > 0)
                                     {
-                                        Console.WriteLine($"Received {bbuf[0]} from {remote.ToString()}");
-                                        dtlsTransport.Send(bbuf, 0, length);
+                                        Console.WriteLine($"Received {receiveBuffer[0]} from {remoteEndpoint}");
+                                        dtlsTransport.Send(receiveBuffer, 0, length);
                                     }
                                 }
 
                                 dtlsTransport.Close();
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Handshake with {remoteEndpoint} failed");
+                                activeSessions.TryRemove(remoteEndpoint.ToString(), out _);
                             }
                         });
                     }

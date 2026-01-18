@@ -32,6 +32,8 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsServer : DefaultTlsServer, IDtlsPeer
     {
+        private readonly object _syncRoot = new object();
+
         public int TimeoutMilliseconds { get; set; } = 20000;
 
         public Certificate Certificate { get; private set; }
@@ -130,26 +132,29 @@ namespace SharpSRTP.DTLS
 
         public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null)
         {
-            if (datagramTransport == null)
+            lock (_syncRoot)
             {
-                throw new ArgumentNullException(nameof(datagramTransport));
-            }
+                if (datagramTransport == null)
+                {
+                    throw new ArgumentNullException(nameof(datagramTransport));
+                }
 
-            DtlsTransport transport = null;
+                DtlsTransport transport = null;
 
-            try
-            {
-                DtlsServerProtocol serverProtocol = new DtlsServerProtocol();
-                transport = serverProtocol.Accept(this, datagramTransport, request);
+                try
+                {
+                    DtlsServerProtocol serverProtocol = new DtlsServerProtocol();
+                    transport = serverProtocol.Accept(this, datagramTransport, request);
+                }
+                catch (Exception ex)
+                {
+                    handshakeError = ex.Message;
+                    return null;
+                }
+
+                handshakeError = null;
+                return transport;
             }
-            catch (Exception ex)
-            {
-                handshakeError = ex.Message;
-                return null;
-            }
-            
-            handshakeError = null;
-            return transport;
         }
 
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)

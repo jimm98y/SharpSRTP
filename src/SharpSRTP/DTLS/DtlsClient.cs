@@ -33,6 +33,7 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsClient : DefaultTlsClient, IDtlsPeer
     {
+        private readonly object _syncRoot = new object();
         private TlsSession _session;
 
         public bool AutogenerateCertificate { get; set; } = true;
@@ -136,21 +137,24 @@ namespace SharpSRTP.DTLS
 
         public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null)
         {
-            DtlsTransport transport = null;
-                        
-            try
+            lock (_syncRoot)
             {
-                DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
-                transport = clientProtocol.Connect(this, datagramTransport);
-            }
-            catch (Exception ex)
-            {
-                handshakeError = ex.Message;
-                return null;
-            }
+                DtlsTransport transport = null;
 
-            handshakeError = null;
-            return transport;
+                try
+                {
+                    DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
+                    transport = clientProtocol.Connect(this, datagramTransport);
+                }
+                catch (Exception ex)
+                {
+                    handshakeError = ex.Message;
+                    return null;
+                }
+
+                handshakeError = null;
+                return transport;
+            }
         }
 
         public override TlsSession GetSessionToResume()

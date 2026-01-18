@@ -2,54 +2,54 @@
 using SharpSRTP.DTLS;
 using SharpSRTP.UDP;
 using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
 DtlsClient client = new DtlsClient();
-client.OnHandshakeCompleted += (sender, e) =>
-{
-    Console.WriteLine("DTLS client connected");
-};
-
 Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-var remote = IPEndPointExtensions.Parse("127.0.0.1:8888");
-socket.Connect(remote);
+IPEndPoint remoteEndpoint = IPEndPointExtensions.Parse("127.0.0.1:8888");
+socket.Connect(remoteEndpoint);
 
 UdpTransport udpClientTransport = new UdpTransport(socket);
-bool isRunning = true;
+bool isShutdown = false;
 
-while (isRunning)
+while (!isShutdown)
 {
-    Console.WriteLine($"Connecting to {remote}");
+    Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
     DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
     byte counter = 0;
 
     if (dtlsTransport != null)
     {
-        Console.WriteLine($"Connected");
-        while (isRunning)
+        Console.WriteLine($"DTLS connected");
+        while (!isShutdown)
         {
             byte[] data = new byte[] { counter };
             dtlsTransport.Send(data, 0, data.Length);
             counter++;
 
-            byte[] buf = new byte[dtlsTransport.GetReceiveLimit()];
-            int ret = dtlsTransport.Receive(buf, 0, buf.Length, 1000);
-            
-            if (ret < 0) 
+            byte[] receiveBuffer = new byte[dtlsTransport.GetReceiveLimit()];
+            int ret = dtlsTransport.Receive(receiveBuffer, 0, receiveBuffer.Length, 1000);
+
+            if (ret < 0)
+            {
                 break;
+            }
 
             if (ret > 0)
             {
-                Console.WriteLine($"Received {buf[0]}");
+                Console.WriteLine($"Received {receiveBuffer[0]} from {remoteEndpoint}");
             }
 
             Thread.Sleep(1000);
         }
+
         dtlsTransport.Close();
     }
     else
     {
+        Console.WriteLine($"Handshake with {remoteEndpoint} failed");
         Thread.Sleep(1000);
     }
 }

@@ -29,8 +29,6 @@ namespace SharpSRTP.UDP
 {
     public class UdpTransport : DatagramTransport
     {
-        private readonly object _syncRoot = new object();
-
         public const int MAX_RECEIVE_QUEUE_ITEMS = 32;
         public const int MTU = 1472; // 1500 - 20 (IP) - 8 (UDP)
 
@@ -41,8 +39,9 @@ namespace SharpSRTP.UDP
         private readonly BlockingCollection<byte[]> _receiveQueue = new BlockingCollection<byte[]>();
 
         public string RemoteEndpoint { get { return _remote.ToString(); } }
-        public DateTime LastReceived { get; private set; }
-        public DateTime LastSent { get; private set; }
+        public DateTime LastReceived { get; private set; } = DateTime.UtcNow;
+        public DateTime LastSent { get; private set; } = DateTime.UtcNow;
+        public DateTime LastUsed { get { return LastReceived > LastSent ? LastReceived : LastSent; } }
 
         public UdpTransport(System.Net.Sockets.Socket socket, EndPoint remote = null, Action<UdpTransport> onClose = null, int mtu = MTU)
         {
