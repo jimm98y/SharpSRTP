@@ -27,6 +27,9 @@ using System.Net.Sockets;
 
 namespace SharpSRTP.UDP
 {
+    /// <summary>
+    /// UDP transport.
+    /// </summary>
     public class UdpTransport : DatagramTransport
     {
         public const int MAX_RECEIVE_QUEUE_ITEMS = 32;
@@ -43,7 +46,7 @@ namespace SharpSRTP.UDP
         public DateTime LastSent { get; private set; } = DateTime.UtcNow;
         public DateTime LastUsed { get { return LastReceived > LastSent ? LastReceived : LastSent; } }
 
-        public UdpTransport(System.Net.Sockets.Socket socket, EndPoint remote = null, Action<UdpTransport> onClose = null, int mtu = MTU)
+        public UdpTransport(Socket socket, EndPoint remote = null, int mtu = MTU, Action<UdpTransport> onClose = null)
         {
             this._socket = socket ?? throw new ArgumentNullException(nameof(socket));
             this._remote = remote;

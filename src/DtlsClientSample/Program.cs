@@ -11,13 +11,13 @@ Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, Protoco
 IPEndPoint remoteEndpoint = IPEndPointExtensions.Parse("127.0.0.1:8888");
 socket.Connect(remoteEndpoint);
 
-UdpTransport udpClientTransport = new UdpTransport(socket);
+UdpTransport udpClientTransport = new UdpTransport(socket, null, UdpTransport.MTU);
 bool isShutdown = false;
 
 while (!isShutdown)
 {
     Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
-    DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
+    DtlsTransport dtlsTransport = client.DoHandshake(udpClientTransport, out string error);
     byte counter = 0;
 
     if (dtlsTransport != null)
@@ -49,7 +49,9 @@ while (!isShutdown)
     }
     else
     {
-        Console.WriteLine($"Handshake with {remoteEndpoint} failed");
+        Console.WriteLine($"Handshake with {remoteEndpoint} failed with {error}");
         Thread.Sleep(1000);
     }
 }
+
+socket.Close();

@@ -26,6 +26,9 @@ using System.Net.Sockets;
 
 namespace SharpSRTP.UDP
 {
+    /// <summary>
+    /// Simple UDP sender to be used with <see cref="DtlsVerifier"/>.
+    /// </summary>
     public class UdpSender : DatagramSender
     {
         private readonly Socket _socket;

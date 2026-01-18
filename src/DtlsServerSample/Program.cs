@@ -11,119 +11,114 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
+const int RECEIVE_TIMEOUT = 0;
+const int INACTIVE_SESSION_TIMEOUT = 60000;
+EndPoint localEndpoint = IPEndPointExtensions.Parse("0.0.0.0:8888");
+EndPoint remoteEndpoint = new IPEndPoint(IPAddress.Any, 0);
+ConcurrentDictionary<string, UdpTransport> activeSessions = new ConcurrentDictionary<string, UdpTransport>();
 DtlsServer server = new DtlsServer();
 TlsCrypto serverCrypto = new BcTlsCrypto();
 DtlsVerifier verifier = new DtlsVerifier(serverCrypto);
 Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-ConcurrentDictionary<string, UdpTransport> activeSessions = new ConcurrentDictionary<string, UdpTransport>();
+listenSocket.ReceiveTimeout = RECEIVE_TIMEOUT;
 byte[] buffer = new byte[UdpTransport.MTU];
-EndPoint localEndpoint = IPEndPointExtensions.Parse("0.0.0.0:8888");
-EndPoint remoteEndpoint = new IPEndPoint(IPAddress.Any, 0);
 bool isShutdown = false;
 bool isHelloVerifyEnabled = true;
 
-const int SessionTimeout = 60000;
 Timer sessionCleanup = new Timer((o) =>
 {
     UdpTransport[] currentSessions = activeSessions.Values.ToArray();
     for (int i = 0; i < currentSessions.Length; i++)
     {
         var session = currentSessions[i];
-        if (DateTime.UtcNow.Subtract(session.LastUsed).TotalMilliseconds > SessionTimeout)
+        if (DateTime.UtcNow.Subtract(session.LastUsed).TotalMilliseconds > INACTIVE_SESSION_TIMEOUT)
         {
             session.Close();
             Console.WriteLine($"Closed inactive session with {session.RemoteEndpoint}");
         }
     }
-}, null, SessionTimeout, SessionTimeout / 2);
+}, null, INACTIVE_SESSION_TIMEOUT, INACTIVE_SESSION_TIMEOUT / 2);
 
-try
+
+listenSocket.Bind(localEndpoint);
+Console.WriteLine($"DTLS Server is listening on {localEndpoint}");
+
+while (!isShutdown)
 {
-    listenSocket.Bind(localEndpoint);
-    Console.WriteLine($"DTLS Server is listening on {localEndpoint}");
-
-    while (!isShutdown)
+    int length = 0;
+    try
     {
-        int length = 0;
-        try
-        {
-            length = listenSocket.ReceiveFrom(buffer, ref remoteEndpoint);
-        }
-        catch(SocketException ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
+        length = listenSocket.ReceiveFrom(buffer, ref remoteEndpoint);
+    }
+    catch(SocketException ex)
+    {
+        Console.WriteLine(ex.Message);
+    }
 
-        if (length > 0)
+    if (length > 0)
+    {
+        if (activeSessions.TryGetValue(remoteEndpoint.ToString(), out var transport))
         {
-            if (activeSessions.TryGetValue(remoteEndpoint.ToString(), out var transport))
-            {
-                // current session
-                transport.TryAddToReceiveQueue(buffer.ToArray());
-            }
-            else
-            {
-                // new session
-                DtlsRequest request = null;
+            // current session
+            transport.TryAddToReceiveQueue(buffer.ToArray());
+        }
+        else
+        {
+            // new session
+            DtlsRequest request = null;
 
-                // optionally start with HelloVerify
-                if (isHelloVerifyEnabled)
+            // optionally start with HelloVerify
+            if (isHelloVerifyEnabled)
+            {
+                var clientID = remoteEndpoint.Serialize().Buffer.ToArray();
+                request = verifier.VerifyRequest(clientID, buffer, 0, length, new UdpSender(listenSocket, remoteEndpoint, UdpTransport.MTU));
+
+                if (request == null)
                 {
-                    var clientID = remoteEndpoint.Serialize().Buffer.ToArray();
-                    request = verifier.VerifyRequest(clientID, buffer, 0, length, new UdpSender(listenSocket, remoteEndpoint, UdpTransport.MTU));
-
-                    if (request == null)
-                    {
-                        Console.WriteLine($"Sent HelloVerify to {remoteEndpoint}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"HelloVerify from {remoteEndpoint} succeeded");
-                    }
+                    Console.WriteLine($"Sent HelloVerify to {remoteEndpoint}");
                 }
-
-                // negotiate DTLS
-                if (request != null || !isHelloVerifyEnabled)
+                else
                 {
-                    UdpTransport udpServerTransport = new UdpTransport(listenSocket, remoteEndpoint, (transport) => activeSessions.TryRemove(transport.RemoteEndpoint, out _));
-                    if (activeSessions.TryAdd(remoteEndpoint.ToString(), udpServerTransport))
+                    Console.WriteLine($"HelloVerify from {remoteEndpoint} succeeded");
+                }
+            }
+
+            // negotiate DTLS
+            if (request != null || !isHelloVerifyEnabled)
+            {
+                UdpTransport udpServerTransport = new UdpTransport(listenSocket, remoteEndpoint, UdpTransport.MTU, (transport) => activeSessions.TryRemove(transport.RemoteEndpoint, out _));
+                if (activeSessions.TryAdd(remoteEndpoint.ToString(), udpServerTransport))
+                {
+                    var session = Task.Run(() =>
                     {
-                        var session = Task.Run(() =>
-                        {
-                            Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
-                            DtlsTransport dtlsTransport = server.DoHandshake(out string error, udpServerTransport, request);
+                        Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
+                        DtlsTransport dtlsTransport = server.DoHandshake(udpServerTransport, out string error, request);
                             
-                            if (dtlsTransport != null)
-                            {
-                                Console.WriteLine($"DTLS connected");
-                                byte[] receiveBuffer = new byte[dtlsTransport.GetReceiveLimit()];
+                        if (dtlsTransport != null)
+                        {
+                            Console.WriteLine($"DTLS connected");
+                            byte[] receiveBuffer = new byte[dtlsTransport.GetReceiveLimit()];
 
-                                while (!isShutdown)
+                            while (!isShutdown)
+                            {
+                                int length = dtlsTransport.Receive(receiveBuffer, 0, receiveBuffer.Length, 1000);
+                                if (length > 0)
                                 {
-                                    int length = dtlsTransport.Receive(receiveBuffer, 0, receiveBuffer.Length, 1000);
-                                    if (length > 0)
-                                    {
-                                        Console.WriteLine($"Received {receiveBuffer[0]} from {remoteEndpoint}");
-                                        dtlsTransport.Send(receiveBuffer, 0, length);
-                                    }
+                                    Console.WriteLine($"Received {receiveBuffer[0]} from {remoteEndpoint}");
+                                    dtlsTransport.Send(receiveBuffer, 0, length);
                                 }
+                            }
 
-                                dtlsTransport.Close();
-                            }
-                            else
-                            {
-                                Console.WriteLine($"Handshake with {remoteEndpoint} failed");
-                                activeSessions.TryRemove(remoteEndpoint.ToString(), out _);
-                            }
-                        });
-                    }
+                            dtlsTransport.Close();
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Handshake with {remoteEndpoint} failed with {error}");
+                            activeSessions.TryRemove(remoteEndpoint.ToString(), out _);
+                        }
+                    });
                 }
             }
         }
     }
-}
-catch (Exception e)
-{
-    Console.Error.WriteLine(e);
-    Console.Error.Flush();
 }

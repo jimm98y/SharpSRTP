@@ -130,7 +130,7 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null)
+        public virtual DtlsTransport DoHandshake(DatagramTransport datagramTransport, out string handshakeError, DtlsRequest request = null)
         {
             lock (_syncRoot)
             {
