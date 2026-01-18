@@ -26,6 +26,7 @@ Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, P
 int receiveLimit = UdpTransport.MTU;
 byte[] buf = new byte[receiveLimit];
 bool isShutdown = false;
+bool isHelloVerifyEnabled = true;
 
 try
 {
@@ -57,10 +58,13 @@ try
             else
             {
                 // new session
-                var clientID = remote.Serialize().Buffer.ToArray();
-                request = verifier.VerifyRequest(clientID, buf, 0, length, new UdpSender(listenSocket, remote, UdpTransport.MTU));
+                if (isHelloVerifyEnabled)
+                {
+                    var clientID = remote.Serialize().Buffer.ToArray();
+                    request = verifier.VerifyRequest(clientID, buf, 0, length, new UdpSender(listenSocket, remote, UdpTransport.MTU));
+                }
 
-                if (request != null)
+                if (request != null || !isHelloVerifyEnabled)
                 {
                     UdpTransport udpServerTransport = new UdpTransport(listenSocket, remote, (transport) => sessions.TryRemove(transport.RemoteEndpoint, out _));
                     if (sessions.TryAdd(remote.ToString(), udpServerTransport))
@@ -77,7 +81,7 @@ try
                                 byte[] bbuf = new byte[dtlsTransport.GetReceiveLimit()];
                                 while (!isShutdown)
                                 {
-                                    int length = dtlsTransport.Receive(bbuf, 0, bbuf.Length, 100);
+                                    int length = dtlsTransport.Receive(bbuf, 0, bbuf.Length, 1000);
                                     if (length > 0)
                                     {
                                         Console.WriteLine($"Received {bbuf[0]} from {remote.ToString()}");
