@@ -38,7 +38,7 @@ client.OnSessionStarted += (sender, e) =>
     });
 };
 
-UdpDatagramTransport udpServerTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
+UdpTransport udpServerTransport = new UdpTransport(null, "127.0.0.1:8888");
 DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpServerTransport);
 
 Console.ReadKey();

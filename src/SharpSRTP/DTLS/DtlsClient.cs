@@ -33,8 +33,6 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsClient : DefaultTlsClient, IDtlsPeer
     {
-        protected DatagramTransport _clientDatagramTransport; // valid only for the current session
-
         private TlsSession _session;
 
         public bool AutogenerateCertificate { get; set; } = true;
@@ -136,17 +134,14 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint = null, Func<string, DatagramTransport> createClientDatagramTransport = null)
+        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null)
         {
             DtlsTransport transport = null;
                         
             try
             {
                 DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
-
-                _clientDatagramTransport = datagramTransport;
                 transport = clientProtocol.Connect(this, datagramTransport);
-                _clientDatagramTransport = null;
             }
             catch (Exception ex)
             {

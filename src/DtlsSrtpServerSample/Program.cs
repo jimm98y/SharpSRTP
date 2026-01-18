@@ -32,7 +32,7 @@ server.OnSessionStarted += (sender, e) =>
         }
     });
 };
-UdpDatagramTransport udpServerTransport = new UdpDatagramTransport("127.0.0.1:8888", null); 
+UdpTransport udpServerTransport = new UdpTransport("127.0.0.1:8888", null); 
 while (!isShutdown)
 {
     DtlsTransport dtlsTransport = server.DoHandshake(
@@ -41,9 +41,5 @@ while (!isShutdown)
         () =>
         {
             return udpServerTransport.RemoteEndPoint.ToString();
-        },
-        (remoteEndpoint) =>
-        {
-            return new UdpDatagramTransport(null, remoteEndpoint);
         });
 }

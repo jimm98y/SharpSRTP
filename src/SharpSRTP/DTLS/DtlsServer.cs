@@ -27,14 +27,11 @@ using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpSRTP.DTLS
 {
     public class DtlsServer : DefaultTlsServer, IDtlsPeer
     {
-        protected DatagramTransport _clientDatagramTransport; // valid only for the current session
-
         public int TimeoutMilliseconds { get; set; } = 20000;
 
         public Certificate Certificate { get; private set; }
@@ -131,16 +128,11 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint, Func<string, DatagramTransport> createClientDatagramTransport)
+        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null)
         {
             if (datagramTransport == null)
             {
                 throw new ArgumentNullException(nameof(datagramTransport));
-            }
-
-            if (createClientDatagramTransport == null)
-            {
-                throw new ArgumentNullException(nameof(createClientDatagramTransport));
             }
 
             DtlsTransport transport = null;
@@ -148,55 +140,7 @@ namespace SharpSRTP.DTLS
             try
             {
                 DtlsServerProtocol serverProtocol = new DtlsServerProtocol();
-                DtlsRequest request = null;
-                string remoteEndpoint = null;
-
-                if (getRemoteEndpoint != null)
-                {
-                    // Use DtlsVerifier to require a HelloVerifyRequest cookie exchange before accepting
-                    DtlsVerifier verifier = new DtlsVerifier(Crypto);
-                    int receiveLimit = datagramTransport.GetReceiveLimit();
-                    byte[] buf = new byte[receiveLimit];
-                    int receiveAttemptCounter = 0;
-
-                    do
-                    {
-                        const int RECEIVE_TIMEOUT = 100;
-                        int length = datagramTransport.Receive(buf, 0, receiveLimit, RECEIVE_TIMEOUT);
-                        if (length > 0)
-                        {
-                            remoteEndpoint = getRemoteEndpoint();
-                            if (string.IsNullOrEmpty(remoteEndpoint))
-                            {
-                                throw new InvalidOperationException();
-                            }
-
-                            byte[] clientID = Encoding.UTF8.GetBytes(remoteEndpoint);
-                            request = verifier.VerifyRequest(clientID, buf, 0, length, datagramTransport);
-                        }
-                        else
-                        {
-                            receiveAttemptCounter++;
-
-                            if (receiveAttemptCounter * RECEIVE_TIMEOUT >= TimeoutMilliseconds) // 20 seconds so that we don't wait forever
-                            {
-                                handshakeError = "HelloVerifyRequest cookie exchange could not be verified due to a timeout";
-                                return null;
-                            }
-                        }
-                    }
-                    while (request == null);
-                }
-
-                var clientDatagramTransport = createClientDatagramTransport(remoteEndpoint);
-
-                // store the current client datagram transport for this session
-                _clientDatagramTransport = clientDatagramTransport;
-
-                transport = serverProtocol.Accept(this, clientDatagramTransport, request);
-
-                // clear the reference to the transport after handshake is done
-                _clientDatagramTransport = null;
+                transport = serverProtocol.Accept(this, datagramTransport, request);
             }
             catch (Exception ex)
             {

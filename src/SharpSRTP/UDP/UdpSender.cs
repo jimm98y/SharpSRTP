@@ -20,27 +20,41 @@
 // SOFTWARE.
 
 using Org.BouncyCastle.Tls;
-using SharpSRTP.DTLS;
-using SharpSRTP.SRTP;
 using System;
+using System.Net;
+using System.Net.Sockets;
 
-namespace SharpSRTP.DTLSSRTP
+namespace SharpSRTP.UDP
 {
-    public class DtlsSessionStartedEventArgs : EventArgs
+    public class UdpSender : DatagramSender
     {
-        public SrtpSessionContext Context { get; private set; }
-        public Certificate PeerCertificate { get; private set;  }
+        private readonly Socket _socket;
+        private readonly EndPoint _remote;
+        private readonly int _mtu;
 
-        public DtlsSessionStartedEventArgs(SrtpSessionContext context, Certificate peerCertificate)
+        public UdpSender(Socket socket, EndPoint remote, int mtu)
         {
-            this.Context = context ?? throw new ArgumentNullException(nameof(context));
-            this.PeerCertificate = peerCertificate ?? throw new ArgumentNullException(nameof(peerCertificate));
+            this._socket = socket ?? throw new ArgumentNullException(nameof(socket));
+            this._remote = remote ?? throw new ArgumentNullException(nameof(remote));
+            this._mtu = mtu;
         }
-    }
 
-    public interface IDtlsSrtpPeer : IDtlsPeer
-    {
-        event EventHandler<DtlsSessionStartedEventArgs> OnSessionStarted;
-        SrtpSessionContext CreateSessionContext(SecurityParameters securityParameters);
+        public int GetSendLimit()
+        {
+            return _mtu;
+        }
+
+        public void Send(byte[] buf, int off, int len)
+        {
+            _socket.SendTo(buf.AsSpan(off, len).ToArray(), _remote);
+        }
+
+#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        /// <exception cref="IOException"/>
+        public void Send(ReadOnlySpan<byte> buffer)
+        {
+            _socket.SendTo(buffer, _remote);
+        }
+#endif
     }
 }
