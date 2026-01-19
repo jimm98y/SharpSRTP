@@ -33,7 +33,7 @@ namespace SharpSRTP.DTLS
     public class DtlsServer : DefaultTlsServer, IDtlsPeer
     {
         private readonly object _syncRoot = new object();
-        protected DatagramTransport _currentDatagramTransport = null;
+        protected DatagramTransport _clientDatagramTransport = null;
 
         public int TimeoutMilliseconds { get; set; } = 20000;
 
@@ -145,9 +145,9 @@ namespace SharpSRTP.DTLS
                 try
                 {
                     DtlsServerProtocol serverProtocol = new DtlsServerProtocol();
-                    _currentDatagramTransport = datagramTransport;
+                    _clientDatagramTransport = datagramTransport;
                     transport = serverProtocol.Accept(this, datagramTransport, request);
-                    _currentDatagramTransport = null;
+                    _clientDatagramTransport = null;
                 }
                 catch (Exception ex)
                 {

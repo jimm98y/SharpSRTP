@@ -32,11 +32,11 @@ namespace SharpSRTP.DTLSSRTP
         public Certificate PeerCertificate { get; private set;  }
         public DatagramTransport ClientDatagramTransport { get; private set; }
 
-        public DtlsSessionStartedEventArgs(SrtpSessionContext context, Certificate peerCertificate, DatagramTransport datagramTransport)
+        public DtlsSessionStartedEventArgs(SrtpSessionContext context, Certificate peerCertificate, DatagramTransport clientDatagramTransport)
         {
             this.Context = context ?? throw new ArgumentNullException(nameof(context));
             this.PeerCertificate = peerCertificate ?? throw new ArgumentNullException(nameof(peerCertificate));
-            this.ClientDatagramTransport = datagramTransport ?? throw new ArgumentNullException(nameof(datagramTransport));
+            this.ClientDatagramTransport = clientDatagramTransport ?? throw new ArgumentNullException(nameof(clientDatagramTransport));
         }
     }
 

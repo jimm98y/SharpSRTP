@@ -34,7 +34,7 @@ namespace SharpSRTP.DTLS
     public class DtlsClient : DefaultTlsClient, IDtlsPeer
     {
         private readonly object _syncRoot = new object();
-        protected DatagramTransport _currentDatagramTransport = null;
+        protected DatagramTransport _clientDatagramTransport = null;
         private TlsSession _session;
 
         public bool AutogenerateCertificate { get; set; } = true;
@@ -145,9 +145,9 @@ namespace SharpSRTP.DTLS
                 try
                 {
                     DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
-                    _currentDatagramTransport = datagramTransport;
+                    _clientDatagramTransport = datagramTransport;
                     transport = clientProtocol.Connect(this, datagramTransport);
-                    _currentDatagramTransport = null;
+                    _clientDatagramTransport = null;
                 }
                 catch (Exception ex)
                 {
