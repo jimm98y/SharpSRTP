@@ -27,7 +27,8 @@ server.OnSessionStarted += (sender, e) =>
     var remoteEndpoint = IPEndPointExtensions.Parse(((UdpTransport)e.Transport).RemoteEndpoint);
     var srtpSession = Task.Run(async () =>
     {
-        Console.WriteLine($"SRTP cipher:   {context.EncodeRtpContext.ProtectionProfile.Cipher}, auth: {context.EncodeRtpContext.ProtectionProfile.Auth}");
+        var protectionProfile = context.EncodeRtpContext.ProtectionProfile;
+        Console.WriteLine($"SRTP cipher:   {protectionProfile.Cipher}, auth: {protectionProfile.Auth}");
 
         ushort sequenceNumber = 1;
         while (!isShutdown)
