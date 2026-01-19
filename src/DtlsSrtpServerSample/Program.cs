@@ -70,7 +70,10 @@ while (!isShutdown)
         if (activeSessions.TryGetValue(remoteEndpoint.ToString(), out var transport))
         {
             // current session
-            transport.TryAddToReceiveQueue(buffer.ToArray());
+            if (!transport.TryAddToReceiveQueue(buffer.ToArray()))
+            {
+                throw new Exception("Receive queue full!");
+            }
         }
         else
         {

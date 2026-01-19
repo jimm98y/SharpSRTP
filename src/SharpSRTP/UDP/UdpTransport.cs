@@ -54,14 +54,15 @@ namespace SharpSRTP.UDP
             this._onClose = onClose;
         }
 
-        public void TryAddToReceiveQueue(byte[] data)
+        public bool TryAddToReceiveQueue(byte[] data, int maxReceiveQueueSize = MAX_RECEIVE_QUEUE_ITEMS)
         {
-            if (_receiveQueue.Count > MAX_RECEIVE_QUEUE_ITEMS)
+            LastReceived = DateTime.UtcNow;
+            if (_receiveQueue.Count > maxReceiveQueueSize)
             {
-                throw new Exception("Receive queue full!");
+                return false;
             }
             _receiveQueue.Add(data);
-            LastReceived = DateTime.UtcNow;
+            return true;
         }
 
         public virtual int GetReceiveLimit()

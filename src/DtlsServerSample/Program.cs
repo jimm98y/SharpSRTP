@@ -39,7 +39,6 @@ Timer sessionCleanup = new Timer((o) =>
     }
 }, null, INACTIVE_SESSION_TIMEOUT, INACTIVE_SESSION_TIMEOUT / 2);
 
-
 listenSocket.Bind(localEndpoint);
 Console.WriteLine($"DTLS Server is listening on {localEndpoint}");
 
@@ -60,7 +59,10 @@ while (!isShutdown)
         if (activeSessions.TryGetValue(remoteEndpoint.ToString(), out var transport))
         {
             // current session
-            transport.TryAddToReceiveQueue(buffer.ToArray());
+            if (!transport.TryAddToReceiveQueue(buffer.ToArray()))
+            {
+                throw new Exception("Receive queue full!");
+            }
         }
         else
         {
