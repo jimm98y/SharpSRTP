@@ -40,6 +40,7 @@ server.OnSessionStarted += (sender, e) =>
         var protectionProfile = context.EncodeRtpContext.ProtectionProfile;
         Console.WriteLine($"SRTP cipher:   {protectionProfile.Cipher}, auth: {protectionProfile.Auth}");
 
+        // Warning: this will run forever - we need RTCP so that the client confirms he's still there, otherwise we don't know when to stop
         ushort sequenceNumber = 1;
         while (!isShutdown)
         {
