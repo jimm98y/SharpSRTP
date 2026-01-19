@@ -58,45 +58,61 @@ Start with generating the TLS certificate. Self-signed RSA SHA256 certificate ca
 bool isRSA = true;
 var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRSA);
 ```
-Create the DTLS server and subscribe the OnHandshakeCompleted event to get notified when a client connects:
+Create the DTLS server:
 ```cs
 DtlsServer server = new DtlsServer(rsaCertificate.Certificate, rsaCertificate.PrivateKey, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
-server.OnHandshakeCompleted += (sender, e) =>
-{
-    ...
-};
 ````
 Create the DTLS transport. Here we will use UDP on localhost, port 8888:
 ```cs
-UdpDatagramTransport udpServerTransport = new UdpDatagramTransport("127.0.0.1:8888", null);
+EndPoint localEndpoint = new IPEndPoint(IPAddress.Any, 8888);
+EndPoint remoteEndpoint = new IPEndPoint(IPAddress.Any, 0);
+Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+listenSocket.ReceiveTimeout = 0;
+listenSocket.Bind(localEndpoint);
 ```
 Wait for the client and perform DTLS handshake:
 ```cs
+UdpTransport transport = null;
+byte[] buffer = new byte[UdpTransport.MTU];
+
 bool isShutdown = false;
 while(!isShutdown)
 {
-    DtlsTransport dtlsTransport = server.DoHandshake(
-        out string error,
-        udpServerTransport, 
-        () =>
+    int length = listenSocket.ReceiveFrom(buffer, ref remoteEndpoint);
+    if (length > 0)
+    {
+        if(transport != null)
         {
-            return udpServerTransport.RemoteEndPoint.ToString();
-        },
-        (remoteEndpoint) =>
+            if (!transport.TryAddToReceiveQueue(buffer.ToArray()))
+            {
+                throw new Exception("Receive queue full!");
+            }
+        }
+        else
         {
-            return new UdpDatagramTransport(null, remoteEndpoint);
-        });
-        
-        var session = Task.Run(() =>
-        {
-            ...
-        });
+            transport = new UdpTransport(listenSocket, remoteEndpoint, UdpTransport.MTU, (t) => activeSessions.TryRemove(t.RemoteEndpoint, out _));
+            transport.TryAddToReceiveQueue(buffer.Take(length).ToArray());
+
+            var session = Task.Run(() =>
+            {
+                 DtlsTransport dtlsTransport = server.DoHandshake(transport, out string error, null);
+                 if (dtlsTransport != null)
+                 {
+                    ...
+                 }
+                 else
+                 {
+                    transport = null;
+                 }
+            });
+        }
+    }
 }
 ```
 Receive data from the client:
 ```cs
 byte[] buffer = new byte[dtlsTransport.GetReceiveLimit()];
-int receivedLength = dtlsTransport.Receive(buffer, 0, buffer.Length, 100);
+int receivedLength = dtlsTransport.Receive(buffer, 0, buffer.Length, 1000);
 ```
 Send data to the client:
 ```cs
@@ -116,16 +132,13 @@ Optionally, you can let the client auto-generate the matching certificate:
 ```cs
 DtlsClient client = new DtlsClient();
 ```
-Subscribe for `OnHandshakeCompleted`:
-```cs
-client.OnHandshakeCompleted += (sender, e) =>
-{
-    ...
-};
-```
 Create the DTLS transport. Here we will use UDP on localhost, port 8888:
 ```cs
-UdpDatagramTransport udpServerTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
+Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+IPEndPoint remoteEndpoint = new IPEndPoint(IPAddress.Loopback, 8888);
+socket.Connect(remoteEndpoint);
+
+UdpTransport udpClientTransport = new UdpTransport(socket);
 ```
 Connect the client:
 ```cs
@@ -223,29 +236,7 @@ server.OnSessionStarted += (sender, e) =>
     ...
 };
 ```
-Create the DTLS transport. Here we will use UDP on localhost, port 8888:
-```cs
-UdpDatagramTransport udpServerTransport = new UdpDatagramTransport("127.0.0.1:8888", null);
-```
-Wait for the client and perform DTLS handshake:
-```cs
-bool isShutdown = false;
-while(!isShutdown)
-{
-    DtlsTransport dtlsTransport = server.DoHandshake(
-        out string error,
-        udpServerTransport, 
-        () =>
-        {
-            return udpServerTransport.RemoteEndPoint.ToString();
-        },
-        (remoteEndpoint) =>
-        {
-            return new UdpDatagramTransport(null, remoteEndpoint);
-        });
-}
-```
-After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data and `clientTransport` to send/receive SRTP.
+Create the DTLS transport as in the previous example. After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data and `clientTransport` to send/receive SRTP.
 ### Client
 Generate the TLS certificate, this time it will be ECDsa:
 ```cs
@@ -265,12 +256,4 @@ client.OnSessionStarted += (sender, e) =>
     ...
 };
 ```
-Create the DTLS transport. Here we will use UDP on localhost, port 8888:
-```cs
-UdpDatagramTransport udpServerTransport = new UdpDatagramTransport(null, "127.0.0.1:8888");
-```
-Connect the client:
-```cs
-DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
-```
-After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data and `clientTransport` to send/receive SRTP.
+Create the DTLS transport as in the previous example. After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data and `clientTransport` to send/receive SRTP.

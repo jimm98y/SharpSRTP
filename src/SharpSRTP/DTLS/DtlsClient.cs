@@ -33,8 +33,8 @@ namespace SharpSRTP.DTLS
 {
     public class DtlsClient : DefaultTlsClient, IDtlsPeer
     {
-        protected DatagramTransport _clientDatagramTransport; // valid only for the current session
-
+        private readonly object _syncRoot = new object();
+        protected DatagramTransport _clientDatagramTransport = null;
         private TlsSession _session;
 
         public bool AutogenerateCertificate { get; set; } = true;
@@ -136,26 +136,28 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, Func<string> getRemoteEndpoint = null, Func<string, DatagramTransport> createClientDatagramTransport = null)
+        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null)
         {
-            DtlsTransport transport = null;
-                        
-            try
+            lock (_syncRoot)
             {
-                DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
+                DtlsTransport transport = null;
 
-                _clientDatagramTransport = datagramTransport;
-                transport = clientProtocol.Connect(this, datagramTransport);
-                _clientDatagramTransport = null;
-            }
-            catch (Exception ex)
-            {
-                handshakeError = ex.Message;
-                return null;
-            }
+                try
+                {
+                    DtlsClientProtocol clientProtocol = new DtlsClientProtocol();
+                    _clientDatagramTransport = datagramTransport;
+                    transport = clientProtocol.Connect(this, datagramTransport);
+                    _clientDatagramTransport = null;
+                }
+                catch (Exception ex)
+                {
+                    handshakeError = ex.Message;
+                    return null;
+                }
 
-            handshakeError = null;
-            return transport;
+                handshakeError = null;
+                return transport;
+            }
         }
 
         public override TlsSession GetSessionToResume()
