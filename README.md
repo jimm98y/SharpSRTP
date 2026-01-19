@@ -90,7 +90,7 @@ while(!isShutdown)
         }
         else
         {
-            transport = new UdpTransport(listenSocket, remoteEndpoint, UdpTransport.MTU, (t) => activeSessions.TryRemove(t.RemoteEndpoint, out _));
+            transport = new UdpTransport(listenSocket, remoteEndpoint, UdpTransport.MTU, (t) => { transport = null; });
             transport.TryAddToReceiveQueue(buffer.Take(length).ToArray());
 
             var session = Task.Run(() =>
