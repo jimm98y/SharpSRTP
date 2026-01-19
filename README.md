@@ -274,3 +274,11 @@ Connect the client:
 DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
 ```
 After the `OnSessionStarted` event is executed, you can use the `Context` to protect/unprotect data and `clientTransport` to send/receive SRTP.
+
+
+
+
+
+
+
+TODO: update readme
