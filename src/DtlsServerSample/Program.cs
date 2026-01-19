@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,6 +22,15 @@ TlsCrypto serverCrypto = new BcTlsCrypto();
 DtlsVerifier verifier = new DtlsVerifier(serverCrypto);
 Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 listenSocket.ReceiveTimeout = RECEIVE_TIMEOUT;
+
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+{
+    // disables the SocketException on client hard crash
+    const int SIO_UDP_CONNRESET = -1744830452;
+    listenSocket.IOControl((IOControlCode)SIO_UDP_CONNRESET, new byte[] { 0, 0, 0, 0 }, null);
+    listenSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
+}
+
 byte[] buffer = new byte[UdpTransport.MTU];
 bool isShutdown = false;
 bool isHelloVerifyEnabled = true;
