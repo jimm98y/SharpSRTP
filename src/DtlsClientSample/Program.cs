@@ -11,7 +11,7 @@ Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, Protoco
 IPEndPoint remoteEndpoint = IPEndPointExtensions.Parse("127.0.0.1:8888");
 socket.Connect(remoteEndpoint);
 
-UdpTransport udpClientTransport = new UdpTransport(socket, null, UdpTransport.MTU);
+UdpTransport udpClientTransport = new UdpTransport(socket);
 bool isShutdown = false;
 
 while (!isShutdown)
