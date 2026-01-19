@@ -101,11 +101,13 @@ while (!isShutdown)
                 UdpTransport udpServerTransport = new UdpTransport(listenSocket, remoteEndpoint, UdpTransport.MTU, (transport) => activeSessions.TryRemove(transport.RemoteEndpoint, out _));
                 if (activeSessions.TryAdd(remoteEndpoint.ToString(), udpServerTransport))
                 {
+                    udpServerTransport.TryAddToReceiveQueue(buffer.Take(length).ToArray());
+
                     var session = Task.Run(() =>
                     {
                         Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
                         DtlsTransport dtlsTransport = server.DoHandshake(udpServerTransport, out string error, request);
-                            
+
                         if (dtlsTransport != null)
                         {
                             Console.WriteLine($"DTLS connected");
