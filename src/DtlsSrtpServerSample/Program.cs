@@ -34,7 +34,7 @@ bool isShutdown = false;
 server.OnSessionStarted += (sender, e) =>
 {
     var context = e.Context;
-    var remoteEndpoint = IPEndPointExtensions.Parse(((UdpTransport)e.Transport).RemoteEndpoint);
+    var remoteEndpoint = IPEndPointExtensions.Parse(((UdpTransport)e.ClientDatagramTransport).RemoteEndpoint);
     var srtpSession = Task.Run(async () =>
     {
         var protectionProfile = context.EncodeRtpContext.ProtectionProfile;
@@ -79,7 +79,8 @@ while (!isShutdown)
 
     if (length > 0)
     {
-        if (activeSessions.TryGetValue(remoteEndpoint.ToString(), out var transport))
+        UdpTransport transport;
+        if (activeSessions.TryGetValue(remoteEndpoint.ToString(), out transport))
         {
             // current session
             if (!transport.TryAddToReceiveQueue(buffer.ToArray()))
@@ -90,14 +91,14 @@ while (!isShutdown)
         else
         {
             // new session
-            UdpTransport udpServerTransport = new UdpTransport(listenSocket, remoteEndpoint, UdpTransport.MTU, (transport) => activeSessions.TryRemove(transport.RemoteEndpoint, out _));
-            if (activeSessions.TryAdd(remoteEndpoint.ToString(), udpServerTransport))
+            transport = new UdpTransport(listenSocket, remoteEndpoint, UdpTransport.MTU, (transport) => activeSessions.TryRemove(transport.RemoteEndpoint, out _));
+            if (activeSessions.TryAdd(remoteEndpoint.ToString(), transport))
             {
-                udpServerTransport.TryAddToReceiveQueue(buffer.Take(length).ToArray());
+                transport.TryAddToReceiveQueue(buffer.Take(length).ToArray());
 
                 var dtlsSession = Task.Run(() =>
                 {
-                    DtlsTransport dtlsTransport = server.DoHandshake(udpServerTransport, out string error, null);
+                    DtlsTransport dtlsTransport = server.DoHandshake(out string error, transport, null);
                     if (dtlsTransport == null)
                     {
                         Console.WriteLine($"Handshake with {remoteEndpoint} failed with {error}");

@@ -69,7 +69,7 @@ client.OnSessionStarted += (sender, e) =>
 while (!isShutdown)
 {
     Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
-    DtlsTransport dtlsTransport = client.DoHandshake(udpClientTransport, out string error);
+    DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
     if (dtlsTransport != null)
     {
         Console.WriteLine($"DTLS connected");

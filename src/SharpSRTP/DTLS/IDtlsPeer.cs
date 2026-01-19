@@ -123,6 +123,6 @@ namespace SharpSRTP.DTLS
         short CertificateHashAlgorithm { get; }
         void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm);
 
-        DtlsTransport DoHandshake(DatagramTransport datagramTransport, out string handshakeError, DtlsRequest request = null);
+        DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null);
     }
 }

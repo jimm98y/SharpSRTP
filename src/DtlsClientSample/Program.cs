@@ -17,7 +17,7 @@ bool isShutdown = false;
 while (!isShutdown)
 {
     Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
-    DtlsTransport dtlsTransport = client.DoHandshake(udpClientTransport, out string error);
+    DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
     byte counter = 0;
 
     if (dtlsTransport != null)

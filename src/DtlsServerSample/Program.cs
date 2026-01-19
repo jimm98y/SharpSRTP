@@ -66,7 +66,8 @@ while (!isShutdown)
 
     if (length > 0)
     {
-        if (activeSessions.TryGetValue(remoteEndpoint.ToString(), out var transport))
+        UdpTransport transport;
+        if (activeSessions.TryGetValue(remoteEndpoint.ToString(), out transport))
         {
             // current session
             if (!transport.TryAddToReceiveQueue(buffer.ToArray()))
@@ -98,15 +99,15 @@ while (!isShutdown)
             // negotiate DTLS
             if (request != null || !isHelloVerifyEnabled)
             {
-                UdpTransport udpServerTransport = new UdpTransport(listenSocket, remoteEndpoint, UdpTransport.MTU, (transport) => activeSessions.TryRemove(transport.RemoteEndpoint, out _));
-                if (activeSessions.TryAdd(remoteEndpoint.ToString(), udpServerTransport))
+                transport = new UdpTransport(listenSocket, remoteEndpoint, UdpTransport.MTU, (t) => activeSessions.TryRemove(t.RemoteEndpoint, out _));
+                if (activeSessions.TryAdd(remoteEndpoint.ToString(), transport))
                 {
-                    udpServerTransport.TryAddToReceiveQueue(buffer.Take(length).ToArray());
+                    transport.TryAddToReceiveQueue(buffer.Take(length).ToArray());
 
                     var session = Task.Run(() =>
                     {
                         Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
-                        DtlsTransport dtlsTransport = server.DoHandshake(udpServerTransport, out string error, request);
+                        DtlsTransport dtlsTransport = server.DoHandshake(out string error, transport, request);
 
                         if (dtlsTransport != null)
                         {
