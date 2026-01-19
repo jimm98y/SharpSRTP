@@ -24,15 +24,15 @@ client.OnSessionStarted += (sender, e) =>
     var context = e.Context;
     var srtpSession = Task.Run(async () =>
     {
-        Console.WriteLine($"SRTP cipher:   {context.DecodeRtpContext.ProtectionProfile.Cipher}, auth: {context.DecodeRtpContext.ProtectionProfile.Auth}");
+        var protectionProfile = context.DecodeRtpContext.ProtectionProfile;
+        Console.WriteLine($"SRTP cipher:   {protectionProfile.Cipher}, auth: {protectionProfile.Auth}");
         
         byte[] receiveBuffer = new byte[2048];
         int timeoutCounter = 0;
 
         while (!isShutdown)
         {
-            int receivedLen = 0;
-            
+            int receivedLen = 0;            
             try
             {
                 receivedLen = socket.Receive(receiveBuffer);
