@@ -19,6 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
+using System;
+
 namespace SharpSRTP.SRTP
 {
     public class SrtpSessionContext : ISrtpContext
@@ -41,14 +43,14 @@ namespace SharpSRTP.SRTP
             return EncodeRtpContext.CalculateRequiredSrtpPayloadLength(rtpLen);
         }
 
-        public int ProtectRtp(byte[] payload, int length, out int outputBufferLength)
+        public int ProtectRtp(Span<byte> output, ReadOnlySpan<byte> payload)
         {
-            return EncodeRtpContext.ProtectRtp(payload, length, out outputBufferLength);
+            return EncodeRtpContext.ProtectRtp(output, payload);
         }
 
-        public int UnprotectRtp(byte[] payload, int length, out int outputBufferLength)
+        public int UnprotectRtp(Span<byte> output, ReadOnlySpan<byte> payload)
         {
-            return DecodeRtpContext.UnprotectRtp(payload, length, out outputBufferLength);
+            return DecodeRtpContext.UnprotectRtp(output, payload);
         }
 
         public int CalculateRequiredSrtcpPayloadLength(int rtpLen)
@@ -56,14 +58,14 @@ namespace SharpSRTP.SRTP
             return EncodeRtcpContext.CalculateRequiredSrtcpPayloadLength(rtpLen);
         }
 
-        public int ProtectRtcp(byte[] payload, int length, out int outputBufferLength)
+        public int ProtectRtcp(Span<byte> output, ReadOnlySpan<byte> payload)
         {
-            return EncodeRtcpContext.ProtectRtcp(payload, length, out outputBufferLength);
+            return EncodeRtcpContext.ProtectRtcp(output, payload);
         }
 
-        public int UnprotectRtcp(byte[] payload, int length, out int outputBufferLength)
+        public int UnprotectRtcp(Span<byte> output, ReadOnlySpan<byte> payload)
         {
-            return DecodeRtcpContext.UnprotectRtcp(payload, length, out outputBufferLength);
+            return DecodeRtcpContext.UnprotectRtcp(output, payload);
         }
     }
 }

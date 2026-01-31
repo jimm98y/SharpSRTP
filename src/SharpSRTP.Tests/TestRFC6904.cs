@@ -22,7 +22,6 @@
 using SharpSRTP.SRTP;
 using System;
 using System.Data;
-using System.Linq;
 
 namespace SharpSRTP.Tests
 {
@@ -38,22 +37,28 @@ namespace SharpSRTP.Tests
         {
             byte[] masterKeyBytes = Convert.FromHexString(masterKey);
             byte[] masterSaltBytes = Convert.FromHexString(masterSalt);
-            byte[] masterKeySalt = masterKeyBytes.Concat(masterSaltBytes).ToArray();
+            byte[] masterKeySalt = new byte[masterKeyBytes.Length + masterSaltBytes.Length];
+            Buffer.BlockCopy(masterKeyBytes, 0, masterKeySalt, 0, masterKeyBytes.Length);
+            Buffer.BlockCopy(masterSaltBytes, 0, masterKeySalt, masterKeyBytes.Length, masterSaltBytes.Length);
             SrtpKeys keys = SrtpProtocol.CreateMasterKeys(cryptoSuite, null, masterKeySalt);
             SrtpSessionContext context = SrtpProtocol.CreateSrtpSessionContext(keys);
 
-            Assert.AreEqual(sk_he, Convert.ToHexString(context.EncodeRtpContext.K_he).ToUpperInvariant());
-            Assert.AreEqual(sk_hs, Convert.ToHexString(context.EncodeRtpContext.K_hs).ToUpperInvariant());
+            var expected_he = Convert.FromHexString(sk_he);
+            var expected_hs = Convert.FromHexString(sk_hs);
+            Assert.IsTrue(context.EncodeRtpContext.K_he.Span.SequenceEqual(expected_he), "K_he mismatch");
+            Assert.IsTrue(context.EncodeRtpContext.K_hs.Span.SequenceEqual(expected_hs), "K_hs mismatch");
 
             byte[] rtpExtensionsBytes = Convert.FromHexString(rtpExtensions.Replace(" ", ""));
             byte[] rtpExtensionsMaskBytes = Convert.FromHexString(rtpExtensionsMask.Replace(" ", ""));
 
-            // null payload won't work for F8 cipher
-            int ret = context.EncodeRtpContext.ProtectUnprotectRtpHeaderExtensions(null, rtpExtensionsBytes, rtpExtensionsMaskBytes, ssrc, roc, SrtpContext.GenerateRtpIndex(roc, sequenceNumber));
-            Assert.AreEqual(0, ret);
+            var encryptedExtensions = new byte[rtpExtensionsBytes.Length];
 
-            string encryptedExtensions = Convert.ToHexString(rtpExtensionsBytes).ToUpperInvariant();
-            Assert.AreEqual(expectedEncryptedExtensions, encryptedExtensions);
+            // null payload won't work for F8 cipher
+            context.EncodeRtpContext.ProtectUnprotectRtpHeaderExtensions(encryptedExtensions, default, rtpExtensionsBytes, rtpExtensionsMaskBytes, ssrc, roc, SrtpContext.GenerateRtpIndex(roc, sequenceNumber));
+
+            var expectedEncrypted = Convert.FromHexString(expectedEncryptedExtensions);
+            Assert.IsTrue(encryptedExtensions.AsSpan().SequenceEqual(expectedEncrypted),
+                $"Encrypted RTP header extensions mismatch.\nExpected: {BitConverter.ToString(expectedEncrypted).Replace("-", "").ToLowerInvariant()}\nActual:   {BitConverter.ToString(encryptedExtensions).Replace("-", "").ToLowerInvariant()}");
         }
     }
 }

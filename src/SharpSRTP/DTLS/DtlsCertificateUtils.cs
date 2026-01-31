@@ -195,10 +195,7 @@ namespace SharpSRTP.DTLS
 
         public static bool IsHashSupported(string algStr)
         {
-            if (string.IsNullOrEmpty(algStr))
-            {
-                throw new ArgumentNullException(nameof(algStr));
-            }
+            Throw.IfNullOrEmpty(algStr);
 
             IDigest digest = null;
 

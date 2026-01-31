@@ -19,6 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
+using System;
+
 namespace SharpSRTP.SRTP.Readers
 {
     public static class RtcpReader
@@ -28,12 +30,12 @@ namespace SharpSRTP.SRTP.Readers
             return 8;
         }
 
-        public static uint ReadSsrc(byte[] rtcpPacket)
+        public static uint ReadSsrc(ReadOnlySpan<byte> rtcpPacket)
         {
             return (uint)((rtcpPacket[4] << 24) | (rtcpPacket[5] << 16) | (rtcpPacket[6] << 8) | rtcpPacket[7]);
         }
 
-        public static uint SrtcpReadIndex(byte[] srtcpPacket, int authTagLen)
+        public static uint SrtcpReadIndex(ReadOnlySpan<byte> srtcpPacket, int authTagLen)
         {
             int index = srtcpPacket.Length - authTagLen - 4;
             return (uint)((srtcpPacket[index] << 24) | (srtcpPacket[index + 1] << 16) | (srtcpPacket[index + 2] << 8) | srtcpPacket[index + 3]);

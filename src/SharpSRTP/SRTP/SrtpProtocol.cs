@@ -21,6 +21,7 @@
 
 using Org.BouncyCastle.Security;
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -54,12 +55,12 @@ namespace SharpSRTP.SRTP
     {
         private static SecureRandom _rand = new SecureRandom();
 
-        public static readonly Dictionary<string, SrtpProtectionProfileConfiguration> SrtpCryptoSuites;
+        public static readonly System.Collections.Frozen.FrozenDictionary<string, SrtpProtectionProfileConfiguration> SrtpCryptoSuites;
 
         static SrtpProtocol()
         {
             // see https://www.iana.org/assignments/sdp-security-descriptions/sdp-security-descriptions.xhtml
-            SrtpCryptoSuites = new Dictionary<string, SrtpProtectionProfileConfiguration>()
+            var dict = new Dictionary<string, SrtpProtectionProfileConfiguration>(StringComparer.Ordinal)
             {
                 { SRTP.SrtpCryptoSuites.AEAD_AES_256_GCM, new SrtpProtectionProfileConfiguration(SrtpCiphers.AEAD_AES_256_GCM, 256, 96, int.MaxValue, SrtpAuth.NONE, 0, 128) },
                 { SRTP.SrtpCryptoSuites.AEAD_AES_128_GCM, new SrtpProtectionProfileConfiguration(SrtpCiphers.AEAD_AES_128_GCM, 128, 96, int.MaxValue, SrtpAuth.NONE, 0, 128) },
@@ -86,38 +87,35 @@ namespace SharpSRTP.SRTP
                 { SRTP.SrtpCryptoSuites.AES_CM_192_HMAC_SHA1_80, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 80) },
                 { SRTP.SrtpCryptoSuites.AES_CM_192_HMAC_SHA1_32, new SrtpProtectionProfileConfiguration(SrtpCiphers.AES_192_CM, 192, 112, int.MaxValue, SrtpAuth.HMAC_SHA1, 160, 32) },
             };
+            SrtpCryptoSuites = dict.ToFrozenDictionary();
         }
 
-        public static SrtpKeys CreateMasterKeys(string cryptoSuite, byte[] mki = null, byte[] useMasterKeySalt = null)
+        public static SrtpKeys CreateMasterKeys(string cryptoSuite, ReadOnlyMemory<byte> mki = default, ReadOnlyMemory<byte> useMasterKeySalt = default)
         {
             var srtpSecurityParams = SrtpCryptoSuites[cryptoSuite];
             int masterKeyLen = srtpSecurityParams.CipherKeyLength >> 3;
             int masterSaltLen = srtpSecurityParams.CipherSaltLength >> 3;
 
-            byte[] masterKeySalt;
-            if (useMasterKeySalt == null)
+            ReadOnlyMemory<byte> masterKeySalt;
+            if (useMasterKeySalt.IsEmpty)
             {
                 // derive the master key + master salt to be sent in SDP crypto: attribute as per RFC 4568
-                masterKeySalt = new byte[masterKeyLen + masterSaltLen];
-                _rand.NextBytes(masterKeySalt);
+                var tmp = new byte[masterKeyLen + masterSaltLen];
+                _rand.NextBytes(tmp);
+                masterKeySalt = tmp;
             }
             else
             {
                 masterKeySalt = useMasterKeySalt;
             }
 
-            SrtpKeys keys = new SrtpKeys(srtpSecurityParams, mki);
-            Buffer.BlockCopy(masterKeySalt, 0, keys.MasterKeySalt, 0, masterKeySalt.Length);
-
+            SrtpKeys keys = new SrtpKeys(srtpSecurityParams, masterKeySalt, mki);
             return keys;
         }
 
         public static byte[] GenerateMki(int length)
         {
-            if(length > 255)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }    
+            Throw.IfGreaterThan(length, 255);
 
             byte[] MKI = new byte[length];
             if (length > 0)

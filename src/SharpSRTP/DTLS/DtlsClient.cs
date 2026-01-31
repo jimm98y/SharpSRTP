@@ -52,7 +52,7 @@ namespace SharpSRTP.DTLS
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
-        public DtlsClient(TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
+        public DtlsClient(TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256)
             : this(new BcTlsCrypto(), session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         { }
 
@@ -112,7 +112,7 @@ namespace SharpSRTP.DTLS
                     CipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
                 };
             }
-            else if(CertificateSignatureAlgorithm == SignatureAlgorithm.ecdsa)
+            else if (CertificateSignatureAlgorithm == SignatureAlgorithm.ecdsa)
             {
                 // ECDSA certificates require matching cipher suites
                 return new int[]
@@ -130,10 +130,9 @@ namespace SharpSRTP.DTLS
                     CipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
                 };
             }
-            else
-            {
-                throw new NotSupportedException();
-            }
+
+            Throw.NotSupportedException();
+            return null!;
         }
 
         public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null)
@@ -288,7 +287,7 @@ namespace SharpSRTP.DTLS
         {
             if (m_context.SecurityParameters.ClientRandom == null)
             {
-                throw new TlsFatalAlert(AlertDescription.internal_error);
+                Throw.TlsFatalAlert(AlertDescription.internal_error);
             }
 
             return base.GetClientExtensions();
@@ -298,7 +297,7 @@ namespace SharpSRTP.DTLS
         {
             if (m_context.SecurityParameters.ServerRandom == null)
             {
-                throw new TlsFatalAlert(AlertDescription.internal_error);
+                Throw.TlsFatalAlert(AlertDescription.internal_error);
             }
 
             base.ProcessServerExtensions(serverExtensions);
@@ -316,7 +315,9 @@ namespace SharpSRTP.DTLS
 
             public DTlsAuthentication(TlsContext context, DtlsClient client)
             {
-                this._client = client ?? throw new ArgumentNullException(nameof(client));
+                Throw.IfNull(client);
+
+                this._client = client;
                 this._context = context;
             }
 
@@ -341,7 +342,7 @@ namespace SharpSRTP.DTLS
 
                 if (isEmpty)
                 {
-                    throw new TlsFatalAlert(AlertDescription.bad_certificate);
+                    Throw.TlsFatalAlert(AlertDescription.bad_certificate);
                 }
 
                 TlsCertificate[] certPath = chain;
@@ -360,7 +361,7 @@ namespace SharpSRTP.DTLS
                     return null;
                 }
 
-                if(_client.Certificate == null || _client.CertificatePrivateKey == null)
+                if (_client.Certificate == null || _client.CertificatePrivateKey == null)
                 {
                     if (_client.AutogenerateCertificate)
                     {
@@ -387,9 +388,9 @@ namespace SharpSRTP.DTLS
                     }
                 }
 
-                if(signatureAndHashAlgorithm == null)
+                if (signatureAndHashAlgorithm == null)
                 {
-                    throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
+                    Throw.InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
                 }
 
                 return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(_context), (BcTlsCrypto)_context.Crypto, _client.CertificatePrivateKey, _client.Certificate, signatureAndHashAlgorithm);
@@ -398,15 +399,14 @@ namespace SharpSRTP.DTLS
 
         public static bool IsServerCertificateRsa(TlsServerCertificate serverCertificate)
         {
-            if (serverCertificate == null || serverCertificate.Certificate == null || serverCertificate.Certificate.IsEmpty)
-            {
-                throw new ArgumentNullException(nameof(serverCertificate));
-            }
+            Throw.IfNull(serverCertificate);
+            Throw.IfNull(serverCertificate.Certificate);
+            Throw.IfFalse(serverCertificate.Certificate.IsEmpty);
 
             var certList = serverCertificate.Certificate.GetCertificateList();
             if (certList == null || certList.Length == 0)
             {
-                throw new ArgumentException("Server certificate chain is empty.", nameof(serverCertificate));
+                Throw.ArgumentException("Server certificate chain is empty.", nameof(serverCertificate));
             }
 
             var firstCertificate = X509CertificateStructure.GetInstance(certList[0].GetEncoded());
@@ -423,7 +423,7 @@ namespace SharpSRTP.DTLS
             {
                 return true;
             }
-            
+
             return false;
         }
     }

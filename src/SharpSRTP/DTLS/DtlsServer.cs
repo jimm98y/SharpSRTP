@@ -46,9 +46,9 @@ namespace SharpSRTP.DTLS
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
-        public DtlsServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : 
+        public DtlsServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) :
             this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
-        {  }
+        { }
 
         public DtlsServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
         {
@@ -125,20 +125,16 @@ namespace SharpSRTP.DTLS
                     CipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
                 };
             }
-            else
-            {
-                throw new InvalidOperationException($"DTLS server certificate algorithm {CertificateSignatureAlgorithm} not supported!");
-            }
+
+            Throw.InvalidOperationException($"DTLS server certificate algorithm {CertificateSignatureAlgorithm} not supported!");
+            return null!;
         }
 
         public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null)
         {
             lock (_syncRoot)
             {
-                if (datagramTransport == null)
-                {
-                    throw new ArgumentNullException(nameof(datagramTransport));
-                }
+                Throw.IfNull(datagramTransport);
 
                 DtlsTransport transport = null;
 
@@ -222,7 +218,7 @@ namespace SharpSRTP.DTLS
 
         public override CertificateRequest GetCertificateRequest()
         {
-            short[] certificateTypes = new short[]{ ClientCertificateType.ecdsa_sign, ClientCertificateType.rsa_sign };
+            short[] certificateTypes = new short[] { ClientCertificateType.ecdsa_sign, ClientCertificateType.rsa_sign };
 
             IList<SignatureAndHashAlgorithm> serverSigAlgs = null;
             if (TlsUtilities.IsSignatureAlgorithmsExtensionAllowed(m_context.ServerVersion))
@@ -284,7 +280,7 @@ namespace SharpSRTP.DTLS
         {
             if (m_context.SecurityParameters.ClientRandom == null)
             {
-                throw new TlsFatalAlert(AlertDescription.internal_error);
+                Throw.TlsFatalAlert(AlertDescription.internal_error);
             }
 
             base.ProcessClientExtensions(clientExtensions);
@@ -294,7 +290,7 @@ namespace SharpSRTP.DTLS
         {
             if (m_context.SecurityParameters.ServerRandom == null)
             {
-                throw new TlsFatalAlert(AlertDescription.internal_error);
+                Throw.TlsFatalAlert(AlertDescription.internal_error);
             }
 
             return base.GetServerExtensions();
@@ -304,7 +300,7 @@ namespace SharpSRTP.DTLS
         {
             if (m_context.SecurityParameters.ServerRandom == null)
             {
-                throw new TlsFatalAlert(AlertDescription.internal_error);
+                Throw.TlsFatalAlert(AlertDescription.internal_error);
             }
 
             base.GetServerExtensionsForConnection(serverExtensions);
@@ -327,7 +323,7 @@ namespace SharpSRTP.DTLS
 
             if (Certificate == null || CertificatePrivateKey == null)
             {
-                throw new InvalidOperationException("DTLS server ECDsa certificate not set!");
+                Throw.InvalidOperationException("DTLS server ECDsa certificate not set!");
             }
 
             foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
@@ -341,7 +337,7 @@ namespace SharpSRTP.DTLS
 
             if (signatureAndHashAlgorithm == null)
             {
-                throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
+                Throw.InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
             }
 
             return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, CertificatePrivateKey, Certificate, signatureAndHashAlgorithm);
@@ -354,7 +350,7 @@ namespace SharpSRTP.DTLS
 
             if (Certificate == null || CertificatePrivateKey == null)
             {
-                throw new InvalidOperationException("DTLS server RSA certificate not set!");
+                Throw.InvalidOperationException("DTLS server RSA certificate not set!");
             }
 
             foreach (SignatureAndHashAlgorithm alg in clientSigAlgs)
@@ -366,9 +362,9 @@ namespace SharpSRTP.DTLS
                 }
             }
 
-            if(signatureAndHashAlgorithm == null)
+            if (signatureAndHashAlgorithm == null)
             {
-                throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
+                Throw.InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
             }
 
             return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, CertificatePrivateKey, Certificate, signatureAndHashAlgorithm);

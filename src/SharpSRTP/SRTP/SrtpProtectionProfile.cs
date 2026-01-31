@@ -51,23 +51,23 @@ namespace SharpSRTP.SRTP
 
     public class SrtpProtectionProfileConfiguration
     {
-        public SrtpCiphers Cipher { get; set; }
-        public int CipherKeyLength { get; set; }
-        public int CipherSaltLength { get; set; }
-        public int MaximumLifetime { get; set; }
-        public SrtpAuth Auth { get; set; }
-        public int AuthKeyLength { get; set; }
-        public int AuthTagLength { get; set; }
-        public int SrtpPrefixLength { get; set; }
+        public SrtpCiphers Cipher { get; }
+        public int CipherKeyLength { get; }
+        public int CipherSaltLength { get; }
+        public int MaximumLifetime { get; }
+        public SrtpAuth Auth { get; }
+        public int AuthKeyLength { get; }
+        public int AuthTagLength { get; }
+        public int SrtpPrefixLength { get; }
 
         public SrtpProtectionProfileConfiguration(
             SrtpCiphers cipher,
-            int cipherKeyLength, 
+            int cipherKeyLength,
             int cipherSaltLength,
             int maximumLifetime,
-            SrtpAuth auth, 
-            int authKeyLength, 
-            int authTagLength, 
+            SrtpAuth auth,
+            int authKeyLength,
+            int authTagLength,
             int srtpPrefixLength = 0)
         {
             Cipher = cipher;

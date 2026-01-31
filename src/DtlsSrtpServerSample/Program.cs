@@ -52,11 +52,16 @@ server.OnSessionStarted += (sender, e) =>
             Buffer.BlockCopy(rtpPacket, 0, rtpBuffer, 0, rtpPacket.Length);
 
             Console.WriteLine($"RTP: {Convert.ToHexString(rtpPacket)}");
-            if (context.ProtectRtp(rtpBuffer, rtpPacket.Length, out int length) == 0)
+            try
             {
+                var length = context.ProtectRtp(rtpBuffer, rtpBuffer);
                 byte[] srtp = rtpBuffer.Take(length).ToArray();
                 Console.WriteLine($"SRTP:     {Convert.ToHexString(srtp)}");
                 listenSocket.SendTo(srtp, remoteEndpoint);
+            }
+            catch (System.Security.Cryptography.CryptographicException ex)
+            {
+                Console.WriteLine($"SRTP error: {ex.HResult}");
             }
 
             sequenceNumber++;
