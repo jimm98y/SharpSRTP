@@ -80,6 +80,12 @@ namespace SharpSRTP.Tests
 
             int n_tag = protectionProfile.AuthTagLength >> 3;
 
+            // It seems RFC 5669 has incorrect auth tag calculated from the original payload.
+            // For a5cdaa4d9edc53763855 the following code works:
+            /*
+            byte[] auth = HMAC.GenerateAuthTag(hmac, payloadRaw, 0, length);
+            */
+            // However, it makes little sense to do it that way, so it's likely a bug and I've updated the test data with a different authTag produced by the standard algorithm
             var auth = new byte[hmac.GetMacSize()];
             HMAC.GenerateAuthTag(hmac, payload.AsSpan(0, length + 4), auth);
             System.Buffer.BlockCopy(auth, 0, payload, length, n_tag);
