@@ -12,7 +12,7 @@ namespace SharpSRTP
         [DoesNotReturn]
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ArgumentNullException(string? paramName = null)
+        public static void ArgumentNullException(string paramName = null)
             => throw new global::System.ArgumentNullException(paramName: paramName);
 
         [DoesNotReturn]
@@ -30,19 +30,19 @@ namespace SharpSRTP
         [DoesNotReturn]
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void InvalidOperationException(string? message = null)
+        public static void InvalidOperationException(string message = null)
             => throw new global::System.InvalidOperationException(message: message);
 
         [DoesNotReturn]
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void NotSupportedException(string? message = null)
+        public static void NotSupportedException(string message = null)
             => throw new global::System.NotSupportedException(message: message);
 
         [DoesNotReturn]
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void FormatException(string? message = null)
+        public static void FormatException(string message = null)
             => throw new global::System.FormatException(message: message);
 
         [DoesNotReturn]
@@ -59,7 +59,7 @@ namespace SharpSRTP
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IfNull([NotNull] object? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        public static void IfNull([NotNull] object argument, [CallerArgumentExpression(nameof(argument))] string paramName = null)
         {
 #if NET8_0_OR_GREATER
             global::System.ArgumentNullException.ThrowIfNull(argument, paramName);
@@ -73,7 +73,7 @@ namespace SharpSRTP
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IfNullOrEmpty([NotNull] string? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        public static void IfNullOrEmpty([NotNull] string argument, [CallerArgumentExpression(nameof(argument))] string paramName = null)
         {
 #if NET8_0_OR_GREATER
             global::System.ArgumentException.ThrowIfNullOrEmpty(argument, paramName);
@@ -92,7 +92,7 @@ namespace SharpSRTP
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IfEmpty<T>(ReadOnlySpan<T> value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        public static void IfEmpty<T>(ReadOnlySpan<T> value, [CallerArgumentExpression(nameof(value))] string paramName = null)
         {
             if (value.IsEmpty)
             {
@@ -102,7 +102,7 @@ namespace SharpSRTP
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IfFalse(bool value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        public static void IfFalse(bool value, [CallerArgumentExpression(nameof(value))] string paramName = null)
         {
             if (!value)
             {
@@ -112,7 +112,7 @@ namespace SharpSRTP
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ThrowIfNotEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        public static void ThrowIfNotEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string paramName = null)
             where T : IEquatable<T>
         {
             if (!value.Equals(other))
@@ -123,7 +123,7 @@ namespace SharpSRTP
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IfNotEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        public static void IfNotEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string paramName = null)
             where T : IEquatable<T>
         {
 #if NET8_0_OR_GREATER
@@ -138,7 +138,7 @@ namespace SharpSRTP
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IfLessThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        public static void IfLessThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string paramName = null)
             where T : IComparable<T>
         {
 #if NET8_0_OR_GREATER
@@ -153,7 +153,7 @@ namespace SharpSRTP
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IfGreaterThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        public static void IfGreaterThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string paramName = null)
             where T : IComparable<T>
         {
 #if NET8_0_OR_GREATER
