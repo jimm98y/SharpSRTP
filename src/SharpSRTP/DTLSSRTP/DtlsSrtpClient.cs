@@ -69,10 +69,7 @@ namespace SharpSRTP.DTLSSRTP
             }
             else
             {
-                if (mki.Length > 255)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(mki));
-                }
+                Throw.IfGreaterThan(mki.Length, 255);
 
                 MkiLength = mki.Length;
             }
@@ -119,20 +116,20 @@ namespace SharpSRTP.DTLSSRTP
             int[] clientSupportedProfiles = GetSupportedProtectionProfiles();
             if (serverSrtpExtension.ProtectionProfiles.Length != 1)
             {
-                throw new TlsFatalAlert(AlertDescription.internal_error);
+                Throw.TlsFatalAlert(AlertDescription.internal_error);
             }
 
             // verify that the server has selected a profile we support
             int selectedProfile = serverSrtpExtension.ProtectionProfiles[0];
             if (!clientSupportedProfiles.Contains(selectedProfile))
             {
-                throw new TlsFatalAlert(AlertDescription.internal_error);
+                Throw.TlsFatalAlert(AlertDescription.internal_error);
             }
 
             // verify the mki sent by the server matches our mki
             if (_srtpData.Mki != null && serverSrtpExtension.Mki != null && !Enumerable.SequenceEqual(_srtpData.Mki, serverSrtpExtension.Mki))
             {
-                throw new TlsFatalAlert(AlertDescription.illegal_parameter);
+                Throw.TlsFatalAlert(AlertDescription.illegal_parameter);
             }
 
             // store the server extension as it contains the selected profile
@@ -151,7 +148,7 @@ namespace SharpSRTP.DTLSSRTP
             // this should only be called from OnHandshakeCompleted so we should still have _srtpData from the connection
             if (m_context == null)
             {
-                throw new InvalidOperationException();
+                Throw.InvalidOperationException();
             }
 
             int selectedProtectionProfile = _srtpData.ProtectionProfiles[0];

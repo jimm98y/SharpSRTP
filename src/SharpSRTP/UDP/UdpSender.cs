@@ -37,8 +37,11 @@ namespace SharpSRTP.UDP
 
         public UdpSender(Socket socket, EndPoint remote, int mtu)
         {
-            this._socket = socket ?? throw new ArgumentNullException(nameof(socket));
-            this._remote = remote ?? throw new ArgumentNullException(nameof(remote));
+            Throw.IfNull(socket);
+            Throw.IfNull(remote);
+
+            this._socket = socket;
+            this._remote = remote;
             this._mtu = mtu;
         }
 

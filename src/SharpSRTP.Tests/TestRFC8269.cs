@@ -29,7 +29,6 @@ using SharpSRTP.SRTP.Authentication;
 using SharpSRTP.SRTP.Encryption;
 using SharpSRTP.SRTP.Readers;
 using System;
-using System.Linq;
 
 namespace SharpSRTP.Tests
 {
@@ -63,7 +62,8 @@ namespace SharpSRTP.Tests
             uint roc = 0;
             ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
 
-            byte[] iv = CTR.GenerateMessageKeyIV(bk_s, ssrc, index);
+            Span<byte> iv = stackalloc byte[CTR.BLOCK_SIZE];
+            CTR.GenerateMessageKeyIV(iv, bk_s, ssrc, index);
 
             var aria = new AriaEngine();
             aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(bk_e));
@@ -71,7 +71,7 @@ namespace SharpSRTP.Tests
             var hmac = new HMac(new Sha1Digest());
             hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(bk_a));
 
-            CTR.Encrypt(aria, payload, offset, length, iv);
+            CTR.Encrypt(payload.AsSpan(offset, length - offset), aria, payload.AsSpan(offset, length - offset), iv);
 
             payload[length + 0] = (byte)(roc >> 24);
             payload[length + 1] = (byte)(roc >> 16);
@@ -79,12 +79,13 @@ namespace SharpSRTP.Tests
             payload[length + 3] = (byte)roc;
 
             int n_tag = protectionProfile.AuthTagLength >> 3;
-            byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
+            var auth = new byte[hmac.GetMacSize()];
+            HMAC.GenerateAuthTag(hmac, payload.AsSpan(0, length + 4), auth);
             System.Buffer.BlockCopy(auth, 0, payload, length, n_tag); // we don't append ROC in SRTP
-            var result = payload.Take(length + n_tag).ToArray();
-
-            string srtpResult = Convert.ToHexString(result).ToLowerInvariant();
-            Assert.AreEqual(expectedSrtp, srtpResult);
+            var result = payload.AsSpan(0, length + n_tag);
+            var expectedSrtpBytes = Convert.FromHexString(expectedSrtp);
+            Assert.IsTrue(result.SequenceEqual(expectedSrtpBytes),
+                $"SRTP ARIA-CTR output does not match expected value.\nExpected: {BitConverter.ToString(expectedSrtpBytes)}\nActual:   {BitConverter.ToString(result.ToArray())}");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_128_GCM, "e91e5e75da65554a48181f3846349562", "000000000000000000000000", "8008315ebf2e6fe020e8f5ebf57af5fd4ae19562976ec57a5a7ad55a5af5c5e5c5fdf5c55ad57a4a7272d57262e9729566ed66e97ac54a4a5a7ad5e15ae5fdd5fd5ac5d56ae56ad5c572d54ae54ac55a956afd6aed5a4ac562957a9516991691d572fd14e97ae962ed7a9f4a955af572e162f57a956666e17ae1f54a95f566d54a66e16e4afd6a9f7ae1c5c55ae5d56afde916c5e94a6ec56695e14afde1148416e94ad57ac5146ed59d1cc5", "8008315ebf2e6fe020e8f5eb4d8a9a0675550c704b17d8c9ddc81a5cd6f7da34f2fe1b3db7cb3dfb9697102ea0f3c1fc2dbc873d44bceeae8e4442974ba21ff6789d3272613fb9631a7cf3f14bacbeb421633a90ffbe58c2fa6bdca534f10d0de0502ce1d531b6336e58878278531e5c22bc6c85bbd784d78d9e680aa19031aaf89101d669d7a3965c1f7e16229d7463e0535f4e253f5d18187d40b8ae0f564bd970b5e7e2adfb211e89a9535abace3f37f5a736f4be984bbffbedc1")]
@@ -104,17 +105,22 @@ namespace SharpSRTP.Tests
             int n_tag = protectionProfile.AuthTagLength >> 3;
             int offset = RtpReader.ReadHeaderLen(rtpBytes);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(bk_s, ssrc, index);
+            var iv = new byte[AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(iv, bk_s, ssrc, index);
 
             byte[] result = new byte[rtpBytes.Length + n_tag];
             Buffer.BlockCopy(rtpBytes, 0, result, 0, rtpBytes.Length);
 
             var cipher = new GcmBlockCipher(new AriaEngine());
-            byte[] associatedData = result.Take(offset).ToArray();
-            AEAD.Encrypt(cipher, true, result, offset, rtpBytes.Length, iv, bk_e, n_tag, associatedData);
+            byte[] associatedData = new byte[offset];
+            Buffer.BlockCopy(result, 0, associatedData, 0, offset);
+            var payloadSpan = result.AsSpan(offset, rtpBytes.Length - offset);
+            var outputSpan = result.AsSpan(offset, (rtpBytes.Length - offset) + n_tag);
+            AEAD.Encrypt(outputSpan, cipher, true, payloadSpan, iv, bk_e, n_tag, associatedData);
 
-            string srtpResult = Convert.ToHexString(result).ToLowerInvariant();
-            Assert.AreEqual(expectedSrtp, srtpResult);
+            var expectedSrtpBytes = Convert.FromHexString(expectedSrtp);
+            Assert.IsTrue(result.AsSpan().SequenceEqual(expectedSrtpBytes),
+                $"SRTP ARIA-GCM output does not match expected value.\nExpected: {BitConverter.ToString(expectedSrtpBytes)}\nActual:   {BitConverter.ToString(result)}");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_80, SrtpContextType.RTP, "e1f97a0d3e018be0d64fa32c06de4139", "0ec675ad498afeebb6960b3aabe6", "dbd85a3c4d9219b3e81f7d942e299de4", "d021877bd3eaf92d581ed70ddc050e03f1125703", "9700657f5f34161830d7d85f5dc8")]
@@ -129,13 +135,12 @@ namespace SharpSRTP.Tests
 
             var context = new SrtpContext(srtpContextType, protectionProfile, masterKeyBytes, masterSaltBytes, null);
 
-            string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
-            string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();
-            string sgk_s = Convert.ToHexString(context.K_s).ToLowerInvariant();
-
-            Assert.AreEqual(sk_e, sgk_e);
-            Assert.AreEqual(sk_a, sgk_a); // TODO: RFC shows 96 bytes auth key, not sure why
-            Assert.AreEqual(sk_s, sgk_s);
+            var expected_e = Convert.FromHexString(sk_e);
+            var expected_a = Convert.FromHexString(sk_a);
+            var expected_s = Convert.FromHexString(sk_s);
+            Assert.IsTrue(context.K_e.Span.SequenceEqual(expected_e), "K_e mismatch");
+            Assert.IsTrue(context.K_a.Span.SequenceEqual(expected_a), "K_a mismatch");
+            Assert.IsTrue(context.K_s.Span.SequenceEqual(expected_s), "K_s mismatch");
         }
     }
 }

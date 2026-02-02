@@ -22,47 +22,86 @@
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
+using System.Buffers;
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+
+#if NET8_0_OR_GREATER
+using ReadOnlyBytes = System.ReadOnlySpan<byte>;
+using Bytes = System.Span<byte>;
+#else
+using ReadOnlyBytes = byte[];
+using Bytes = byte[];
+#endif
 
 namespace SharpSRTP.SRTP.Encryption
 {
     public static class AEAD
     {
-        public static void Encrypt(IAeadBlockCipher engine, bool encrypt, byte[] payload, int offset, int length, byte[] iv, byte[] K_e, int N_tag, byte[] associatedData)
+        public const int BLOCK_SIZE = 12;
+
+        [SkipLocalsInit]
+        public static void Encrypt(Span<byte> output, IAeadBlockCipher engine, bool encrypt, ReadOnlySpan<byte> payload, byte[] iv, ReadOnlyMemory<byte> K_e, int N_tag, byte[] associatedData)
         {
-            int payloadSize = length - offset;
+            var payloadSize = payload.Length;
+            var expectedLength = engine.GetOutputSize(payloadSize);
 
-            int expectedLength = engine.GetOutputSize(payloadSize);
-            if (offset + expectedLength > payload.Length)
-            {
-                throw new ArgumentOutOfRangeException("Payload is too small!");
-            }
+            Throw.IfLessThan(output.Length, expectedLength);
 
-            var parameters = new AeadParameters(new KeyParameter(K_e), N_tag << 3, iv, associatedData);
+            var parameters = new AeadParameters(K_e.ToKeyParameter(), N_tag << 3, iv, associatedData);
             engine.Init(encrypt, parameters);
 
-            int len = engine.ProcessBytes(payload, offset, payloadSize, payload, offset);
-            
+#if NET8_0_OR_GREATER
+            var len = engine.ProcessBytes(payload, output);
+
             // throws when the MAC fails to match
-            engine.DoFinal(payload, offset + len);
+            len += engine.DoFinal(output.Slice(len));
+#else
+            var bytes = ArrayPool<byte>.Shared.Rent(Math.Max(payloadSize, output.Length));
+            try
+            {
+                payload.CopyTo(bytes);
+
+                var len = engine.ProcessBytes(bytes, 0, payloadSize, bytes, 0);
+
+                // throws when the MAC fails to match
+                len += engine.DoFinal(bytes, len);
+
+                // Copy result to output span
+                bytes.AsSpan(0, len).CopyTo(output);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(bytes);
+            }
+#endif
         }
 
-        public static byte[] GenerateMessageKeyIV(byte[] k_s, uint ssrc, ulong index)
+        public static void GenerateMessageKeyIV(Span<byte> iv, ReadOnlySpan<byte> k_s, uint ssrc, ulong index)
         {
-            byte[] iv = new byte[12];
-            Buffer.BlockCopy(k_s, 0, iv, 0, 12);
+            if (iv.Length != BLOCK_SIZE)
+            {
+                Throw.ArgumentException($"IV Bytes must be exactly {BLOCK_SIZE} bytes", nameof(iv));
+            }
 
-            iv[2] ^= (byte)((ssrc >> 24) & 0xFF);
-            iv[3] ^= (byte)((ssrc >> 16) & 0xFF);
-            iv[4] ^= (byte)((ssrc >> 8) & 0xFF);
-            iv[5] ^= (byte)(ssrc & 0xFF);
-            iv[6] ^= (byte)((index >> 40) & 0xFF);
-            iv[7] ^= (byte)((index >> 32) & 0xFF);
-            iv[8] ^= (byte)((index >> 24) & 0xFF);
-            iv[9] ^= (byte)((index >> 16) & 0xFF);
-            iv[10] ^= (byte)((index >> 8) & 0xFF);
-            iv[11] ^= (byte)(index & 0xFF);
+            k_s.Slice(0, 12).CopyTo(iv);
 
-            return iv;
+            // XOR in SSRC (big-endian)
+            var ssrcSpan = iv.Slice(2, 4);
+            var ssrcVal = BinaryPrimitives.ReadUInt32BigEndian(ssrcSpan);
+            ssrcVal ^= ssrc;
+            BinaryPrimitives.WriteUInt32BigEndian(ssrcSpan, ssrcVal);
+
+            // XOR in index high 48bits using big-endian 32-bit and 16-bit segments
+            var hiSpan = iv.Slice(6, 4);
+            var hi = BinaryPrimitives.ReadUInt32BigEndian(hiSpan);
+            hi ^= (uint)(index >> 16);
+            BinaryPrimitives.WriteUInt32BigEndian(hiSpan, hi);
+
+            var loSpan = iv.Slice(10, 2);
+            var lo = BinaryPrimitives.ReadUInt16BigEndian(loSpan);
+            lo ^= (ushort)(index & 0xFFFF);
+            BinaryPrimitives.WriteUInt16BigEndian(loSpan, lo);
         }
     }
 }

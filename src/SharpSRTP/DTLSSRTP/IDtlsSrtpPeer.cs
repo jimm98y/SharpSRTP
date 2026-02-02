@@ -29,14 +29,18 @@ namespace SharpSRTP.DTLSSRTP
     public class DtlsSessionStartedEventArgs : EventArgs
     {
         public SrtpSessionContext Context { get; private set; }
-        public Certificate PeerCertificate { get; private set;  }
+        public Certificate PeerCertificate { get; private set; }
         public DatagramTransport ClientDatagramTransport { get; private set; }
 
         public DtlsSessionStartedEventArgs(SrtpSessionContext context, Certificate peerCertificate, DatagramTransport clientDatagramTransport)
         {
-            this.Context = context ?? throw new ArgumentNullException(nameof(context));
-            this.PeerCertificate = peerCertificate ?? throw new ArgumentNullException(nameof(peerCertificate));
-            this.ClientDatagramTransport = clientDatagramTransport ?? throw new ArgumentNullException(nameof(clientDatagramTransport));
+            Throw.IfNull(context);
+            Throw.IfNull(peerCertificate);
+            Throw.IfNull(clientDatagramTransport);
+
+            this.Context = context;
+            this.PeerCertificate = peerCertificate;
+            this.ClientDatagramTransport = clientDatagramTransport;
         }
     }
 

@@ -28,7 +28,6 @@ using SharpSRTP.SRTP.Authentication;
 using SharpSRTP.SRTP.Encryption;
 using SharpSRTP.SRTP.Readers;
 using System;
-using System.Linq;
 
 namespace SharpSRTP.Tests
 {
@@ -37,7 +36,7 @@ namespace SharpSRTP.Tests
     /// </summary>
     [TestClass]
     public sealed class TestRFC3711
-    {       
+    {
         [DataRow("2B7E151628AED2A6ABF7158809CF4F3C", "F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000", "E03EAD0935C95E80E166B16DD92B4EB4", 0u, (ushort)0, 0u, 0)]
         [DataRow("2B7E151628AED2A6ABF7158809CF4F3C", "F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000", "D23513162B02D0F72A43A2FE4A5F97AB", 0u, (ushort)0, 0u, 1)]
         [DataRow("2B7E151628AED2A6ABF7158809CF4F3C", "F0F1F2F3F4F5F6F7F8F9FAFBFCFD0000", "41E95B3BB0A2E8DD477901E4FCA894C0", 0u, (ushort)0, 0u, 2)]
@@ -52,17 +51,19 @@ namespace SharpSRTP.Tests
             ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
 
             AesEngine aes = new AesEngine();
-            byte[] iv = CTR.GenerateMessageKeyIV(k_s, ssrc, index);
+            Span<byte> iv = stackalloc byte[CTR.BLOCK_SIZE];
+            CTR.GenerateMessageKeyIV(iv, k_s, ssrc, index);
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
 
             iv[14] = (byte)((i >> 8) & 0xff);
             iv[15] = (byte)(i & 0xff);
 
             byte[] cipher = new byte[k_s.Length];
-            aes.ProcessBlock(iv, 0, cipher, 0);
+            aes.ProcessBlock(iv.ToArray(), 0, cipher, 0);
 
-            string payloadString = Convert.ToHexString(cipher);
-            Assert.AreEqual(keystream, payloadString);
+            var expectedKeystream = Convert.FromHexString(keystream);
+            Assert.IsTrue(cipher.AsSpan().SequenceEqual(expectedKeystream),
+                $"AESCM keystream mismatch.\nExpected: {BitConverter.ToString(expectedKeystream)}\nActual:   {BitConverter.ToString(cipher)}");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, SrtpContextType.RTP, "72db0646db1e98b02a0056ef700c6cb2", "45111565691aa9d235afee475b12", "57dca73c834ac313d7fdbe58f4df5d93", "a0482b8914db8219f0ec4e54c2f32c4f854eeacf", "8666bc4b1ec16deb3e28fed64da3")]
@@ -77,13 +78,12 @@ namespace SharpSRTP.Tests
             var protectionProfile = DtlsSrtpProtocol.DtlsProtectionProfiles[dtlsProtectionProfile];
             var context = new SrtpContext(strpContextType, protectionProfile, masterKeyBytes, masterSaltBytes, null);
 
-            string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
-            string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();
-            string sgk_s = Convert.ToHexString(context.K_s).ToLowerInvariant();
-
-            Assert.AreEqual(sk_e, sgk_e);
-            Assert.AreEqual(sk_a, sgk_a);
-            Assert.AreEqual(sk_s, sgk_s);
+            var expected_e = Convert.FromHexString(sk_e);
+            var expected_a = Convert.FromHexString(sk_a);
+            var expected_s = Convert.FromHexString(sk_s);
+            Assert.IsTrue(context.K_e.Span.SequenceEqual(expected_e), "K_e mismatch");
+            Assert.IsTrue(context.K_a.Span.SequenceEqual(expected_a), "K_a mismatch");
+            Assert.IsTrue(context.K_s.Span.SequenceEqual(expected_s), "K_s mismatch");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, SrtpContextType.RTP, "503073e919570c4be07872a22f6f682e", "f635137879c3dbf0d3b422aee13b", "45bd0c56f87f8013721257c9322c1fbf", "fc958d05c608be655f16c1f2b423223de9a9cdc2", "c5029308e55be19e3911ce68a1af", "8061eb7f8b1f6f186dc9803d67640028acb402802dc8", "8061eb7f8b1f6f186dc9803df7be778106050cb06813102c2ff82d9f51f2c52c")]
@@ -100,13 +100,12 @@ namespace SharpSRTP.Tests
             var protectionProfile = DtlsSrtpProtocol.DtlsProtectionProfiles[dtlsProtectionProfile];
             var context = new SrtpContext(strpContextType, protectionProfile, masterKeyBytes, masterSaltBytes, null);
 
-            string sgk_e = Convert.ToHexString(context.K_e).ToLowerInvariant();
-            string sgk_a = Convert.ToHexString(context.K_a).ToLowerInvariant();
-            string sgk_s = Convert.ToHexString(context.K_s).ToLowerInvariant();
-
-            Assert.AreEqual(sk_e, sgk_e);
-            Assert.AreEqual(sk_a, sgk_a);
-            Assert.AreEqual(sk_s, sgk_s);
+            var expected_e = Convert.FromHexString(sk_e);
+            var expected_a = Convert.FromHexString(sk_a);
+            var expected_s = Convert.FromHexString(sk_s);
+            Assert.IsTrue(context.K_e.Span.SequenceEqual(expected_e), "K_e mismatch");
+            Assert.IsTrue(context.K_a.Span.SequenceEqual(expected_a), "K_a mismatch");
+            Assert.IsTrue(context.K_s.Span.SequenceEqual(expected_s), "K_s mismatch");
 
             byte[] payloadRaw = Convert.FromHexString(rtp);
             int length = payloadRaw.Length;
@@ -119,15 +118,16 @@ namespace SharpSRTP.Tests
 
             uint roc = 0;
             ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
-            byte[] iv = CTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
+            Span<byte> iv = stackalloc byte[CTR.BLOCK_SIZE];
+            CTR.GenerateMessageKeyIV(iv, context.K_s.Span, ssrc, index);
 
             var aes = new AesEngine();
-            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e.ToArray()));
 
             var hmac = new HMac(new Sha1Digest());
-            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_a));
+            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_a.ToArray()));
 
-            CTR.Encrypt(aes, payload, offset, length, iv);
+            CTR.Encrypt(payload.AsSpan(offset, length - offset), aes, payload.AsSpan(offset, length - offset), iv);
 
             payload[length + 0] = (byte)(roc >> 24);
             payload[length + 1] = (byte)(roc >> 16);
@@ -135,12 +135,14 @@ namespace SharpSRTP.Tests
             payload[length + 3] = (byte)roc;
 
             int n_tag = protectionProfile.AuthTagLength >> 3;
-            byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
+            var auth = new byte[hmac.GetMacSize()];
+            HMAC.GenerateAuthTag(hmac, payload.AsSpan(0, length + 4), auth);
             System.Buffer.BlockCopy(auth, 0, payload, length, n_tag); // we don't append ROC in SRTP
-            var result = payload.Take(length + n_tag).ToArray();
+            var result = payload.AsSpan(0, length + n_tag);
 
-            string srtpResult = Convert.ToHexString(result).ToLowerInvariant();
-            Assert.AreEqual(srtp, srtpResult);
+            var expectedSrtpBytes = Convert.FromHexString(srtp);
+            Assert.IsTrue(result.SequenceEqual(expectedSrtpBytes),
+                $"SRTP RTP mismatch.\nExpected: {BitConverter.ToString(expectedSrtpBytes)}\nActual:   {BitConverter.ToString(result.ToArray())}");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_AES128_CM_HMAC_SHA1_80, SrtpContextType.RTCP, "7c70686d319cdb521a6b71d883f9ce08", "68d48dc36f7f29c860eae2e3be5b", "36db45fe23d42378ffc1df8f8241f26b", "a5a171c0a334826513056abe124e22417fa21a86", "fad326f5f9a17147157f82602566", 0u, "80c8000667160dd7ecf549a36fdf3b6499f322dc00000083000288e781ca000267160dd701000000", "80c8000667160dd794c8324dbed8d36fe8e0b6afa47cc7e05f436ec763e8a1e9081aefa22e084c1d800000002af3b0da27475b47bee1")]
@@ -155,13 +157,12 @@ namespace SharpSRTP.Tests
             var protectionProfile = DtlsSrtpProtocol.DtlsProtectionProfiles[dtlsProtectionProfile];
             var context = new SrtpContext(strpContextType, protectionProfile, masterKeyBytes, masterSaltBytes, null);
 
-            string sgk_e = Convert.ToHexString(context.K_e);
-            string sgk_a = Convert.ToHexString(context.K_a);
-            string sgk_s = Convert.ToHexString(context.K_s);
-
-            Assert.AreEqual(sk_e.ToUpperInvariant(), sgk_e);
-            Assert.AreEqual(sk_a.ToUpperInvariant(), sgk_a);
-            Assert.AreEqual(sk_s.ToUpperInvariant(), sgk_s);
+            var expected_e = Convert.FromHexString(sk_e);
+            var expected_a = Convert.FromHexString(sk_a);
+            var expected_s = Convert.FromHexString(sk_s);
+            Assert.IsTrue(context.K_e.Span.SequenceEqual(expected_e), "K_e mismatch");
+            Assert.IsTrue(context.K_a.Span.SequenceEqual(expected_a), "K_a mismatch");
+            Assert.IsTrue(context.K_s.Span.SequenceEqual(expected_s), "K_s mismatch");
 
             byte[] payloadRaw = Convert.FromHexString(rtcp);
             int length = payloadRaw.Length;
@@ -172,15 +173,16 @@ namespace SharpSRTP.Tests
             uint index = S_l | SrtpContext.E_FLAG;
 
             int offset = RtcpReader.GetHeaderLen();
-            byte[] iv = CTR.GenerateMessageKeyIV(context.K_s, ssrc, S_l);
+            Span<byte> iv = stackalloc byte[CTR.BLOCK_SIZE];
+            CTR.GenerateMessageKeyIV(iv, context.K_s.Span, ssrc, S_l);
 
             var aes = new AesEngine();
-            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
+            aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e.ToArray()));
 
             var hmac = new HMac(new Sha1Digest());
-            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_a));
+            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_a.ToArray()));
 
-            CTR.Encrypt(aes, payload, offset, length, iv);
+            CTR.Encrypt(payload.AsSpan(offset, length - offset), aes, payload.AsSpan(offset, length - offset), iv);
 
             payload[length + 0] = (byte)(index >> 24);
             payload[length + 1] = (byte)(index >> 16);
@@ -188,12 +190,13 @@ namespace SharpSRTP.Tests
             payload[length + 3] = (byte)index;
 
             int n_tag = protectionProfile.AuthTagLength >> 3;
-            byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
+            var auth = new byte[hmac.GetMacSize()];
+            HMAC.GenerateAuthTag(hmac, payload.AsSpan(0, length + 4), auth);
             System.Buffer.BlockCopy(auth, 0, payload, length + 4, n_tag); // we don't append ROC in SRTP
-            var result = payload.Take(length + 4 + n_tag).ToArray();
-
-            string srtpResult = Convert.ToHexString(result).ToLowerInvariant();
-            Assert.AreEqual(expectedSrtcp, srtpResult);
+            var result = payload.AsSpan(0, length + 4 + n_tag);
+            var expectedSrtcpBytes = Convert.FromHexString(expectedSrtcp);
+            Assert.IsTrue(result.SequenceEqual(expectedSrtcpBytes),
+                $"SRTP RTCP mismatch.\nExpected: {BitConverter.ToString(expectedSrtcpBytes)}\nActual:   {BitConverter.ToString(result.ToArray())}");
         }
 
         [DataRow("806e5cba50681de55c62159970736575646f72616e646f6d6e65737320697320746865206e6578742062657374207468696e67", 0xd462564a, "234829008467be186c3de14aae72d62c", "32f2870d", "806e5cba50681de55c621599019ce7a26e7854014a6366aa95d4eefd1ad4172a14f9faf455b7f1d4b62bd08f562c0eef7c4802")]
@@ -210,13 +213,15 @@ namespace SharpSRTP.Tests
             ulong index = ((ulong)roc << 16) | sequenceNumber;
 
             AesEngine aes = new AesEngine();
-            byte[] iv = F8.GenerateRtpMessageKeyIV(aes, k_e, k_s, rtpBytes, roc);
+            var iv = new byte[CTR.BLOCK_SIZE];
+            F8.GenerateRtpMessageKeyIV(iv, aes, k_e, k_s, rtpBytes, roc);
 
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
-            F8.Encrypt(aes, rtpBytes, offset, rtpBytes.Length, iv);
+            F8.Encrypt(rtpBytes.AsSpan(offset, rtpBytes.Length - offset), aes, rtpBytes.AsSpan(offset, rtpBytes.Length - offset), iv);
 
-            string payloadString = Convert.ToHexString(rtpBytes).ToLowerInvariant();
-            Assert.AreEqual(expectedSrtp, payloadString);
+            var expectedSrtpBytes = Convert.FromHexString(expectedSrtp);
+            Assert.IsTrue(rtpBytes.AsSpan().SequenceEqual(expectedSrtpBytes),
+                $"AESF8 mismatch.\nExpected: {BitConverter.ToString(expectedSrtpBytes)}\nActual:   {BitConverter.ToString(rtpBytes)}");
         }
     }
 }

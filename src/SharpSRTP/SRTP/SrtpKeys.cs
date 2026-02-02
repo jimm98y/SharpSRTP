@@ -20,27 +20,44 @@
 // SOFTWARE.
 
 using System;
-using System.Linq;
 
 namespace SharpSRTP.SRTP
 {
     public class SrtpKeys
     {
         public SrtpProtectionProfileConfiguration ProtectionProfile { get; }
-        public byte[] Mki { get; }
 
-        public byte[] MasterKey { get { return MasterKeySalt.Take(ProtectionProfile.CipherKeyLength >> 3).ToArray(); } }
-        public byte[] MasterSalt { get { return MasterKeySalt.Skip(ProtectionProfile.CipherKeyLength >> 3).ToArray(); } }
-        public byte[] MasterKeySalt { get; }
+        public ReadOnlyMemory<byte> Mki { get; }
 
-        public SrtpKeys(SrtpProtectionProfileConfiguration protectionProfile, byte[] mki = null)
+
+        public ReadOnlyMemory<byte> MasterKey { get; }
+        public ReadOnlyMemory<byte> MasterSalt { get; }
+        public ReadOnlyMemory<byte> MasterKeySalt { get; }
+
+        public SrtpKeys(SrtpProtectionProfileConfiguration protectionProfile, ReadOnlyMemory<byte> masterKeySalt = default, ReadOnlyMemory<byte> mki = default)
         {
-            this.ProtectionProfile = protectionProfile ?? throw new ArgumentNullException(nameof(protectionProfile));
-            this.Mki = mki;
+            Throw.IfNull(protectionProfile);
 
-            int cipherKeyLen = protectionProfile.CipherKeyLength >> 3;
-            int cipherSaltLen = protectionProfile.CipherSaltLength >> 3;
-            this.MasterKeySalt = new byte[cipherKeyLen + cipherSaltLen];
+            this.ProtectionProfile = protectionProfile;
+
+            int requiredLen = (protectionProfile.CipherKeyLength + protectionProfile.CipherSaltLength) >> 3;
+            if (masterKeySalt.IsEmpty)
+            {
+                this.MasterKeySalt = new byte[requiredLen];
+            }
+            else
+            {
+                if (masterKeySalt.Length != requiredLen)
+                {
+                    Throw.ArgumentException("masterKeySalt length does not match profile requirements", nameof(masterKeySalt));
+                }
+
+                this.MasterKeySalt = masterKeySalt;
+            }
+
+            this.MasterKey = MasterKeySalt.Slice(0, protectionProfile.CipherKeyLength >> 3);
+            this.MasterSalt = MasterKeySalt.Slice(protectionProfile.CipherKeyLength >> 3);
+            this.Mki = mki;
         }
     }
 }

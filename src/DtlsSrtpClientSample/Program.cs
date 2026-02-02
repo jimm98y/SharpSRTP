@@ -19,20 +19,20 @@ UdpTransport udpClientTransport = new UdpTransport(socket, null, UdpTransport.MT
 client.OnSessionStarted += (sender, e) =>
 {
     isSrtpSessionRunning = true;
-    socket.ReceiveTimeout = 1000; 
+    socket.ReceiveTimeout = 1000;
 
     var context = e.Context;
     var srtpSession = Task.Run(async () =>
     {
         var protectionProfile = context.DecodeRtpContext.ProtectionProfile;
         Console.WriteLine($"SRTP cipher:   {protectionProfile.Cipher}, auth: {protectionProfile.Auth}");
-        
+
         byte[] receiveBuffer = new byte[2048];
         int timeoutCounter = 0;
 
         while (!isShutdown)
         {
-            int receivedLen = 0;            
+            int receivedLen = 0;
             try
             {
                 receivedLen = socket.Receive(receiveBuffer);
@@ -40,24 +40,29 @@ client.OnSessionStarted += (sender, e) =>
             }
             catch (SocketException ex)
             {
-                if(ex.SocketErrorCode == SocketError.TimedOut)
+                if (ex.SocketErrorCode == SocketError.TimedOut)
                 {
                     timeoutCounter++;
                 }
             }
-                
+
             if (receivedLen != 0)
             {
                 Console.WriteLine($"SRTP: {Convert.ToHexString(receiveBuffer.Take(receivedLen).ToArray())}");
 
-                if (context.UnprotectRtp(receiveBuffer, receivedLen, out int length) == 0)
+                try
                 {
+                    var length = context.UnprotectRtp(receiveBuffer, receiveBuffer);
                     byte[] rtp = receiveBuffer.Take(length).ToArray();
                     Console.WriteLine($"RTP: {Convert.ToHexString(rtp)}");
                 }
+                catch (System.Security.Cryptography.CryptographicException ex)
+                {
+                    Console.WriteLine($"SRTP error: {ex.HResult}");
+                }
             }
 
-            if(timeoutCounter > 30)
+            if (timeoutCounter > 30)
             {
                 isSrtpSessionRunning = false;
                 break;
@@ -74,7 +79,7 @@ while (!isShutdown)
     {
         Console.WriteLine($"DTLS connected");
 
-        while(isSrtpSessionRunning)
+        while (isSrtpSessionRunning)
         {
             Thread.Sleep(1000);
         }

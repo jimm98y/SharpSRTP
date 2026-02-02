@@ -19,15 +19,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
+using System;
+
 namespace SharpSRTP.SRTP
 {
     public interface ISrtpContext
     {
         int CalculateRequiredSrtpPayloadLength(int rtpLen);
-        int ProtectRtp(byte[] payload, int length, out int outputBufferLength);
-        int UnprotectRtp(byte[] payload, int length, out int outputBufferLength);
+        int ProtectRtp(Span<byte> output, ReadOnlySpan<byte> payload);
+        int UnprotectRtp(Span<byte> output, ReadOnlySpan<byte> payload);
         int CalculateRequiredSrtcpPayloadLength(int rtpLen);
-        int ProtectRtcp(byte[] payload, int length, out int outputBufferLength);
-        int UnprotectRtcp(byte[] payload, int length, out int outputBufferLength);
+        int ProtectRtcp(Span<byte> output, ReadOnlySpan<byte> payload);
+        int UnprotectRtcp(Span<byte> output, ReadOnlySpan<byte> payload);
     }
 }

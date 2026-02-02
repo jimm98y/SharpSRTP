@@ -20,19 +20,40 @@
 // SOFTWARE.
 
 using Org.BouncyCastle.Crypto.Macs;
+using System;
+using System.Buffers;
+#if NET8_0_OR_GREATER
+using Bytes = System.Span<byte>;
+#else
+using Bytes = byte[];
+#endif
 
 namespace SharpSRTP.SRTP.Authentication
 {
     public static class HMAC
     {
-        public static byte[] GenerateAuthTag(HMac hmac, byte[] payload, int offset, int length)
+        public static void GenerateAuthTag(HMac hmac, ReadOnlySpan<byte> payload, Bytes output)
         {
-            hmac.BlockUpdate(payload, offset, length);
+            Throw.IfLessThan(output.Length, hmac.GetMacSize());
 
-            byte[] output = new byte[hmac.GetMacSize()];
+#if NET8_0_OR_GREATER
+            hmac.BlockUpdate(payload);
+
+            hmac.DoFinal(output);
+#else
+            var buffer = ArrayPool<byte>.Shared.Rent(payload.Length);
+            payload.CopyTo(buffer);
+            try
+            {
+                hmac.BlockUpdate(buffer, 0, payload.Length);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+
             hmac.DoFinal(output, 0);
-
-            return output;
+#endif
         }
     }
 }

@@ -26,7 +26,7 @@ using SharpSRTP.SRTP;
 using SharpSRTP.SRTP.Encryption;
 using SharpSRTP.SRTP.Readers;
 using System;
-using System.Linq;
+using System.Buffers.Binary;
 
 namespace SharpSRTP.Tests
 {
@@ -47,10 +47,12 @@ namespace SharpSRTP.Tests
             ushort sequenceNumber = RtpReader.ReadSequenceNumber(rtpBytes);
             ulong index = SrtpContext.GenerateRtpIndex(0, sequenceNumber);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            Span<byte> iv = stackalloc byte[AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(iv, k_s, ssrc, index);
 
-            string ivString = Convert.ToHexString(iv).ToLowerInvariant();
-            Assert.AreEqual(expectedIv, ivString);
+            var expectedIvBytes = Convert.FromHexString(expectedIv);
+            Assert.IsTrue(iv.SequenceEqual(expectedIvBytes),
+                $"IV mismatch.\nExpected: {BitConverter.ToString(expectedIvBytes)}\nActual:   {BitConverter.ToString(iv.ToArray())}");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM, "8040f17b8041f8d35501a0b247616c6c696120657374206f6d6e69732064697669736120696e207061727465732074726573", "000102030405060708090a0b0c0d0e0f", "517569642070726f2071756f", "8040f17b8041f8d35501a0b2f24de3a3fb34de6cacba861c9d7e4bcabe633bd50d294e6f42a5f47a51c7d19b36de3adf8833899d7f27beb16a9152cf765ee4390cce")]
@@ -70,17 +72,24 @@ namespace SharpSRTP.Tests
             int n_tag = protectionProfile.AuthTagLength >> 3;
             int offset = RtpReader.ReadHeaderLen(rtpBytes);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            var iv = new byte[AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(iv, k_s, ssrc, index);
 
             byte[] result = new byte[rtpBytes.Length + n_tag];
             Buffer.BlockCopy(rtpBytes, 0, result, 0, rtpBytes.Length);
 
             var cipher = new GcmBlockCipher(new AesEngine());
-            byte[] associatedData = result.Take(offset).ToArray();
-            AEAD.Encrypt(cipher, true, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
+            byte[] associatedData = new byte[offset];
+            Buffer.BlockCopy(result, 0, associatedData, 0, offset);
 
-            string encryptedRTP = Convert.ToHexString(result).ToLowerInvariant();
-            Assert.AreEqual(expectedSrtp, encryptedRTP);
+            // Encrypt payload -> payload+tag slice
+            var payloadSpan = result.AsSpan(offset, rtpBytes.Length - offset);
+            var outputSpan = result.AsSpan(offset, (rtpBytes.Length - offset) + n_tag);
+            AEAD.Encrypt(outputSpan, cipher, true, payloadSpan, iv, k_e, n_tag, associatedData);
+
+            var expectedSrtpBytes = Convert.FromHexString(expectedSrtp);
+            Assert.IsTrue(result.AsSpan().SequenceEqual(expectedSrtpBytes),
+                $"SRTP RTP mismatch.\nExpected: {BitConverter.ToString(expectedSrtpBytes)}\nActual:   {BitConverter.ToString(result)}");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM, "8040f17b8041f8d35501a0b2f24de3a3fb34de6cacba861c9d7e4bcabe633bd50d294e6f42a5f47a51c7d19b36de3adf8833899d7f27beb16a9152cf765ee4390cce", "000102030405060708090a0b0c0d0e0f", "517569642070726f2071756f", "8040f17b8041f8d35501a0b247616c6c696120657374206f6d6e69732064697669736120696e207061727465732074726573")]
@@ -100,14 +109,22 @@ namespace SharpSRTP.Tests
             int n_tag = protectionProfile.AuthTagLength >> 3;
             int offset = RtpReader.ReadHeaderLen(srtpBytes);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            var iv = new byte[AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(iv, k_s, ssrc, index);
 
             var cipher = new GcmBlockCipher(new AesEngine());
-            byte[] associatedData = srtpBytes.Take(offset).ToArray();
-            AEAD.Encrypt(cipher, false, srtpBytes, offset, srtpBytes.Length, iv, k_e, n_tag, associatedData);
+            byte[] associatedData = new byte[offset];
+            Buffer.BlockCopy(srtpBytes, 0, associatedData, 0, offset);
 
-            string result = Convert.ToHexString(srtpBytes.Take(srtpBytes.Length - n_tag).ToArray()).ToLowerInvariant();
-            Assert.AreEqual(expectedRtp, result);
+            // Decrypt payload+tag -> payload slice
+            var encSpan = srtpBytes.AsSpan(offset, srtpBytes.Length - offset);
+            var outSpan = srtpBytes.AsSpan(offset, srtpBytes.Length - offset);
+            AEAD.Encrypt(outSpan, cipher, false, encSpan, iv, k_e, n_tag, associatedData);
+
+            var expectedRtpBytes = Convert.FromHexString(expectedRtp);
+            var actualRtpSpan = srtpBytes.AsSpan(0, srtpBytes.Length - n_tag);
+            Assert.IsTrue(actualRtpSpan.SequenceEqual(expectedRtpBytes),
+                $"SRTP Decrypt RTP mismatch.\nExpected: {BitConverter.ToString(expectedRtpBytes)}\nActual:   {BitConverter.ToString(actualRtpSpan.ToArray())}");
         }
 
         [DataRow("81c8000e4d6172734e5450314e545031525450200000042a0000eb984c756e61deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", "517569642070726f2071756f", (uint)0x000005d4, "517524055203726f207170bb")]
@@ -118,9 +135,11 @@ namespace SharpSRTP.Tests
             byte[] k_s = Convert.FromHexString(sk_s);
             uint ssrc = RtcpReader.ReadSsrc(rtpBytes);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
-            string ivString = Convert.ToHexString(iv).ToLowerInvariant();
-            Assert.AreEqual(expectedIv, ivString);
+            Span<byte> iv = stackalloc byte[AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(iv, k_s, ssrc, index);
+            var expectedIvBytes = Convert.FromHexString(expectedIv);
+            Assert.IsTrue(iv.SequenceEqual(expectedIvBytes),
+                $"IV RTCP mismatch.\nExpected: {BitConverter.ToString(expectedIvBytes)}\nActual:   {BitConverter.ToString(iv.ToArray())}");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM, "81c8000d4d6172734e5450314e545032525450200000042a0000e9304c756e61deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", "000102030405060708090a0b0c0d0e0f", "517569642070726f2071756f", (uint)0x000005d4, "81c8000d4d61727363e94885dcdab67ca727d7662f6b7e997ff5c0f76c06f32dc676a5f1730d6fda4ce09b4686303ded0bb9275bc84aa45896cf4d2fc5abf87245d9eade800005d4")]
@@ -135,7 +154,8 @@ namespace SharpSRTP.Tests
             uint ssrc = RtcpReader.ReadSsrc(rtcpBytes);
 
             int offset = RtcpReader.GetHeaderLen();
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, idx);
+            var iv = new byte[AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(iv, k_s, ssrc, idx);
 
             int n_tag = protectionProfile.AuthTagLength >> 3;
             byte[] srtcp = new byte[rtcpBytes.Length + n_tag + 4];
@@ -143,16 +163,21 @@ namespace SharpSRTP.Tests
 
             var cipher = new GcmBlockCipher(new AesEngine());
             uint index = idx | SrtpContext.E_FLAG;
-            byte[] associatedData = srtcp.Take(offset).Concat(new byte[] { (byte)(index >> 24), (byte)(index >> 16), (byte)(index >> 8), (byte)index }).ToArray(); // associatedData include also index
-            AEAD.Encrypt(cipher, true, srtcp, offset, rtcpBytes.Length, iv, k_e, n_tag, associatedData);
 
-            srtcp[rtcpBytes.Length + n_tag + 0] = (byte)(index >> 24);
-            srtcp[rtcpBytes.Length + n_tag + 1] = (byte)(index >> 16);
-            srtcp[rtcpBytes.Length + n_tag + 2] = (byte)(index >> 8);
-            srtcp[rtcpBytes.Length + n_tag + 3] = (byte)index;
+            // associatedData include also index
+            byte[] associatedData = new byte[offset + 4];
+            Array.Copy(srtcp, 0, associatedData, 0, offset);
+            BinaryPrimitives.WriteUInt32BigEndian(associatedData.AsSpan(offset, 4), index);
 
-            string result = Convert.ToHexString(srtcp).ToLowerInvariant();
-            Assert.AreEqual(expectedSrtcp, result);
+            var payloadSpan = srtcp.AsSpan(offset, rtcpBytes.Length - offset);
+            var outputSpan = srtcp.AsSpan(offset, rtcpBytes.Length - offset + n_tag);
+            AEAD.Encrypt(outputSpan, cipher, true, payloadSpan, iv, k_e, n_tag, associatedData);
+
+            BinaryPrimitives.WriteUInt32BigEndian(srtcp.AsSpan(rtcpBytes.Length + n_tag, 4), index);
+
+            var expectedSrtcpBytes = Convert.FromHexString(expectedSrtcp);
+            Assert.IsTrue(srtcp.AsSpan().SequenceEqual(expectedSrtcpBytes),
+                $"SRTP RTCP mismatch.\nExpected: {BitConverter.ToString(expectedSrtcpBytes)}\nActual:   {BitConverter.ToString(srtcp)}");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM, "81c8000d4d617273d50ae4d1f5ce5d304ba297e47d470c282c3ece5dbffe0a50a2eaa5c1110555be8415f658c61de0476f1b6fad1d1eb30c4446839f57ff6f6cb26ac3be800005d4", "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "517569642070726f2071756f", "81c8000d4d6172734e5450314e545032525450200000042a0000e9304c756e61deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")]
@@ -168,18 +193,27 @@ namespace SharpSRTP.Tests
             int n_tag = protectionProfile.AuthTagLength >> 3;
             uint ssrc = RtcpReader.ReadSsrc(srtcpBytes);
             uint idx = RtcpReader.SrtcpReadIndex(srtcpBytes, 0);
-            
+
             uint index = idx & ~SrtpContext.E_FLAG;
             int offset = RtcpReader.GetHeaderLen();
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            var iv = new byte[AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(iv, k_s, ssrc, index);
 
             var cipher = new GcmBlockCipher(new AesEngine());
-            byte[] associatedData = srtcpBytes.Take(offset).Concat(srtcpBytes.Skip(srtcpBytes.Length - 4).Take(4)).ToArray(); // associatedData include also index
-            AEAD.Encrypt(cipher, false, srtcpBytes, offset, srtcpBytes.Length - 4, iv, k_e, n_tag, associatedData);
+            byte[] associatedData = new byte[offset + 4];
+            Array.Copy(srtcpBytes, 0, associatedData, 0, offset);
+            BinaryPrimitives.WriteUInt32BigEndian(associatedData.AsSpan(offset, 4),
+                BinaryPrimitives.ReadUInt32BigEndian(srtcpBytes.AsSpan(srtcpBytes.Length - 4, 4)));
 
-            string result = Convert.ToHexString(srtcpBytes.Take(srtcpBytes.Length - 4 - n_tag).ToArray()).ToLowerInvariant();
-            Assert.AreEqual(expectedRtcp, result);
+            var encSpan = srtcpBytes.AsSpan(offset, srtcpBytes.Length - offset - 4);
+            var outSpan = srtcpBytes.AsSpan(offset, srtcpBytes.Length - offset);
+            AEAD.Encrypt(outSpan, cipher, false, encSpan, iv, k_e, n_tag, associatedData);
+
+            var expectedRtcpBytes = Convert.FromHexString(expectedRtcp);
+            var actualRtcpSpan = srtcpBytes.AsSpan(0, srtcpBytes.Length - 4 - n_tag);
+            Assert.IsTrue(actualRtcpSpan.SequenceEqual(expectedRtcpBytes),
+                $"SRTP Decrypt RTCP mismatch.\nExpected: {BitConverter.ToString(expectedRtcpBytes)}\nActual:   {BitConverter.ToString(actualRtcpSpan.ToArray())}");
         }
     }
 }

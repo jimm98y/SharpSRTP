@@ -48,7 +48,9 @@ namespace SharpSRTP.UDP
 
         public UdpTransport(Socket socket, EndPoint remote = null, int mtu = MTU, Action<UdpTransport> onClose = null)
         {
-            this._socket = socket ?? throw new ArgumentNullException(nameof(socket));
+            Throw.IfNull(socket);
+
+            this._socket = socket;
             this._remote = remote;
             this._mtu = mtu;
             this._onClose = onClose;
@@ -93,7 +95,7 @@ namespace SharpSRTP.UDP
                     byteBuffer.AsSpan().CopyTo(buffer);
                     return len;
                 }
-                catch(SocketException)
+                catch (SocketException)
                 {
                     return -1;
                 }
@@ -118,25 +120,36 @@ namespace SharpSRTP.UDP
                  * the DTLS implementation SHOULD generate an error, thus avoiding sending a packet
                  * which will be fragmented."
                  */
-                throw new TlsFatalAlert(AlertDescription.internal_error);
+                Throw.TlsFatalAlert(AlertDescription.internal_error);
             }
 
-            Send(buf.AsSpan(off, len));
+            LastSent = DateTime.UtcNow;
+
+            if (_remote == null)
+            {
+                _socket.Send(buf, off, len, SocketFlags.None);
+            }
+            else
+            {
+                _socket.SendTo(buf, off, len, SocketFlags.None, _remote);
+            }
         }
 
+#if NET8_0_OR_GREATER
         public virtual void Send(ReadOnlySpan<byte> buffer)
         {
             LastSent = DateTime.UtcNow;
 
             if (_remote == null)
             {
-                _socket.Send(buffer.ToArray());
+                _socket.Send(buffer);
             }
             else
             {
-                _socket.SendTo(buffer.ToArray(), _remote);
+                _socket.SendTo(buffer, _remote);
             }
         }
+#endif
 
         public virtual void Close()
         {

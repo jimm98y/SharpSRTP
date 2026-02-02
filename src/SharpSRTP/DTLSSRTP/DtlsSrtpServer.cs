@@ -101,7 +101,7 @@ namespace SharpSRTP.DTLSSRTP
             int[] mutuallySupportedProfiles = clientSrtpExtension.ProtectionProfiles.Where(x => serverSupportedProfiles.Contains(x)).ToArray();
             if (mutuallySupportedProfiles.Length == 0)
             {
-                throw new TlsFatalAlert(AlertDescription.internal_error);
+                Throw.TlsFatalAlert(AlertDescription.internal_error);
             }
 
             int selectedProfile = mutuallySupportedProfiles.OrderBy(x => Array.IndexOf(serverSupportedProfiles, x)).First(); // Choose the highest priority profile supported by the server
@@ -120,7 +120,7 @@ namespace SharpSRTP.DTLSSRTP
             // this should only be called from OnHandshakeCompleted so we should still have _srtpData from the connection
             if (m_context == null)
             {
-                throw new InvalidOperationException();
+                Throw.InvalidOperationException();
             }
 
             int selectedProtectionProfile = _srtpData.ProtectionProfiles[0];
