@@ -75,7 +75,7 @@ namespace SharpSRTP.Tests
                 var expectedBytes = Convert.FromHexString(expectedSrtp);
                 var actualBytes = srtpProtectedBytes.Slice(0, len).ToArray();
                 Assert.IsTrue(expectedBytes.SequenceEqual(actualBytes),
-                    $"ProtectRtp output does not match the expected value.\nExpected: {BitConverter.ToString(expectedBytes).Replace("-", "").ToLowerInvariant()}\nActual:   {BitConverter.ToString(actualBytes).Replace("-", "").ToLowerInvariant()}");
+                    $"ProtectRtp output does not match the expected value.\nExpected: {BitConverter.ToString(expectedBytes)}\nActual:   {BitConverter.ToString(actualBytes)}");
             }
 
             var decodeContext = DtlsSrtpProtocol.CreateSrtpServerSessionContext(keys);
@@ -96,7 +96,7 @@ namespace SharpSRTP.Tests
 
                 var actualUnprotected = srtpUnprotectedBytes.Slice(0, olen).ToArray();
                 Assert.IsTrue(rtpBytes.SequenceEqual(actualUnprotected),
-                    $"UnprotectRtp output does not match the expected value.\nExpected: {BitConverter.ToString(rtpBytes).Replace("-", "").ToLowerInvariant()}\nActual:   {BitConverter.ToString(actualUnprotected).Replace("-", "").ToLowerInvariant()}");
+                    $"UnprotectRtp output does not match the expected value.\nExpected: {BitConverter.ToString(rtpBytes)}\nActual:   {BitConverter.ToString(actualUnprotected)}");
             }
         }
     }

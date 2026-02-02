@@ -24,6 +24,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 
 #if NET8_0_OR_GREATER
 using ReadOnlyBytes = System.ReadOnlySpan<byte>;
@@ -39,6 +40,7 @@ namespace SharpSRTP.SRTP.Encryption
     {
         public const int BLOCK_SIZE = 12;
 
+        [SkipLocalsInit]
         public static void Encrypt(Span<byte> output, IAeadBlockCipher engine, bool encrypt, ReadOnlySpan<byte> payload, byte[] iv, ReadOnlyMemory<byte> K_e, int N_tag, byte[] associatedData)
         {
             var payloadSize = payload.Length;

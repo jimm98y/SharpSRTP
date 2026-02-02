@@ -92,7 +92,7 @@ namespace SharpSRTP.Tests
             var result = payload.AsSpan(0, length + n_tag);
             var expectedSrtpBytes = Convert.FromHexString(srtp);
             Assert.IsTrue(result.SequenceEqual(expectedSrtpBytes),
-                $"SEED-CTR SRTP mismatch.\nExpected: {BitConverter.ToString(expectedSrtpBytes).Replace("-", "").ToLowerInvariant()}\nActual:   {BitConverter.ToString(result.ToArray()).Replace("-", "").ToLowerInvariant()}");
+                $"SEED-CTR SRTP mismatch.\nExpected: {BitConverter.ToString(expectedSrtpBytes)}\nActual:   {BitConverter.ToString(result.ToArray())}");
         }
 
         [DataRow(SrtpCryptoSuites.SEED_128_GCM_96, "e91e5e75da65554a48181f3846349562", "0000000000000000000000000000", "8008315ebf2e6fe020e8f5ebf57af5fd4ae19562976ec57a5a7ad55a5af5c5e5c5fdf5c55ad57a4a7272d57262e9729566ed66e97ac54a4a5a7ad5e15ae5fdd5fd5ac5d56ae56ad5c572d54ae54ac55a956afd6aed5a4ac562957a9516991691d572fd14e97ae962ed7a9f4a955af572e162f57a956666e17ae1f54a95f566d54a66e16e4afd6a9f7ae1c5c55ae5d56afde916c5e94a6ec56695e14afde1148416e94ad57ac5146ed59d1cc5", "8008315ebf2e6fe020e8f5eb8a5363682c6b1bbf13c0b09cf747a5512543cb2f129b8bd0e92dfadf735cda8f88c4bbf90288f5e58d20c4f1bb0d58446ea009103ee57ba99cdeabaaa18d4a9a05ddb46e7e5290a5a2284fe50b1f6fe9ad3f1348c354181e85b24f1a552a1193cf0e13eed5ab95ae854fb4f5b0edb2d3ee5eb238c8f4bfb136b2eb6cd78760420680ce1879100014f140a15e07e70133ed9cbb6d57b75d574acb0087eefbac9936cd9ae602be3ee2cd8d5d9d")]
@@ -128,7 +128,7 @@ namespace SharpSRTP.Tests
 
             var expectedEncryptedBytes = Convert.FromHexString(expectedEncryptedRTP);
             Assert.IsTrue(result.AsSpan().SequenceEqual(expectedEncryptedBytes),
-                $"SEED-GCM SRTP mismatch.\nExpected: {BitConverter.ToString(expectedEncryptedBytes).Replace("-", "").ToLowerInvariant()}\nActual:   {BitConverter.ToString(result).Replace("-", "").ToLowerInvariant()}");
+                $"SEED-GCM SRTP mismatch.\nExpected: {BitConverter.ToString(expectedEncryptedBytes)}\nActual:   {BitConverter.ToString(result)}");
         }
 
         [DataRow(SrtpCryptoSuites.SEED_128_CCM_80, "974bee725d44fc3992267b284c3c6750", "0000000000000000000000000000", "8008315ebf2e6fe020e8f5ebf57af5fd4ae19562976ec57a5a7ad55a5af5c5e5c5fdf5c55ad57a4a7272d57262e9729566ed66e97ac54a4a5a7ad5e15ae5fdd5fd5ac5d56ae56ad5c572d54ae54ac55a956afd6aed5a4ac562957a9516991691d572fd14e97ae962ed7a9f4a955af572e162f57a956666e17ae1f54a95f566d54a66e16e4afd6a9f7ae1c5c55ae5d56afde916c5e94a6ec56695e14afde1148416e94ad57ac5146ed59d1cc5", "8008315ebf2e6fe020e8f5eb486843a881df215a8574650ddabf5dbb2650f06f51252bccaeb4012899d6d71e30c64dad5ead5d8ba65ffe9d79aaf30dc9e6334490c07e7533d704114a9006ecb3b3bff59ecf585485bc0bd286ed434cfd684d19a1ad514ca5f37b71d93288c07cf4d5e9b83db8becc8c692a7279b6a9ac62ba970fc54f46dcc926d434c0b5ad8678fbf0e7a03037924dae342ef64fa65b8eaea260fecb477a57e3919c5dab82b0a8274cf6a8bb6cc466")]
@@ -164,7 +164,7 @@ namespace SharpSRTP.Tests
 
             var expectedEncryptedBytes = Convert.FromHexString(expectedEncryptedRTP);
             Assert.IsTrue(result.AsSpan().SequenceEqual(expectedEncryptedBytes),
-                $"SEED-CCM SRTP mismatch.\nExpected: {BitConverter.ToString(expectedEncryptedBytes).Replace("-", "").ToLowerInvariant()}\nActual:   {BitConverter.ToString(result).Replace("-", "").ToLowerInvariant()}");
+                $"SEED-CCM SRTP mismatch.\nExpected: {BitConverter.ToString(expectedEncryptedBytes)}\nActual:   {BitConverter.ToString(result)}");
         }
     }
 }

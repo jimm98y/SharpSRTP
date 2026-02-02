@@ -564,8 +564,9 @@ namespace SharpSRTP.SRTP
                         var iv = GC.AllocateUninitializedArray<byte>(SRTP.Encryption.F8.BLOCK_SIZE);
 #endif
                         SRTP.Encryption.F8.GenerateRtpMessageKeyIV(iv, context.PayloadF8, context.K_e.Span, context.K_s.Span, payload, roc);
-                        var payloadSpan = output.Slice(offset, payload.Length - offset);
-                        SRTP.Encryption.F8.Encrypt(payloadSpan, context.PayloadCTR, payload.Slice(offset), iv);
+                        var payloadSpan = payload.Slice(offset);
+                        var outputSpan = output.Slice(offset);
+                        SRTP.Encryption.F8.Encrypt(outputSpan, context.PayloadCTR, payloadSpan, iv);
                     }
                     break;
 
@@ -582,8 +583,9 @@ namespace SharpSRTP.SRTP
                         var iv = GC.AllocateUninitializedArray<byte>(SRTP.Encryption.CTR.BLOCK_SIZE);
 #endif
                         SRTP.Encryption.CTR.GenerateMessageKeyIV(iv, context.K_s.Span, ssrc, index);
-                        var payloadSpan = output.Slice(offset, payload.Length - offset);
-                        SRTP.Encryption.CTR.Encrypt(payloadSpan, context.PayloadCTR, payload.Slice(offset), iv);
+                        var payloadSpan = payload.Slice(offset);
+                        var outputSpan = output.Slice(offset);
+                        SRTP.Encryption.CTR.Encrypt(outputSpan, context.PayloadCTR, payloadSpan, iv);
                     }
                     break;
 
@@ -771,6 +773,7 @@ namespace SharpSRTP.SRTP
             return;
         }
 
+        [SkipLocalsInit]
         public int UnprotectRtp(Span<byte> output, ReadOnlySpan<byte> payload)
         {
             var context = this;

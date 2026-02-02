@@ -85,7 +85,7 @@ namespace SharpSRTP.Tests
             var result = payload.AsSpan(0, length + n_tag);
             var expectedSrtpBytes = Convert.FromHexString(expectedSrtp);
             Assert.IsTrue(result.SequenceEqual(expectedSrtpBytes),
-                $"SRTP ARIA-CTR output does not match expected value.\nExpected: {BitConverter.ToString(expectedSrtpBytes).Replace("-", "").ToLowerInvariant()}\nActual:   {BitConverter.ToString(result.ToArray()).Replace("-", "").ToLowerInvariant()}");
+                $"SRTP ARIA-CTR output does not match expected value.\nExpected: {BitConverter.ToString(expectedSrtpBytes)}\nActual:   {BitConverter.ToString(result.ToArray())}");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_128_GCM, "e91e5e75da65554a48181f3846349562", "000000000000000000000000", "8008315ebf2e6fe020e8f5ebf57af5fd4ae19562976ec57a5a7ad55a5af5c5e5c5fdf5c55ad57a4a7272d57262e9729566ed66e97ac54a4a5a7ad5e15ae5fdd5fd5ac5d56ae56ad5c572d54ae54ac55a956afd6aed5a4ac562957a9516991691d572fd14e97ae962ed7a9f4a955af572e162f57a956666e17ae1f54a95f566d54a66e16e4afd6a9f7ae1c5c55ae5d56afde916c5e94a6ec56695e14afde1148416e94ad57ac5146ed59d1cc5", "8008315ebf2e6fe020e8f5eb4d8a9a0675550c704b17d8c9ddc81a5cd6f7da34f2fe1b3db7cb3dfb9697102ea0f3c1fc2dbc873d44bceeae8e4442974ba21ff6789d3272613fb9631a7cf3f14bacbeb421633a90ffbe58c2fa6bdca534f10d0de0502ce1d531b6336e58878278531e5c22bc6c85bbd784d78d9e680aa19031aaf89101d669d7a3965c1f7e16229d7463e0535f4e253f5d18187d40b8ae0f564bd970b5e7e2adfb211e89a9535abace3f37f5a736f4be984bbffbedc1")]
@@ -120,7 +120,7 @@ namespace SharpSRTP.Tests
 
             var expectedSrtpBytes = Convert.FromHexString(expectedSrtp);
             Assert.IsTrue(result.AsSpan().SequenceEqual(expectedSrtpBytes),
-                $"SRTP ARIA-GCM output does not match expected value.\nExpected: {BitConverter.ToString(expectedSrtpBytes).Replace("-", "").ToLowerInvariant()}\nActual:   {BitConverter.ToString(result).Replace("-", "").ToLowerInvariant()}");
+                $"SRTP ARIA-GCM output does not match expected value.\nExpected: {BitConverter.ToString(expectedSrtpBytes)}\nActual:   {BitConverter.ToString(result)}");
         }
 
         [DataRow(ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_80, SrtpContextType.RTP, "e1f97a0d3e018be0d64fa32c06de4139", "0ec675ad498afeebb6960b3aabe6", "dbd85a3c4d9219b3e81f7d942e299de4", "d021877bd3eaf92d581ed70ddc050e03f1125703", "9700657f5f34161830d7d85f5dc8")]

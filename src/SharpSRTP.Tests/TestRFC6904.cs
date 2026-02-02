@@ -58,7 +58,7 @@ namespace SharpSRTP.Tests
 
             var expectedEncrypted = Convert.FromHexString(expectedEncryptedExtensions);
             Assert.IsTrue(encryptedExtensions.AsSpan().SequenceEqual(expectedEncrypted),
-                $"Encrypted RTP header extensions mismatch.\nExpected: {BitConverter.ToString(expectedEncrypted).Replace("-", "").ToLowerInvariant()}\nActual:   {BitConverter.ToString(encryptedExtensions).Replace("-", "").ToLowerInvariant()}");
+                $"Encrypted RTP header extensions mismatch.\nExpected: {BitConverter.ToString(expectedEncrypted)}\nActual:   {BitConverter.ToString(encryptedExtensions)}");
         }
     }
 }
