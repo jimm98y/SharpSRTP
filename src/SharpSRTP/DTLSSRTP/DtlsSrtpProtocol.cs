@@ -120,11 +120,14 @@ namespace SharpSRTP.DTLSSRTP
                SecurityParameters.server_random
                )[length]
              */
+            byte[] prfSeed = GC.AllocateUninitializedArray<byte>(dtlsSecurityParameters.ClientRandom.Length + dtlsSecurityParameters.ServerRandom.Length);
+            Buffer.BlockCopy(dtlsSecurityParameters.ClientRandom, 0, prfSeed, 0, dtlsSecurityParameters.ClientRandom.Length);
+            Buffer.BlockCopy(dtlsSecurityParameters.ServerRandom, 0, prfSeed, dtlsSecurityParameters.ClientRandom.Length, dtlsSecurityParameters.ServerRandom.Length);
             byte[] sharedSecret = TlsUtilities.Prf(
                 dtlsSecurityParameters,
                 dtlsSecurityParameters.MasterSecret,
                 ExporterLabel.dtls_srtp, // The exporter label for this usage is "EXTRACTOR-dtls_srtp"
-                dtlsSecurityParameters.ClientRandom.Concat(dtlsSecurityParameters.ServerRandom).ToArray(),
+                prfSeed,
                 sharedSecretLength
                 ).Extract();
 
@@ -135,42 +138,76 @@ namespace SharpSRTP.DTLSSRTP
         {
             var srtpSecurityParams = DtlsProtectionProfiles[protectionProfile];
 
-            if(sharedSecret == null)
+            if (sharedSecret == null)
             {
                 throw new ArgumentNullException(nameof(sharedSecret));
             }
 
             int sharedSecretLength = (2 * (srtpSecurityParams.CipherKeyLength + srtpSecurityParams.CipherSaltLength)) >> 3;
-            if(sharedSecret.Length < sharedSecretLength)
+            if (sharedSecret.Length < sharedSecretLength)
             {
                 throw new ArgumentException("Invalid shared secret length.", nameof(sharedSecret));
             }
 
-            DtlsSrtpKeys keys = new DtlsSrtpKeys(srtpSecurityParams, mki);
+            var cipherKeyLen = srtpSecurityParams.CipherKeyLength >> 3;
+            var cipherSaltLen = srtpSecurityParams.CipherSaltLength >> 3;
+
+
+            ReadOnlyMemory<byte> clientWriteMasterKey, clientWriteMasterSalt, serverWriteMasterKey, serverWriteMasterSalt;
 
             if (srtpSecurityParams.Cipher >= SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM)
             {
                 // we have to maintain separation of the inner and outer keys according to RFC8723
                 // <inner client key> <inner server key> <inner client salt> <inner server salt> | <outer client key> <outer server key> <outer client salt> <outer server salt>
-                Buffer.BlockCopy(sharedSecret, 0, keys.ClientWriteMasterKey, 0, keys.ClientWriteMasterKey.Length / 2); // inner
-                Buffer.BlockCopy(sharedSecret, sharedSecretLength / 2, keys.ClientWriteMasterKey, keys.ClientWriteMasterKey.Length / 2, keys.ClientWriteMasterKey.Length / 2); // outer
-                Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length / 2, keys.ServerWriteMasterKey, 0, keys.ServerWriteMasterKey.Length / 2); // inner
-                Buffer.BlockCopy(sharedSecret, sharedSecretLength / 2 + keys.ClientWriteMasterKey.Length / 2, keys.ServerWriteMasterKey, keys.ServerWriteMasterKey.Length / 2, keys.ServerWriteMasterKey.Length / 2); // outer
-                Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length / 2 + keys.ServerWriteMasterKey.Length / 2, keys.ClientWriteMasterSalt, 0, keys.ClientWriteMasterSalt.Length / 2); // inner
-                Buffer.BlockCopy(sharedSecret, sharedSecretLength / 2 + keys.ClientWriteMasterKey.Length / 2 + keys.ServerWriteMasterKey.Length / 2, keys.ClientWriteMasterSalt, keys.ClientWriteMasterSalt.Length / 2, keys.ClientWriteMasterSalt.Length / 2); // outer
-                Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length / 2 + keys.ServerWriteMasterKey.Length / 2 + keys.ClientWriteMasterSalt.Length / 2, keys.ServerWriteMasterSalt, 0, keys.ServerWriteMasterSalt.Length / 2); // inner
-                Buffer.BlockCopy(sharedSecret, sharedSecretLength / 2 + keys.ClientWriteMasterKey.Length / 2 + keys.ServerWriteMasterKey.Length / 2 + keys.ClientWriteMasterSalt.Length / 2, keys.ServerWriteMasterSalt, keys.ServerWriteMasterSalt.Length / 2, keys.ServerWriteMasterSalt.Length / 2); // outer
+                int halfKeyLen = cipherKeyLen / 2;
+                int halfSaltLen = cipherSaltLen / 2;
+                int halfSecret = sharedSecretLength / 2;
+
+                // ClientWriteMasterKey: inner + outer
+                var clientKey = new byte[cipherKeyLen];
+                Buffer.BlockCopy(sharedSecret, 0, clientKey, 0, halfKeyLen);
+                Buffer.BlockCopy(sharedSecret, halfSecret, clientKey, halfKeyLen, halfKeyLen);
+                clientWriteMasterKey = clientKey.AsMemory();
+
+                // ServerWriteMasterKey: inner + outer
+                var serverKey = new byte[cipherKeyLen];
+                Buffer.BlockCopy(sharedSecret, halfKeyLen, serverKey, 0, halfKeyLen);
+                Buffer.BlockCopy(sharedSecret, halfSecret + halfKeyLen, serverKey, halfKeyLen, halfKeyLen);
+                serverWriteMasterKey = serverKey.AsMemory();
+
+                // ClientWriteMasterSalt: inner + outer
+                var clientSalt = new byte[cipherSaltLen];
+                Buffer.BlockCopy(sharedSecret, 2 * halfKeyLen, clientSalt, 0, halfSaltLen);
+                Buffer.BlockCopy(sharedSecret, halfSecret + 2 * halfKeyLen, clientSalt, halfSaltLen, halfSaltLen);
+                clientWriteMasterSalt = clientSalt.AsMemory();
+
+                // ServerWriteMasterSalt: inner + outer
+                var serverSalt = new byte[cipherSaltLen];
+                Buffer.BlockCopy(sharedSecret, 2 * halfKeyLen + halfSaltLen, serverSalt, 0, halfSaltLen);
+                Buffer.BlockCopy(sharedSecret, halfSecret + 2 * halfKeyLen + halfSaltLen, serverSalt, halfSaltLen, halfSaltLen);
+                serverWriteMasterSalt = serverSalt.AsMemory();
             }
             else
             {
                 // <client key> <server key> <client salt> <server salt>
-                Buffer.BlockCopy(sharedSecret, 0, keys.ClientWriteMasterKey, 0, keys.ClientWriteMasterKey.Length);
-                Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length, keys.ServerWriteMasterKey, 0, keys.ServerWriteMasterKey.Length);
-                Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length + keys.ServerWriteMasterKey.Length, keys.ClientWriteMasterSalt, 0, keys.ClientWriteMasterSalt.Length);
-                Buffer.BlockCopy(sharedSecret, keys.ClientWriteMasterKey.Length + keys.ServerWriteMasterKey.Length + keys.ClientWriteMasterSalt.Length, keys.ServerWriteMasterSalt, 0, keys.ServerWriteMasterSalt.Length);
+                int offset = 0;
+                clientWriteMasterKey = sharedSecret.AsMemory(offset, cipherKeyLen);
+                offset += cipherKeyLen;
+                serverWriteMasterKey = sharedSecret.AsMemory(offset, cipherKeyLen);
+                offset += cipherKeyLen;
+                clientWriteMasterSalt = sharedSecret.AsMemory(offset, cipherSaltLen);
+                offset += cipherSaltLen;
+                serverWriteMasterSalt = sharedSecret.AsMemory(offset, cipherSaltLen);
             }
 
-            return keys;
+            var k = new DtlsSrtpKeys(
+                srtpSecurityParams,
+                clientWriteMasterKey,
+                clientWriteMasterSalt,
+                serverWriteMasterKey,
+                serverWriteMasterSalt,
+                mki == null ? default : mki.AsMemory());
+            return k;
         }
 
         public static byte[] GenerateMki(int length)

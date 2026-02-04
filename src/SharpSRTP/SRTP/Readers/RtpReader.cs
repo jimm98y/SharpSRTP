@@ -19,28 +19,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
-using System.Linq;
+using System;
 
 namespace SharpSRTP.SRTP.Readers
 {
     public static class RtpReader
     {
-        public static uint ReadSsrc(byte[] rtpPacket)
+        public static uint ReadSsrc(ReadOnlySpan<byte> rtpPacket)
         {
-            return (uint)((rtpPacket[8] << 24) | (rtpPacket[9] << 16) | (rtpPacket[10] << 8) | rtpPacket[11]);
+            return System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(rtpPacket.Slice(8, 4));
         }
 
-        public static ushort ReadSequenceNumber(byte[] rtpPacket)
+        public static ushort ReadSequenceNumber(ReadOnlySpan<byte> rtpPacket)
         {
-            return (ushort)((rtpPacket[2] << 8) | rtpPacket[3]);
+            return System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(rtpPacket.Slice(2, 2));
         }
 
-        public static int ReadHeaderLen(byte[] payload)
+        public static int ReadHeaderLen(ReadOnlySpan<byte> payload)
         {
             return ReadHeaderLenWithoutExtensions(payload) + ReadExtensionsLength(payload);
         }
 
-        public static int ReadExtensionsLength(byte[] payload)
+        public static int ReadExtensionsLength(ReadOnlySpan<byte> payload)
         {
             int length = ReadHeaderLenWithoutExtensions(payload);
             if ((payload[0] & 0x10) == 0x10)
@@ -53,16 +53,16 @@ namespace SharpSRTP.SRTP.Readers
             }
         }
 
-        public static int ReadHeaderLenWithoutExtensions(byte[] payload)
+        public static int ReadHeaderLenWithoutExtensions(ReadOnlySpan<byte> payload)
         {
             return 12 + 4 * (payload[0] & 0xf);
         }
 
-        public static byte[] ReadHeaderExtensions(byte[] payload)
+        public static byte[] ReadHeaderExtensions(ReadOnlySpan<byte> payload)
         {
             int length = ReadHeaderLenWithoutExtensions(payload);
             int extLen = ReadExtensionsLength(payload);
-            return payload.Skip(length).Take(extLen).ToArray();
+            return payload.Slice(length, extLen).ToArray();
         }
     }
 }

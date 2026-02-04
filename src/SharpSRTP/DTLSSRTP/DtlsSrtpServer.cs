@@ -27,7 +27,6 @@ using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace SharpSRTP.DTLSSRTP
 {
@@ -97,15 +96,27 @@ namespace SharpSRTP.DTLSSRTP
 
             UseSrtpData clientSrtpExtension = TlsSrtpUtilities.GetUseSrtpExtension(clientExtensions);
 
+            // Choose the highest priority profile supported by the server
             int[] serverSupportedProfiles = GetSupportedProtectionProfiles();
-            int[] mutuallySupportedProfiles = clientSrtpExtension.ProtectionProfiles.Where(x => serverSupportedProfiles.Contains(x)).ToArray();
-            if (mutuallySupportedProfiles.Length == 0)
+            bool found = false;
+            int selectedProfile = int.MinValue;
+            int minIndex = int.MaxValue;
+            for (int i = 0; i < clientSrtpExtension.ProtectionProfiles.Length; i++)
+            {
+                int val = clientSrtpExtension.ProtectionProfiles[i];
+                int idx = Array.IndexOf(serverSupportedProfiles, val);
+                if (idx >= 0 && idx < minIndex)
+                {
+                    minIndex = idx;
+                    selectedProfile = val;
+                    found = true;
+                }
+            }
+            if (!found)
             {
                 throw new TlsFatalAlert(AlertDescription.internal_error);
             }
-
-            int selectedProfile = mutuallySupportedProfiles.OrderBy(x => Array.IndexOf(serverSupportedProfiles, x)).First(); // Choose the highest priority profile supported by the server
-            _srtpData = new UseSrtpData(new int[] { selectedProfile }, ForceDisableMKI ? new byte[0] : clientSrtpExtension.Mki); // Server must return only a single selected profile
+            _srtpData = new UseSrtpData(new int[] { selectedProfile }, ForceDisableMKI ? Array.Empty<byte>() : clientSrtpExtension.Mki); // Server must return only a single selected profile
         }
 
         public override IDictionary<int, byte[]> GetServerExtensions()
