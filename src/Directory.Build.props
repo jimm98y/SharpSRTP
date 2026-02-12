@@ -17,6 +17,7 @@
 		<FileVersion>$(Version)</FileVersion>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Description>DTLS, DTLS-SRTP, SRTP/SRTCP client and server written in C#.</Description>
+		<LangVersion>14.0</LangVersion>
 	</PropertyGroup>
 	
 	<ItemGroup>

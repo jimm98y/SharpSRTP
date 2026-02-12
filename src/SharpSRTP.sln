@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DtlsSrtpServerSample", "Dtl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DtlsSrtpClientSample", "DtlsSrtpClientSample\DtlsSrtpClientSample.csproj", "{F76EADBF-2BC8-4493-8C61-357D41A0990C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSRTP.Benchmarks", "SharpSRTP.Benchmarks\SharpSRTP.Benchmarks.csproj", "{B0AB2A27-9869-2EFF-18C3-16E49905391B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{F76EADBF-2BC8-4493-8C61-357D41A0990C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F76EADBF-2BC8-4493-8C61-357D41A0990C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F76EADBF-2BC8-4493-8C61-357D41A0990C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0AB2A27-9869-2EFF-18C3-16E49905391B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0AB2A27-9869-2EFF-18C3-16E49905391B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0AB2A27-9869-2EFF-18C3-16E49905391B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0AB2A27-9869-2EFF-18C3-16E49905391B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

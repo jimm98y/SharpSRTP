@@ -22,6 +22,7 @@
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
+using System.Buffers.Binary;
 
 namespace SharpSRTP.SRTP.Encryption
 {
@@ -29,32 +30,54 @@ namespace SharpSRTP.SRTP.Encryption
     {
         public static void Encrypt(IAeadBlockCipher engine, bool encrypt, byte[] payload, int offset, int length, byte[] iv, byte[] K_e, int N_tag, byte[] associatedData)
         {
+            Encrypt(engine, encrypt, payload, offset, length, iv, new KeyParameter(K_e), N_tag, associatedData);
+        }
+
+        public static void Encrypt(IAeadBlockCipher engine, bool encrypt, byte[] payload, int offset, int length, byte[] iv, KeyParameter K_e, int N_tag, byte[] associatedData)
+        {
             int payloadSize = length - offset;
 
-            var parameters = new AeadParameters(new KeyParameter(K_e), N_tag << 3, iv, associatedData);
+            var parameters = new AeadParameters(K_e, N_tag << 3, iv, associatedData);
             engine.Init(encrypt, parameters);
 
             int len = engine.ProcessBytes(payload, offset, payloadSize, payload, offset);
-            
+
             // throws when the MAC fails to match
             engine.DoFinal(payload, offset + len);
         }
 
-        public static byte[] GenerateMessageKeyIV(byte[] k_s, uint ssrc, ulong index)
+        public static byte[] GenerateMessageKeyIV(ReadOnlySpan<byte> k_s, uint ssrc, ulong index)
         {
-            byte[] iv = new byte[12];
-            Buffer.BlockCopy(k_s, 0, iv, 0, 12);
+            byte[] iv = GC.AllocateUninitializedArray<byte>(12);
+            k_s.Slice(0, 12).CopyTo(iv);
 
-            iv[2] ^= (byte)((ssrc >> 24) & 0xFF);
-            iv[3] ^= (byte)((ssrc >> 16) & 0xFF);
-            iv[4] ^= (byte)((ssrc >> 8) & 0xFF);
-            iv[5] ^= (byte)(ssrc & 0xFF);
-            iv[6] ^= (byte)((index >> 40) & 0xFF);
-            iv[7] ^= (byte)((index >> 32) & 0xFF);
-            iv[8] ^= (byte)((index >> 24) & 0xFF);
-            iv[9] ^= (byte)((index >> 16) & 0xFF);
-            iv[10] ^= (byte)((index >> 8) & 0xFF);
-            iv[11] ^= (byte)(index & 0xFF);
+            // XOR ssrc at offset 2 (3 bytes for 48-bit index)
+            var ssrcSpan = iv.AsSpan(2, 4);
+            BinaryPrimitives.WriteUInt32BigEndian(ssrcSpan,
+                BinaryPrimitives.ReadUInt32BigEndian(ssrcSpan) ^ ssrc);
+
+            // XOR index at offset 6 (6 bytes for 48-bit index)
+            var indexSpan = iv.AsSpan(4, 8);
+            BinaryPrimitives.WriteUInt64BigEndian(indexSpan,
+                BinaryPrimitives.ReadUInt64BigEndian(indexSpan) ^ (index & 0x0000_FFFF_FFFF_FFFF));
+
+            return iv;
+        }
+
+        public static byte[] GenerateMessageKeyIV(ArraySegment<byte> k_s, uint ssrc, ulong index)
+        {
+            byte[] iv = GC.AllocateUninitializedArray<byte>(12);
+            Buffer.BlockCopy(k_s.Array, k_s.Offset, iv, 0, 12);
+
+            // XOR ssrc at offset 2 (3 bytes for 48-bit index)
+            var ssrcSpan = iv.AsSpan(2, 4);
+            BinaryPrimitives.WriteUInt32BigEndian(ssrcSpan,
+                BinaryPrimitives.ReadUInt32BigEndian(ssrcSpan) ^ ssrc);
+
+            // XOR index at offset 6 (6 bytes for 48-bit index)
+            var indexSpan = iv.AsSpan(4, 8);
+            BinaryPrimitives.WriteUInt64BigEndian(indexSpan,
+                BinaryPrimitives.ReadUInt64BigEndian(indexSpan) ^ (index & 0x0000_FFFF_FFFF_FFFF));
 
             return iv;
         }
