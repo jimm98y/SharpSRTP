@@ -53,7 +53,7 @@ internal sealed class Config : ManualConfig
     {
         public IEnumerable<BenchmarkCase> GetExecutionOrder(
             ImmutableArray<BenchmarkCase> benchmarksCase,
-            IEnumerable<BenchmarkLogicalGroupRule>? order = null)
+            IEnumerable<BenchmarkLogicalGroupRule> order = null)
             => benchmarksCase;
 
         public IEnumerable<BenchmarkCase> GetSummaryOrder(
@@ -64,15 +64,15 @@ internal sealed class Config : ManualConfig
                 .ThenBy(b => b.Job.Environment.Runtime?.Name)
                 .ThenBy(b => b.Job.DisplayInfo);
 
-        public string? GetHighlightGroupKey(BenchmarkCase benchmarkCase) => null;
+        public string GetHighlightGroupKey(BenchmarkCase benchmarkCase) => null;
 
-        public string? GetLogicalGroupKey(
+        public string GetLogicalGroupKey(
             ImmutableArray<BenchmarkCase> allBenchmarksCases,
             BenchmarkCase benchmarkCase) => null;
 
         public IEnumerable<IGrouping<string, BenchmarkCase>> GetLogicalGroupOrder(
             IEnumerable<IGrouping<string, BenchmarkCase>> logicalGroups,
-            IEnumerable<BenchmarkLogicalGroupRule>? order = null)
+            IEnumerable<BenchmarkLogicalGroupRule> order = null)
             => logicalGroups;
 
         public bool SeparateLogicalGroups => false;
