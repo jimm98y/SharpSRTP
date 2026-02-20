@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
+using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Macs;
@@ -51,7 +52,7 @@ namespace SharpSRTP.Tests
             byte[] k_s = Convert.FromHexString(sk_s);
             ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
 
-            AesEngine aes = new AesEngine();
+            IBlockCipher aes = AesUtilities.CreateEngine();
             byte[] iv = CTR.GenerateMessageKeyIV(k_s, ssrc, index);
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
 
@@ -112,7 +113,7 @@ namespace SharpSRTP.Tests
             ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
             byte[] iv = CTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
 
-            var aes = new AesEngine();
+            var aes = AesUtilities.CreateEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
 
             var hmac = new HMac(new Sha1Digest());
@@ -161,7 +162,7 @@ namespace SharpSRTP.Tests
             int offset = RtcpReader.GetHeaderLen();
             byte[] iv = CTR.GenerateMessageKeyIV(context.K_s, ssrc, S_l);
 
-            var aes = new AesEngine();
+            var aes = AesUtilities.CreateEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
 
             var hmac = new HMac(new Sha1Digest());
@@ -196,7 +197,7 @@ namespace SharpSRTP.Tests
             int offset = RtpReader.ReadHeaderLen(rtpBytes);
             ulong index = ((ulong)roc << 16) | sequenceNumber;
 
-            AesEngine aes = new AesEngine();
+            IBlockCipher aes = AesUtilities.CreateEngine();
             byte[] iv = F8.GenerateRtpMessageKeyIV(aes, k_e, k_s, rtpBytes, roc);
 
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));

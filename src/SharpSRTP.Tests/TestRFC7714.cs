@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
+using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using SharpSRTP.DTLSSRTP;
@@ -75,7 +76,7 @@ namespace SharpSRTP.Tests
             byte[] result = new byte[rtpBytes.Length + n_tag];
             Buffer.BlockCopy(rtpBytes, 0, result, 0, rtpBytes.Length);
 
-            var cipher = new GcmBlockCipher(new AesEngine());
+            var cipher = new GcmBlockCipher(AesUtilities.CreateEngine());
             byte[] associatedData = new byte[offset];
             Buffer.BlockCopy(result, 0, associatedData, 0, offset);
             AEAD.Encrypt(cipher, true, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
@@ -104,7 +105,7 @@ namespace SharpSRTP.Tests
 
             byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
 
-            var cipher = new GcmBlockCipher(new AesEngine());
+            var cipher = new GcmBlockCipher(AesUtilities.CreateEngine());
             byte[] associatedData = new byte[offset];
             Buffer.BlockCopy(srtpBytes, 0, associatedData, 0, offset);
             AEAD.Encrypt(cipher, false, srtpBytes, offset, srtpBytes.Length, iv, k_e, n_tag, associatedData);
@@ -147,7 +148,7 @@ namespace SharpSRTP.Tests
             byte[] srtcp = new byte[rtcpBytes.Length + n_tag + 4];
             Buffer.BlockCopy(rtcpBytes, 0, srtcp, 0, rtcpBytes.Length);
 
-            var cipher = new GcmBlockCipher(new AesEngine());
+            var cipher = new GcmBlockCipher(AesUtilities.CreateEngine());
             uint index = idx | SrtpContext.E_FLAG;
             byte[] associatedData = new byte[offset + 4];
             Buffer.BlockCopy(srtcp, 0, associatedData, 0, offset);
@@ -186,7 +187,7 @@ namespace SharpSRTP.Tests
 
             byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
 
-            var cipher = new GcmBlockCipher(new AesEngine());
+            var cipher = new GcmBlockCipher(AesUtilities.CreateEngine());
             byte[] associatedData = new byte[offset + 4];
             Buffer.BlockCopy(srtcpBytes, 0, associatedData, 0, offset);
             Buffer.BlockCopy(srtcpBytes, srtcpBytes.Length - 4, associatedData, offset, 4);
