@@ -272,7 +272,7 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM:
                 case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
                     {
-                        var aesKeys = new AesEngine();
+                        var aesKeys = AesUtilities.CreateEngine();
                         this.K_e = GenerateSessionKey(aesKeys, Cipher, MasterKey, MasterSalt, N_e, labelBaseValue + 0, index, KeyDerivationRate);
                         this.K_a = GenerateSessionKey(aesKeys, Cipher, MasterKey, MasterSalt, N_a, labelBaseValue + 1, index, KeyDerivationRate);
                         this.K_s = GenerateSessionKey(aesKeys, Cipher, MasterKey, MasterSalt, N_s, labelBaseValue + 2, index, KeyDerivationRate);
@@ -281,37 +281,37 @@ namespace SharpSRTP.SRTP
 
                         if (Cipher >= SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM)
                         {
-                            var aesPayload = new AesEngine();
+                            var aesPayload = AesUtilities.CreateEngine();
                             aesPayload.Init(true, new KeyParameter(K_e, K_e.Length / 2, K_e.Length / 2));
                             this.PayloadCTR = aesPayload;
 
-                            var aesHeader = new AesEngine();
+                            var aesHeader = AesUtilities.CreateEngine();
                             aesHeader.Init(true, new KeyParameter(K_he, K_he.Length / 2, K_he.Length / 2));
                             this.HeaderCTR = aesHeader;
                         }
                         else
                         {
-                            var aesPayload = new AesEngine();
+                            var aesPayload = AesUtilities.CreateEngine();
                             aesPayload.Init(true, new KeyParameter(K_e));
                             this.PayloadCTR = aesPayload;
 
-                            var aesHeader = new AesEngine();
+                            var aesHeader = AesUtilities.CreateEngine();
                             aesHeader.Init(true, new KeyParameter(K_he));
                             this.HeaderCTR = aesHeader;
                         }
 
                         if (Cipher == SrtpCiphers.AES_128_F8)
                         {
-                            this.PayloadF8 = new AesEngine();
-                            this.HeaderF8 = new AesEngine();
+                            this.PayloadF8 = AesUtilities.CreateEngine();
+                            this.HeaderF8 = AesUtilities.CreateEngine();
                         }
                         else if (Cipher == SrtpCiphers.AEAD_AES_128_GCM || Cipher == SrtpCiphers.AEAD_AES_256_GCM)
                         {
-                            this.PayloadAEAD = new GcmBlockCipher(new AesEngine());
+                            this.PayloadAEAD = new GcmBlockCipher(AesUtilities.CreateEngine());
                         }
                         else if (Cipher == SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM || Cipher == SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM)
                         {
-                            this.PayloadAEAD = new GcmBlockCipher(new AesEngine());
+                            this.PayloadAEAD = new GcmBlockCipher(AesUtilities.CreateEngine());
                         }
                     }
                     break;

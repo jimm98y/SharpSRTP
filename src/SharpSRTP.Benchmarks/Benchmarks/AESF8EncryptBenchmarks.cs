@@ -33,7 +33,7 @@ namespace SharpSRTP.Benchmarks
         [IterationSetup]
         public void IterationSetup()
         {
-            aes = new AesEngine(); //AesUtilities.CreateEngine();
+            aes = AesUtilities.CreateEngine();
             rtpBytes = new byte[rtpBytesSource.Length];
             Buffer.BlockCopy(rtpBytesSource, 0, rtpBytes, 0, rtpBytesSource.Length);
 
