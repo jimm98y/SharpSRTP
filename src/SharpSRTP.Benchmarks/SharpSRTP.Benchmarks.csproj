@@ -10,6 +10,10 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(LibVersion)' != ''">
+    <DefineConstants>$(DefineConstants);LibVersion;LibVersion_$(LibVersion.Replace('.', '_'))</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\SharpSRTP.Tests\PolyfillExtensions.cs" Link="PolyfillExtensions.cs" />
   </ItemGroup>

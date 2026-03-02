@@ -50,6 +50,22 @@ internal static partial class PolyfillExtensions
             return new ArraySegment<T>(source.Array, source.Offset + index, count);
         }
     }
+
+    extension (byte[] bytes)
+    {
+        public void CopyTo(Span<byte> destination)
+        {
+            if (bytes == null)
+            {
+                throw new ArgumentNullException(nameof(bytes));
+            }
+            if (destination.Length < bytes.Length)
+            {
+                throw new ArgumentException("Destination span is too small.", nameof(destination));
+            }
+            bytes.AsSpan().CopyTo(destination);
+        }
+    }
 #endif
 
     public static ArraySegment<T> AsArraySegment<T>(this T[] array) => array != null ? new ArraySegment<T>(array) : default(ArraySegment<T>);

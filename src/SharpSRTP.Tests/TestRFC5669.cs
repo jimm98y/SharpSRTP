@@ -110,7 +110,8 @@ namespace SharpSRTP.Tests
 
             int offset = RtpReader.ReadHeaderLen(rtpBytes);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            byte[] iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(k_s, ssrc, index, iv);
 
             byte[] result = new byte[rtpBytes.Length + n_tag];
             Buffer.BlockCopy(rtpBytes, 0, result, 0, rtpBytes.Length);
@@ -141,7 +142,8 @@ namespace SharpSRTP.Tests
 
             int offset = RtpReader.ReadHeaderLen(rtpBytes);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            var iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(k_s, ssrc, index, iv);
 
             byte[] result = new byte[rtpBytes.Length + n_tag];
             Buffer.BlockCopy(rtpBytes, 0, result, 0, rtpBytes.Length);

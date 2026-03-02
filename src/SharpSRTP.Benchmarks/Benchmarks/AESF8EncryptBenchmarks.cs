@@ -48,7 +48,16 @@ namespace SharpSRTP.Benchmarks
         {
             int offset = RtpReader.ReadHeaderLen(rtpBytesSource);
 
-            byte[] iv = F8.GenerateRtpMessageKeyIV(aes, k_e, k_s, rtpBytesSource, roc);
+#if LibVersion
+            var iv = F8.GenerateRtpMessageKeyIV(aes, k_e, k_s, rtpBytesSource, roc);
+#else
+#if NET8_0_OR_GREATER
+            Span<byte> iv = stackalloc byte[F8.BLOCK_SIZE];
+#else
+            var iv = new byte[F8.BLOCK_SIZE];
+#endif
+            F8.GenerateRtpMessageKeyIV(aes, k_e, k_s, rtpBytesSource, roc, iv);
+#endif
 
             aes.Init(true, new KeyParameter(k_e));
             F8.Encrypt(aes, rtpBytesSource, offset, rtpBytesSource.Length, iv);
