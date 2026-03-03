@@ -53,7 +53,8 @@ namespace SharpSRTP.Tests
             ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
 
             IBlockCipher aes = AesUtilities.CreateEngine();
-            byte[] iv = CTR.GenerateMessageKeyIV(k_s, ssrc, index);
+            byte[] iv = new byte[CTR.BLOCK_SIZE];
+            CTR.GenerateMessageKeyIV(k_s, ssrc, index, iv);
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
 
             iv[14] = (byte)((i >> 8) & 0xff);
@@ -111,7 +112,8 @@ namespace SharpSRTP.Tests
 
             uint roc = 0;
             ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
-            byte[] iv = CTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
+            byte[] iv = new byte[CTR.BLOCK_SIZE];
+            CTR.GenerateMessageKeyIV(context.K_s, ssrc, index, iv);
 
             var aes = AesUtilities.CreateEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
@@ -119,7 +121,7 @@ namespace SharpSRTP.Tests
             var hmac = new HMac(new Sha1Digest());
             hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_a));
 
-            CTR.Encrypt(aes, payload, offset, length, iv);
+            CTR.Encrypt(aes, payload.AsSpan(offset, length - offset), payload.AsSpan(offset, length - offset), iv);
 
             payload[length + 0] = (byte)(roc >> 24);
             payload[length + 1] = (byte)(roc >> 16);
@@ -127,7 +129,11 @@ namespace SharpSRTP.Tests
             payload[length + 3] = (byte)roc;
 
             int n_tag = protectionProfile.AuthTagLength >> 3;
-            byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
+#if NET8_0_OR_GREATER
+            byte[] auth = HMAC.GenerateAuthTag(hmac, payload.AsSpan(0, length + 4));
+#else
+            byte[] auth = HMAC.GenerateAuthTag(hmac, new ArraySegment<byte>(payload, 0, length + 4));
+#endif
             System.Buffer.BlockCopy(auth, 0, payload, length, n_tag); // we don't append ROC in SRTP
             var result = new byte[length + n_tag];
             Buffer.BlockCopy(payload, 0, result, 0, length + n_tag);
@@ -160,7 +166,8 @@ namespace SharpSRTP.Tests
             uint index = S_l | SrtpContext.E_FLAG;
 
             int offset = RtcpReader.GetHeaderLen();
-            byte[] iv = CTR.GenerateMessageKeyIV(context.K_s, ssrc, S_l);
+            byte[] iv = new byte[CTR.BLOCK_SIZE];
+            CTR.GenerateMessageKeyIV(context.K_s, ssrc, S_l, iv);
 
             var aes = AesUtilities.CreateEngine();
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_e));
@@ -168,7 +175,7 @@ namespace SharpSRTP.Tests
             var hmac = new HMac(new Sha1Digest());
             hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(context.K_a));
 
-            CTR.Encrypt(aes, payload, offset, length, iv);
+            CTR.Encrypt(aes, payload.AsSpan(offset, length - offset), payload.AsSpan(offset, length - offset), iv);
 
             payload[length + 0] = (byte)(index >> 24);
             payload[length + 1] = (byte)(index >> 16);
@@ -176,7 +183,11 @@ namespace SharpSRTP.Tests
             payload[length + 3] = (byte)index;
 
             int n_tag = protectionProfile.AuthTagLength >> 3;
-            byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
+#if NET8_0_OR_GREATER
+            byte[] auth = HMAC.GenerateAuthTag(hmac, payload.AsSpan(0, length + 4));
+#else
+            byte[] auth = HMAC.GenerateAuthTag(hmac, new ArraySegment<byte>(payload, 0, length + 4));
+#endif
             System.Buffer.BlockCopy(auth, 0, payload, length + 4, n_tag); // we don't append ROC in SRTP
             var result = new byte[length + 4 + n_tag];
             Buffer.BlockCopy(payload, 0, result, 0, length + 4 + n_tag);
@@ -202,7 +213,7 @@ namespace SharpSRTP.Tests
             F8.GenerateRtpMessageKeyIV(aes, k_e, k_s, rtpBytes, roc, iv);
 
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
-            F8.Encrypt(aes, rtpBytes, offset, rtpBytes.Length, iv);
+            F8.Encrypt(aes, rtpBytes.AsSpan(offset, rtpBytes.Length - offset), rtpBytes.AsSpan(offset, rtpBytes.Length - offset), iv);
 
             Assert.IsTrue(Convert.FromHexString(expectedSrtp).AsSpan().SequenceEqual(rtpBytes));
         }

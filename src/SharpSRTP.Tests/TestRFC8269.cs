@@ -1,4 +1,4 @@
-﻿// SharpSRTP
+// SharpSRTP
 // Copyright (C) 2025 Lukas Volf
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -63,7 +63,8 @@ namespace SharpSRTP.Tests
             uint roc = 0;
             ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
 
-            byte[] iv = CTR.GenerateMessageKeyIV(bk_s, ssrc, index);
+            byte[] iv = new byte[CTR.BLOCK_SIZE];
+            CTR.GenerateMessageKeyIV(bk_s, ssrc, index, iv);
 
             var aria = new AriaEngine();
             aria.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(bk_e));
@@ -71,7 +72,7 @@ namespace SharpSRTP.Tests
             var hmac = new HMac(new Sha1Digest());
             hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(bk_a));
 
-            CTR.Encrypt(aria, payload, offset, length, iv);
+            CTR.Encrypt(aria, payload.AsSpan(offset, length - offset), payload.AsSpan(offset, length - offset), iv);
 
             payload[length + 0] = (byte)(roc >> 24);
             payload[length + 1] = (byte)(roc >> 16);
@@ -79,7 +80,11 @@ namespace SharpSRTP.Tests
             payload[length + 3] = (byte)roc;
 
             int n_tag = protectionProfile.AuthTagLength >> 3;
-            byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
+#if NET8_0_OR_GREATER
+            byte[] auth = HMAC.GenerateAuthTag(hmac, payload.AsSpan(0, length + 4));
+#else
+            byte[] auth = HMAC.GenerateAuthTag(hmac, new ArraySegment<byte>(payload, 0, length + 4));
+#endif
             System.Buffer.BlockCopy(auth, 0, payload, length, n_tag); // we don't append ROC in SRTP
             var result = new byte[length + n_tag];
             Buffer.BlockCopy(payload, 0, result, 0, length + n_tag);
@@ -115,7 +120,7 @@ namespace SharpSRTP.Tests
             var cipher = new GcmBlockCipher(new AriaEngine());
             byte[] associatedData = new byte[offset];
             Buffer.BlockCopy(result, 0, associatedData, 0, offset);
-            AEAD.Encrypt(cipher, true, result, offset, rtpBytes.Length, iv, bk_e, n_tag, associatedData);
+            AEAD.Encrypt(cipher, true, result.Slice(offset, rtpBytes.Length - offset), result.Slice(offset), iv, bk_e, n_tag, associatedData.AsArraySegment());
 
             var expectedSrtpBytes = Convert.FromHexString(expectedSrtp);
             Assert.IsTrue(result.AsSpan().SequenceEqual(expectedSrtpBytes),

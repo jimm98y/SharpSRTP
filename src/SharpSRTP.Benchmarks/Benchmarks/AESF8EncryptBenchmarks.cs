@@ -48,7 +48,7 @@ namespace SharpSRTP.Benchmarks
         {
             int offset = RtpReader.ReadHeaderLen(rtpBytesSource);
 
-#if LibVersion
+#if LibVersion && !LibVersion_0_4_0
             var iv = F8.GenerateRtpMessageKeyIV(aes, k_e, k_s, rtpBytesSource, roc);
 #else
 #if NET8_0_OR_GREATER
@@ -60,7 +60,11 @@ namespace SharpSRTP.Benchmarks
 #endif
 
             aes.Init(true, new KeyParameter(k_e));
+#if LibVersion || LibVersion_0_4_0
             F8.Encrypt(aes, rtpBytesSource, offset, rtpBytesSource.Length, iv);
+#else
+            F8.Encrypt(aes, rtpBytesSource.AsSpan(offset, rtpBytesSource.Length - offset), rtpBytesSource.AsSpan(offset, rtpBytesSource.Length - offset), iv);
+#endif
         }
     }
 }

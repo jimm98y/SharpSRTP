@@ -27,9 +27,17 @@ using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using SharpSRTP.SRTP.Readers;
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Threading;
+#if NET8_0_OR_GREATER
+using ReadOnlyBytes = System.ReadOnlySpan<byte>;
+using Bytes = System.Span<byte>;
+#else
+using ReadOnlyBytes = System.ArraySegment<byte>;
+using Bytes = byte[];
+#endif
 
 namespace SharpSRTP.SRTP
 {
@@ -258,7 +266,7 @@ namespace SharpSRTP.SRTP
 
         public virtual void DeriveSessionKeys(ulong index = 0)
         {
-            int labelBaseValue = _contextType == SrtpContextType.RTP ? 0 : 3;
+            var labelBaseValue = _contextType == SrtpContextType.RTP ? 0 : 3;
 
             switch (Cipher)
             {
@@ -398,7 +406,7 @@ namespace SharpSRTP.SRTP
 
         public static byte[] GenerateSessionKey(IBlockCipher engineKeys, SrtpCiphers cipher, ReadOnlyMemory<byte> masterKey, ReadOnlyMemory<byte> masterSalt, int length, int label, ulong index, ulong kdr)
         {
-            byte[] key = GC.AllocateUninitializedArray<byte>(length);
+            var key = GC.AllocateUninitializedArray<byte>(length);
             switch (cipher)
             {
                 case SrtpCiphers.NULL:
@@ -423,7 +431,7 @@ namespace SharpSRTP.SRTP
                         var iv = new byte[Encryption.CTR.BLOCK_SIZE];
 #endif
                         Encryption.CTR.GenerateSessionKeyIV(masterSalt, index, kdr, (byte)label, iv);
-                        Encryption.CTR.Encrypt(engineKeys, key, 0, length, iv);
+                        Encryption.CTR.Encrypt(engineKeys, key, key, iv);
                     }
                     break;
 
@@ -441,7 +449,8 @@ namespace SharpSRTP.SRTP
 #endif
                         Encryption.CTR.GenerateSessionKeyIV(innerSalt, index, kdr, (byte)label, innerIv);
                         engineKeys.Init(true, KeyParameter.Create(innerKey));
-                        Encryption.CTR.Encrypt(engineKeys, key, 0, key.Length / 2, innerIv);
+                        var halfLen = key.Length / 2;
+                        Encryption.CTR.Encrypt(engineKeys, key.AsSpan(0, halfLen), key.AsSpan(0, halfLen), innerIv);
 
                         var outerSalt = masterSalt.Slice(masterSalt.Length / 2);
                         var outerKey = masterKey.Slice(masterKey.Length / 2);
@@ -452,7 +461,7 @@ namespace SharpSRTP.SRTP
 #endif
                         Encryption.CTR.GenerateSessionKeyIV(outerSalt, index, kdr, (byte)label, outerIv);
                         engineKeys.Init(true, KeyParameter.Create(outerKey));
-                        Encryption.CTR.Encrypt(engineKeys, key, key.Length / 2, key.Length, outerIv);
+                        Encryption.CTR.Encrypt(engineKeys, key.AsSpan(halfLen), key.AsSpan(halfLen), outerIv);
                     }
                     break;
 
@@ -470,18 +479,21 @@ namespace SharpSRTP.SRTP
             return rtpLen + mki.Length + context.N_tag + (Cipher >= SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM ? 1 : 0);
         }
 
-        public virtual int ProtectRtp(byte[] payload, int length, out int outputBufferLength)
+        public virtual int ProtectRtp(ReadOnlyBytes input, Bytes output, out int outputBufferLength)
         {
             var context = this;
+            var length = input.Length;
 
-            if (payload == null)
+#if !NET8_0_OR_GREATER
+            if (output == null)
             {
-                throw new ArgumentNullException(nameof(payload));
+                throw new ArgumentNullException(nameof(output));
             }
+#endif
 
-            if (payload.Length < CalculateRequiredSrtpPayloadLength(length))
+            if (output.Length < CalculateRequiredSrtpPayloadLength(length))
             {
-                throw new ArgumentOutOfRangeException($"{nameof(ProtectRtp)} failed, {nameof(payload)} buffer is too small!");
+                throw new ArgumentOutOfRangeException($"{nameof(ProtectRtp)} failed, {nameof(output)} buffer is too small!");
             }
 
             if (!context.IncrementMasterKeyUseCounter())
@@ -490,36 +502,38 @@ namespace SharpSRTP.SRTP
                 return ERROR_MASTER_KEY_ROTATION_REQUIRED;
             }
 
-            uint ssrc = RtpReader.ReadSsrc(payload);
-            ushort sequenceNumber = RtpReader.ReadSequenceNumber(payload);
-            int offset = RtpReader.ReadHeaderLen(payload);
-            uint roc = context.Roc;
-            ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
+            var ssrc = RtpReader.ReadSsrc(input);
+            var sequenceNumber = RtpReader.ReadSequenceNumber(input);
+            var offset = RtpReader.ReadHeaderLen(input);
+            var roc = context.Roc;
+            var index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
+
+            // copy header from input to output
+            input.Slice(0, offset).CopyTo(output.Slice(0, offset));
 
             // RFC6904
-            byte[] rtpExtensionsMask = RtpHeaderExtensionsEncryptionMask;
+            var rtpExtensionsMask = RtpHeaderExtensionsEncryptionMask;
             if (rtpExtensionsMask != null && rtpExtensionsMask.Length > 0)
             {
-                int rtpExtensionsOffset = RtpReader.ReadHeaderLenWithoutExtensions(payload) + 4; // 4 bytes of "defined by profile" and "length" fields
-                if (RtpReader.ReadExtensionsLength(payload) <= 0)
+                int extLen = RtpReader.ReadExtensionsLength(input);
+                if (extLen <= 0)
                 {
                     throw new InvalidOperationException("RTP header extensions encryption mask is set, but the RTP packet does not contain any header extensions!");
                 }
 
-                byte[] rtpExtensions = RtpReader.ReadHeaderExtensions(payload);
-                int ret = ProtectUnprotectRtpHeaderExtensions(payload, rtpExtensions, rtpExtensionsMask, ssrc, roc, index);
+                var rtpExtensionsOffset = RtpReader.ReadHeaderLenWithoutExtensions(input) + 4; // 4 bytes of "defined by profile" and "length" fields
+                var ret = ProtectUnprotectRtpHeaderExtensions(input, output.Slice(rtpExtensionsOffset, extLen), rtpExtensionsMask, ssrc, roc, index);
                 if (ret != 0)
                 {
                     outputBufferLength = 0;
                     return ret;
                 }
-
-                Buffer.BlockCopy(rtpExtensions, 0, payload, rtpExtensionsOffset, rtpExtensions.Length);
             }
 
             switch (context.Cipher)
             {
                 case SrtpCiphers.NULL:
+                    input.Slice(offset, length - offset).CopyTo(output.Slice(offset, length - offset));
                     break;
 
                 case SrtpCiphers.AES_128_F8:
@@ -529,8 +543,8 @@ namespace SharpSRTP.SRTP
 #else
                         var iv = new byte[SRTP.Encryption.F8.BLOCK_SIZE];
 #endif
-                        SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, payload, roc, iv);
-                        SRTP.Encryption.F8.Encrypt(context.PayloadCTR, payload, offset, length, iv);
+                        SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, roc, iv);
+                        SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, length - offset), output.Slice(offset, length - offset), iv);
                     }
                     break;
 
@@ -541,8 +555,13 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.ARIA_256_CTR:
                 case SrtpCiphers.SEED_128_CTR:
                     {
-                        byte[] iv = SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
-                        SRTP.Encryption.CTR.Encrypt(context.PayloadCTR, payload, offset, length, iv);
+#if NET8_0_OR_GREATER
+                        Span<byte> iv = stackalloc byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#else
+                        var iv = new byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#endif
+                        SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, index, iv);
+                        SRTP.Encryption.CTR.Encrypt(context.PayloadCTR, input.Slice(offset, length - offset), output.Slice(offset, length - offset), iv);
                     }
                     break;
 
@@ -555,8 +574,7 @@ namespace SharpSRTP.SRTP
                     {
                         var iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
                         SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, index, iv);
-                        byte[] associatedData = payload.AsSpan(0, offset).ToArray();
-                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, payload, offset, length, iv, context.K_e, context.N_tag, associatedData);
+                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, input.Slice(offset, length - offset), output.Slice(offset), iv, context.K_e, context.N_tag, output.Slice(0, offset));
                         length += context.N_tag;
                     }
                     break;
@@ -565,45 +583,51 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
                     {
                         // form a synthetic RTP packet
-                        int rtpHeaderLength = RtpReader.ReadHeaderLenWithoutExtensions(payload);
-                        int rtpExtensionsLength = RtpReader.ReadExtensionsLength(payload);
-                        byte[] syntheticRtpPacket = GC.AllocateUninitializedArray<byte>(length - rtpExtensionsLength + (context.N_tag / 2));
+                        var rtpHeaderLength = RtpReader.ReadHeaderLenWithoutExtensions(input);
+                        var rtpExtensionsLength = RtpReader.ReadExtensionsLength(input);
+                        var syntheticRtpPacketLen = length - rtpExtensionsLength + (context.N_tag / 2);
+                        var syntheticRtpPacket = ArrayPool<byte>.Shared.Rent(syntheticRtpPacketLen);
 
-                        // copy header without extensions
-                        Buffer.BlockCopy(payload, 0, syntheticRtpPacket, 0, rtpHeaderLength);
+                        try
+                        {
+                            // copy header without extensions
+                            input.Slice(0, rtpHeaderLength).CopyTo(syntheticRtpPacket.AsSpan(0, rtpHeaderLength));
 
-                        // set X bit to 0
-                        syntheticRtpPacket[0] &= 0xEF;
+                            // set X bit to 0
+                            syntheticRtpPacket[0] &= 0xEF;
 
-                        // copy the original payload
-                        Buffer.BlockCopy(payload, offset, syntheticRtpPacket, rtpHeaderLength, length - offset);
+                            // copy the original payload
+                            input.Slice(offset, length - offset).CopyTo(syntheticRtpPacket.AsSpan(rtpHeaderLength, length - offset));
 
-                        // apply inner cryptographic algorithm
-                        var innerK_e = KeyParameter.Create(context.K_e.AsArraySegment(0, context.K_e.Length / 2));
-                        var innerK_s = context.K_s.AsSpan(0, context.K_s.Length / 2);
-                        var innerIv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
-                        SRTP.Encryption.AEAD.GenerateMessageKeyIV(innerK_s, ssrc, index, innerIv);
-                        var innerAssociatedData = syntheticRtpPacket.AsSpan(0, rtpHeaderLength).ToArray();
-                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, syntheticRtpPacket, rtpHeaderLength, length - rtpExtensionsLength, innerIv, innerK_e, context.N_tag / 2, innerAssociatedData);
+                            // apply inner cryptographic algorithm
+                            var innerK_e = KeyParameter.Create(context.K_e.Slice(0, context.K_e.Length / 2));
+                            var innerK_s = context.K_s.AsSpan(0, context.K_s.Length / 2);
+                            var innerIv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+                            SRTP.Encryption.AEAD.GenerateMessageKeyIV(innerK_s, ssrc, index, innerIv);
+                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, syntheticRtpPacket.Slice(rtpHeaderLength, length - rtpExtensionsLength - rtpHeaderLength), syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), innerIv, innerK_e, context.N_tag / 2, syntheticRtpPacket.Slice(0, rtpHeaderLength));
 
-                        // copy the protected payload back to the original payload buffer
-                        Buffer.BlockCopy(syntheticRtpPacket, rtpHeaderLength, payload, offset, syntheticRtpPacket.Length - rtpHeaderLength);
-                        length += context.N_tag / 2;
+                            // copy the protected payload back to the output buffer
+                            syntheticRtpPacket.AsSpan(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength).CopyTo(output.Slice(offset, syntheticRtpPacketLen - rtpHeaderLength));
+                            length += context.N_tag / 2;
 
-                        // append OHB
-                        payload[length] = 0; // all empty OHB
+                            // append OHB
+                            output[length] = 0; // all empty OHB
 
-                        length += 1;
+                            length += 1;
 
-                        // apply outer cryptographic algorithm
-                        var outerK_e = KeyParameter.Create(context.K_e.AsArraySegment(context.K_e.Length / 2));
-                        var outerK_s = context.K_s.AsSpan(context.K_s.Length / 2);
-                        var outerIv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
-                        SRTP.Encryption.AEAD.GenerateMessageKeyIV(outerK_s, ssrc, index, outerIv);
-                        var outerAssociatedData = payload.AsSpan(0, offset).ToArray();
+                            // apply outer cryptographic algorithm
+                            var outerK_e = KeyParameter.Create(context.K_e.Slice(context.K_e.Length / 2));
+                            var outerK_s = context.K_s.AsSpan(context.K_s.Length / 2);
+                            var outerIv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+                            SRTP.Encryption.AEAD.GenerateMessageKeyIV(outerK_s, ssrc, index, outerIv);
 
-                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, payload, offset, length, outerIv, outerK_e, context.N_tag / 2, outerAssociatedData);
-                        length += context.N_tag / 2;
+                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, output.Slice(offset, length - offset), output.Slice(offset), outerIv, outerK_e, context.N_tag / 2, output.Slice(0, offset));
+                            length += context.N_tag / 2;
+                        }
+                        finally
+                        {
+                            ArrayPool<byte>.Shared.Return(syntheticRtpPacket);
+                        }
                     }
                     break;
 
@@ -617,21 +641,21 @@ namespace SharpSRTP.SRTP
             byte[] auth = null;
             if (context.Auth != SrtpAuth.NONE)
             {
-                BinaryPrimitives.WriteUInt32BigEndian(payload.AsSpan(length, 4), roc);
+                BinaryPrimitives.WriteUInt32BigEndian(output.Slice(length, 4), roc);
 
-                auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, payload, 0, length + 4);
+                auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, output.Slice(0, length + 4));
             }
 
             var mki = context.Mki;
             if (mki.Length > 0)
             {
-                mki.CopyTo(payload.AsMemory(length, mki.Length));
+                mki.Span.CopyTo(output.Slice(length, mki.Length));
                 length += mki.Length;
             }
 
             if (auth != null)
             {
-                System.Buffer.BlockCopy(auth, 0, payload, length, context.N_tag); // we don't append ROC in SRTP
+                auth.AsSpan(0, context.N_tag).CopyTo(output.Slice(length, context.N_tag)); // we don't append ROC in SRTP
                 length += context.N_tag;
             }
 
@@ -646,86 +670,106 @@ namespace SharpSRTP.SRTP
             return 0;
         }
 
-        public int ProtectUnprotectRtpHeaderExtensions(byte[] payload, byte[] rtpExtensions, byte[] rtpExtensionsMask, uint ssrc, uint roc, ulong index)
+        public int ProtectUnprotectRtpHeaderExtensions(ReadOnlySpan<byte> payload, Span<byte> rtpExtensions, ReadOnlySpan<byte> rtpExtensionsMask, uint ssrc, uint roc, ulong index)
         {
             var context = this;
 
-            byte[] rtpExtensionsEncrypted = GC.AllocateUninitializedArray<byte>(rtpExtensions.Length);
-            Buffer.BlockCopy(rtpExtensions, 0, rtpExtensionsEncrypted, 0, rtpExtensions.Length);
+            var rtpExtensionsEncrypted = ArrayPool<byte>.Shared.Rent(rtpExtensions.Length);
 
-            // in case of Double AEAD, this should use the outer cryptographic key
-            switch (context.Cipher)
+            try
             {
-                case SrtpCiphers.NULL:
-                    return 0;
+                // in case of Double AEAD, this should use the outer cryptographic key
+                switch (context.Cipher)
+                {
+                    case SrtpCiphers.NULL:
+                        return 0;
 
-                case SrtpCiphers.AES_128_F8:
-                    {
+                    case SrtpCiphers.AES_128_F8:
+                        {
 #if NET8_0_OR_GREATER
                         Span<byte> iv = stackalloc byte[SRTP.Encryption.F8.BLOCK_SIZE];
 #else
-                        var iv = new byte[SRTP.Encryption.F8.BLOCK_SIZE];
+                            var iv = new byte[SRTP.Encryption.F8.BLOCK_SIZE];
 #endif
-                        SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.HeaderF8, context.K_he, context.K_hs, payload, roc, iv);
-                        SRTP.Encryption.F8.Encrypt(context.HeaderCTR, rtpExtensionsEncrypted, 0, rtpExtensionsEncrypted.Length, iv);
-                    }
-                    break;
+                            SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.HeaderF8, context.K_he, context.K_hs, payload, roc, iv);
+                            SRTP.Encryption.F8.Encrypt(context.HeaderCTR, rtpExtensions, rtpExtensionsEncrypted.AsSpan(0, rtpExtensions.Length), iv);
+                        }
+                        break;
 
-                case SrtpCiphers.AES_128_CM:
-                case SrtpCiphers.AES_192_CM:
-                case SrtpCiphers.AES_256_CM:
-                case SrtpCiphers.ARIA_128_CTR:
-                case SrtpCiphers.ARIA_256_CTR:
-                case SrtpCiphers.SEED_128_CTR:
-                case SrtpCiphers.AEAD_AES_128_GCM:
-                case SrtpCiphers.AEAD_AES_256_GCM:
-                case SrtpCiphers.AEAD_ARIA_128_GCM:
-                case SrtpCiphers.AEAD_ARIA_256_GCM:
-                case SrtpCiphers.SEED_128_CCM:
-                case SrtpCiphers.SEED_128_GCM:
-                    {
-                        byte[] iv = SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_hs, ssrc, index);
-                        SRTP.Encryption.CTR.Encrypt(context.HeaderCTR, rtpExtensionsEncrypted, 0, rtpExtensionsEncrypted.Length, iv);
-                    }
-                    break;
+                    case SrtpCiphers.AES_128_CM:
+                    case SrtpCiphers.AES_192_CM:
+                    case SrtpCiphers.AES_256_CM:
+                    case SrtpCiphers.ARIA_128_CTR:
+                    case SrtpCiphers.ARIA_256_CTR:
+                    case SrtpCiphers.SEED_128_CTR:
+                    case SrtpCiphers.AEAD_AES_128_GCM:
+                    case SrtpCiphers.AEAD_AES_256_GCM:
+                    case SrtpCiphers.AEAD_ARIA_128_GCM:
+                    case SrtpCiphers.AEAD_ARIA_256_GCM:
+                    case SrtpCiphers.SEED_128_CCM:
+                    case SrtpCiphers.SEED_128_GCM:
+                        {
+#if NET8_0_OR_GREATER
+                        Span<byte> iv = stackalloc byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#else
+                            var iv = new byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#endif
+                            SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_hs, ssrc, index, iv);
+                            SRTP.Encryption.CTR.Encrypt(context.HeaderCTR, rtpExtensions, rtpExtensionsEncrypted.AsSpan(0, rtpExtensions.Length), iv);
+                        }
+                        break;
 
-                case SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM:
-                case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
-                    {
-                        var outerK_hs = context.K_hs.AsSpan(context.K_hs.Length / 2);
-                        var outerIv = SRTP.Encryption.CTR.GenerateMessageKeyIV(outerK_hs, ssrc, index);
-                        SRTP.Encryption.CTR.Encrypt(context.HeaderCTR, rtpExtensionsEncrypted, 0, rtpExtensionsEncrypted.Length, outerIv);
-                    }
-                    break;
+                    case SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM:
+                    case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
+                        {
+                            var outerK_hs = context.K_hs.AsSpan(context.K_hs.Length / 2);
+#if NET8_0_OR_GREATER
+                        Span<byte> outerIv = stackalloc byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#else
+                            var outerIv = new byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#endif
+                            SRTP.Encryption.CTR.GenerateMessageKeyIV(outerK_hs, ssrc, index, outerIv);
+                            SRTP.Encryption.CTR.Encrypt(context.HeaderCTR, rtpExtensions, rtpExtensionsEncrypted.AsSpan(0, rtpExtensions.Length), outerIv);
+                        }
+                        break;
 
-                default:
-                    return ERROR_UNSUPPORTED_CIPHER;
+                    default:
+                        return ERROR_UNSUPPORTED_CIPHER;
+                }
+
+                for (var i = 0; i < rtpExtensions.Length; i++)
+                {
+                    // EncryptedHeader = (Encrypt(Key, Plaintext) AND MASK) OR (Plaintext AND (NOT MASK))
+                    rtpExtensions[i] = unchecked((byte)((rtpExtensionsEncrypted[i] & rtpExtensionsMask[i]) | (rtpExtensions[i] & ~rtpExtensionsMask[i])));
+                }
             }
-
-            for (int i = 0; i < rtpExtensions.Length; i++)
+            finally
             {
-                // EncryptedHeader = (Encrypt(Key, Plaintext) AND MASK) OR (Plaintext AND (NOT MASK))
-                rtpExtensions[i] = unchecked((byte)((rtpExtensionsEncrypted[i] & rtpExtensionsMask[i]) | (rtpExtensions[i] & ~rtpExtensionsMask[i])));
+                ArrayPool<byte>.Shared.Return(rtpExtensionsEncrypted);
             }
 
             return 0;
         }
 
-        public virtual int UnprotectRtp(byte[] payload, int length, out int outputBufferLength)
+        public virtual int UnprotectRtp(ReadOnlyBytes input, Bytes output, out int outputBufferLength)
         {
             var context = this;
+            var length = input.Length;
 
-            if (payload == null)
+#if !NET8_0_OR_GREATER
+            if (output == null)
             {
-                throw new ArgumentNullException(nameof(payload));
+                throw new ArgumentNullException(nameof(output));
             }
+#endif
 
+            ReadOnlySpan<byte> inputSpan = input;
             var mki = context.Mki;
 
             var mkiSpan = mki.Span;
-            for (int i = 0; i < mki.Length; i++)
+            for (var i = 0; i < mki.Length; i++)
             {
-                if (payload[length - mki.Length - context.N_tag + i] != mkiSpan[i])
+                if (inputSpan[length - mki.Length - context.N_tag + i] != mkiSpan[i])
                 {
                     outputBufferLength = 0;
                     return ERROR_MKI_CHECK_FAILED;
@@ -738,8 +782,8 @@ namespace SharpSRTP.SRTP
                 return ERROR_MASTER_KEY_ROTATION_REQUIRED;
             }
 
-            uint ssrc = RtpReader.ReadSsrc(payload);
-            ushort sequenceNumber = RtpReader.ReadSequenceNumber(payload);
+            var ssrc = RtpReader.ReadSsrc(input);
+            var sequenceNumber = RtpReader.ReadSequenceNumber(input);
 
             SsrcSrtpContext ssrcContext;
             if (context.ReplayProtection.TryGetValue(ssrc, out ssrcContext) == false)
@@ -751,35 +795,38 @@ namespace SharpSRTP.SRTP
             ssrcContext.SetInitialSequence(sequenceNumber);
 
             // Derive ROC/index for this packet from the last accepted index.
-            uint lastIndex = ssrcContext.S_l;
-            ushort lastSeq = (ushort)(lastIndex & 0xFFFF);
-            uint lastRoc = lastIndex >> 16;
-            uint index = SrtpContext.DetermineRtpIndex(lastSeq, sequenceNumber, lastRoc);
-            uint roc = index >> 16;
+            var lastIndex = ssrcContext.S_l;
+            var lastSeq = (ushort)(lastIndex & 0xFFFF);
+            var lastRoc = lastIndex >> 16;
+            var index = SrtpContext.DetermineRtpIndex(lastSeq, sequenceNumber, lastRoc);
+            var roc = index >> 16;
 
             if (context.Auth != SrtpAuth.NONE)
             {
-                // TODO: optimize memory allocation - we could preallocate 4 byte array and add another GenerateAuthTag overload that processes 2 blocks
-            int authenticatedLen = length - mki.Length - context.N_tag;
-                byte[] msgAuth = GC.AllocateUninitializedArray<byte>(authenticatedLen + 4);
-                Buffer.BlockCopy(payload, 0, msgAuth, 0, authenticatedLen);
-                msgAuth[authenticatedLen + 0] = (byte)(roc >> 24);
-                msgAuth[authenticatedLen + 1] = (byte)(roc >> 16);
-                msgAuth[authenticatedLen + 2] = (byte)(roc >> 8);
-                msgAuth[authenticatedLen + 3] = (byte)(roc);
-
-                byte[] auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, msgAuth, 0, authenticatedLen + 4);
-            for (int i = 0; i < context.N_tag; i++)
-            {
-                if (payload[authenticatedLen + mki.Length + i] != auth[i])
+                var authenticatedLen = length - mki.Length - context.N_tag;
+                var msgAuth = ArrayPool<byte>.Shared.Rent(authenticatedLen + 4);
+                try
                 {
-                    outputBufferLength = 0;
-                    return ERROR_HMAC_CHECK_FAILED;
+                    input.Slice(0, authenticatedLen).CopyTo(msgAuth.AsSpan(0, authenticatedLen));
+                    BinaryPrimitives.WriteUInt32BigEndian(msgAuth.AsSpan(authenticatedLen, 4), roc);
+
+                    var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, msgAuth.Slice(0, authenticatedLen + 4));
+                    for (var i = 0; i < context.N_tag; i++)
+                    {
+                        if (inputSpan[authenticatedLen + mki.Length + i] != auth[i])
+                        {
+                            outputBufferLength = 0;
+                            return ERROR_HMAC_CHECK_FAILED;
+                        }
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(msgAuth);
                 }
             }
-            }
 
-            int offset = RtpReader.ReadHeaderLen(payload);
+            var offset = RtpReader.ReadHeaderLen(input);
 
             if (!ssrcContext.CheckAndUpdateReplayWindow(index))
             {
@@ -791,7 +838,9 @@ namespace SharpSRTP.SRTP
             {
                 case SrtpCiphers.NULL:
                     {
-                        outputBufferLength = length - mki.Length - context.N_tag;
+                        var dataLen = length - mki.Length - context.N_tag;
+                        input.Slice(0, dataLen).CopyTo(output.Slice(0, dataLen));
+                        outputBufferLength = dataLen;
                     }
                     break;
 
@@ -802,9 +851,11 @@ namespace SharpSRTP.SRTP
 #else
                         var iv = new byte[SRTP.Encryption.F8.BLOCK_SIZE];
 #endif
-                        SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, payload, roc, iv);
-                        SRTP.Encryption.F8.Encrypt(context.PayloadCTR, payload, offset, length - mki.Length - context.N_tag, iv);
-                        outputBufferLength = length - mki.Length - context.N_tag;
+                        SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, roc, iv);
+                        var decLen = length - mki.Length - context.N_tag;
+                        input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                        SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), iv);
+                        outputBufferLength = decLen;
                     }
                     break;
 
@@ -815,9 +866,16 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.ARIA_256_CTR:
                 case SrtpCiphers.SEED_128_CTR:
                     {
-                        byte[] iv = SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, index);
-                        SRTP.Encryption.CTR.Encrypt(context.PayloadCTR, payload, offset, length - mki.Length - context.N_tag, iv);
-                        outputBufferLength = length - mki.Length - context.N_tag;
+#if NET8_0_OR_GREATER
+                        Span<byte> iv = stackalloc byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#else
+                        var iv = new byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#endif
+                        SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, index, iv);
+                        var decLen = length - mki.Length - context.N_tag;
+                        input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                        SRTP.Encryption.CTR.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), iv);
+                        outputBufferLength = decLen;
                     }
                     break;
 
@@ -830,8 +888,8 @@ namespace SharpSRTP.SRTP
                     {
                         var iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
                         SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, index, iv);
-                        byte[] associatedData = payload.AsSpan(0, offset).ToArray();
-                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, payload, offset, length - mki.Length, iv, context.K_e, context.N_tag, associatedData);
+                        input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - mki.Length - offset), output.Slice(offset), iv, context.K_e, context.N_tag, input.Slice(0, offset));
                         outputBufferLength = length - mki.Length - context.N_tag;
                     }
                     break;
@@ -840,17 +898,19 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
                     {
                         // apply outer cryptographic algorithm
-                        var outerK_e = KeyParameter.Create(context.K_e.AsArraySegment(context.K_e.Length / 2));
+                        var outerK_e = KeyParameter.Create(context.K_e.Slice(context.K_e.Length / 2));
                         var outerK_s = context.K_s.AsSpan(context.K_s.Length / 2);
                         var outerIv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
                         SRTP.Encryption.AEAD.GenerateMessageKeyIV(outerK_s, ssrc, index, outerIv);
-                        var outerAssociatedData = payload.AsSpan(0, offset).ToArray();
-                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, payload, offset, length - mki.Length, outerIv, outerK_e, context.N_tag / 2, outerAssociatedData);
+                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - mki.Length - offset), output.Slice(offset), outerIv, outerK_e, context.N_tag / 2, input.Slice(0, offset));
+
+                        // copy header from input to output
+                        input.Slice(0, offset).CopyTo(output.Slice(0, offset));
 
                         // calculate OHB size - it can now be larger than 1 byte if it was modified
-                        int lastOhbByteIndex = length - mki.Length - context.N_tag / 2 - 1;
-                        byte ohbConfig = payload[lastOhbByteIndex];
-                        int ohbLength = 1;
+                        var lastOhbByteIndex = length - mki.Length - context.N_tag / 2 - 1;
+                        var ohbConfig = output[lastOhbByteIndex];
+                        var ohbLength = 1;
                         if ((ohbConfig & 0x01) == 0x01)
                         {
                             ohbLength += 2;
@@ -861,56 +921,63 @@ namespace SharpSRTP.SRTP
                         }
 
                         // form a synthetic RTP packet
-                        int rtpHeaderLength = RtpReader.ReadHeaderLenWithoutExtensions(payload);
-                        int rtpExtensionsLength = RtpReader.ReadExtensionsLength(payload);
-                        byte[] syntheticRtpPacket = GC.AllocateUninitializedArray<byte>(length - rtpExtensionsLength - (context.N_tag / 2) - ohbLength);
+                        var rtpHeaderLength = RtpReader.ReadHeaderLenWithoutExtensions(output);
+                        var rtpExtensionsLength = RtpReader.ReadExtensionsLength(output);
+                        var syntheticRtpPacketLen = length - rtpExtensionsLength - (context.N_tag / 2) - ohbLength;
+                        var syntheticRtpPacket = ArrayPool<byte>.Shared.Rent(syntheticRtpPacketLen);
 
-                        // copy header without extensions
-                        Buffer.BlockCopy(payload, 0, syntheticRtpPacket, 0, rtpHeaderLength);
-
-                        // set X bit to 0
-                        syntheticRtpPacket[0] &= 0xEF;
-
-                        // restore original header values from the OHB
-                        if ((ohbConfig & 0x01) == 0x01)
+                        try
                         {
-                            syntheticRtpPacket[2] = payload[lastOhbByteIndex - ohbLength - 1];
-                            syntheticRtpPacket[3] = payload[lastOhbByteIndex - ohbLength];
+                            // copy header without extensions
+                            output.Slice(0, rtpHeaderLength).CopyTo(syntheticRtpPacket.AsSpan(0, rtpHeaderLength));
+
+                            // set X bit to 0
+                            syntheticRtpPacket[0] &= 0xEF;
+
+                            // restore original header values from the OHB
+                            if ((ohbConfig & 0x01) == 0x01)
+                            {
+                                syntheticRtpPacket[2] = output[lastOhbByteIndex - ohbLength - 1];
+                                syntheticRtpPacket[3] = output[lastOhbByteIndex - ohbLength];
+                            }
+                            if ((ohbConfig & 0x02) == 0x02)
+                            {
+                                var pt = output[lastOhbByteIndex - ohbLength];
+                                syntheticRtpPacket[1] = (byte)((syntheticRtpPacket[1] & 0x80) | (pt & 0x7F));
+                            }
+                            if ((ohbConfig & 0x04) == 0x04)
+                            {
+                                var markerBit = (ohbConfig & 0x08) == 0x08;
+                                syntheticRtpPacket[1] = (byte)((markerBit ? 0x80 : 0x00) | (syntheticRtpPacket[1] & 0x7F));
+                            }
+
+                            // copy the payload including the inner authentication tag
+                            output.Slice(offset, length - offset - mki.Length - context.N_tag / 2 - ohbLength).CopyTo(syntheticRtpPacket.AsSpan(rtpHeaderLength, length - offset - mki.Length - context.N_tag / 2 - ohbLength));
+
+                            var innerSsrc = RtpReader.ReadSsrc(syntheticRtpPacket);
+                            var innerSequenceNumber = RtpReader.ReadSequenceNumber(syntheticRtpPacket);
+                            var innerIndex = SrtpContext.DetermineRtpIndex(lastSeq, innerSequenceNumber, lastRoc);
+
+                            // apply inner cryptographic algorithm
+                            var innerK_e = KeyParameter.Create(context.K_e.Slice(0, context.K_e.Length / 2));
+                            var innerK_s = context.K_s.AsSpan(0, context.K_s.Length / 2);
+                            var innerIv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+                            SRTP.Encryption.AEAD.GenerateMessageKeyIV(innerK_s, innerSsrc, innerIndex, innerIv);
+                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), innerIv, innerK_e, context.N_tag / 2, syntheticRtpPacket.Slice(0, rtpHeaderLength));
+
+                            // copy the unprotected payload back to the output buffer
+                            syntheticRtpPacket.AsSpan(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength - context.N_tag / 2).CopyTo(output.Slice(offset, syntheticRtpPacketLen - rtpHeaderLength - context.N_tag / 2));
+
+                            // copy the synthetic header back to the output buffer
+                            syntheticRtpPacket.AsSpan(0, rtpHeaderLength).CopyTo(output.Slice(0, rtpHeaderLength));
+
+                            // update the output buffer length
+                            outputBufferLength = offset + syntheticRtpPacketLen - rtpHeaderLength - context.N_tag / 2;
                         }
-                        if ((ohbConfig & 0x02) == 0x02)
+                        finally
                         {
-                            byte pt = payload[lastOhbByteIndex - ohbLength];
-                            syntheticRtpPacket[1] = (byte)((syntheticRtpPacket[1] & 0x80) | (pt & 0x7F));
+                            ArrayPool<byte>.Shared.Return(syntheticRtpPacket);
                         }
-                        if ((ohbConfig & 0x04) == 0x04)
-                        {
-                            bool markerBit = (ohbConfig & 0x08) == 0x08;
-                            syntheticRtpPacket[1] = (byte)((markerBit ? 0x80 : 0x00) | (syntheticRtpPacket[1] & 0x7F));
-                        }
-
-                        // copy the payload including the inner authentication tag
-                        Buffer.BlockCopy(payload, offset, syntheticRtpPacket, rtpHeaderLength, length - offset - mki.Length - context.N_tag / 2 - ohbLength);
-
-                        uint innerSsrc = RtpReader.ReadSsrc(syntheticRtpPacket);
-                        ushort innerSequenceNumber = RtpReader.ReadSequenceNumber(syntheticRtpPacket);
-                        uint innerIndex = SrtpContext.DetermineRtpIndex(lastSeq, innerSequenceNumber, lastRoc);
-
-                        // apply inner cryptographic algorithm
-                        var innerK_e = KeyParameter.Create(context.K_e.AsArraySegment(0, context.K_e.Length / 2));
-                        var innerK_s = context.K_s.AsSpan(0, context.K_s.Length / 2);
-                        var innerIv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
-                        SRTP.Encryption.AEAD.GenerateMessageKeyIV(innerK_s, innerSsrc, innerIndex, innerIv);
-                        var innerAssociatedData = syntheticRtpPacket.AsSpan(0, rtpHeaderLength).ToArray();
-                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, syntheticRtpPacket, rtpHeaderLength, syntheticRtpPacket.Length, innerIv, innerK_e, context.N_tag / 2, innerAssociatedData);
-
-                        // copy the unprotected payload back to the original payload buffer
-                        Buffer.BlockCopy(syntheticRtpPacket, rtpHeaderLength, payload, offset, syntheticRtpPacket.Length - rtpHeaderLength - context.N_tag / 2);
-
-                        // copy the synthetic header back to the original payload buffer
-                        Buffer.BlockCopy(syntheticRtpPacket, 0, payload, 0, rtpHeaderLength);
-
-                        // update the output buffer length
-                        outputBufferLength = offset + syntheticRtpPacket.Length - rtpHeaderLength - context.N_tag / 2;
                     }
                     break;
 
@@ -923,24 +990,22 @@ namespace SharpSRTP.SRTP
 
             // because of CCM/GCM, RTP headers must be unprotected only after the payload is unprotected and HMAC is verified
             // RFC6904
-            byte[] rtpExtensionsMask = RtpHeaderExtensionsEncryptionMask;
+            var rtpExtensionsMask = RtpHeaderExtensionsEncryptionMask;
             if (rtpExtensionsMask != null && rtpExtensionsMask.Length > 0)
             {
-                int rtpExtensionsOffset = RtpReader.ReadHeaderLenWithoutExtensions(payload) + 4; // 4 bytes of "defined by profile" and "length" fields
-                if (RtpReader.ReadExtensionsLength(payload) <= 0)
+                int extLen = RtpReader.ReadExtensionsLength(output);
+                if (extLen <= 0)
                 {
                     throw new InvalidOperationException("RTP header extensions encryption mask is set, but the RTP packet does not contain any header extensions!");
                 }
 
-                byte[] rtpExtensions = RtpReader.ReadHeaderExtensions(payload);
-                int ret = ProtectUnprotectRtpHeaderExtensions(payload, rtpExtensions, rtpExtensionsMask, ssrc, roc, index);
+                var rtpExtensionsOffset = RtpReader.ReadHeaderLenWithoutExtensions(output) + 4; // 4 bytes of "defined by profile" and "length" fields
+                var ret = ProtectUnprotectRtpHeaderExtensions(output, output.Slice(rtpExtensionsOffset, extLen), rtpExtensionsMask, ssrc, roc, index);
                 if (ret != 0)
                 {
                     outputBufferLength = 0;
                     return ret;
                 }
-
-                Buffer.BlockCopy(rtpExtensions, 0, payload, rtpExtensionsOffset, rtpExtensions.Length);
             }
 
             return 0;
@@ -953,18 +1018,21 @@ namespace SharpSRTP.SRTP
             return rtcpLen + 4 + mki.Length + context.N_tag;
         }
 
-        public int ProtectRtcp(byte[] payload, int length, out int outputBufferLength)
+        public int ProtectRtcp(ReadOnlyBytes input, Bytes output, out int outputBufferLength)
         {
             var context = this;
+            var length = input.Length;
 
-            if (payload == null)
+#if !NET8_0_OR_GREATER
+            if (output == null)
             {
-                throw new ArgumentNullException(nameof(payload));
+                throw new ArgumentNullException(nameof(output));
             }
+#endif
 
-            if (payload.Length < CalculateRequiredSrtcpPayloadLength(length))
+            if (output.Length < CalculateRequiredSrtcpPayloadLength(length))
             {
-                throw new ArgumentOutOfRangeException($"{nameof(ProtectRtcp)} failed, {nameof(payload)} buffer is too small!");
+                throw new ArgumentOutOfRangeException($"{nameof(ProtectRtcp)} failed, {nameof(output)} buffer is too small!");
             }
 
             if (!context.IncrementMasterKeyUseCounter())
@@ -973,8 +1041,8 @@ namespace SharpSRTP.SRTP
                 return ERROR_MASTER_KEY_ROTATION_REQUIRED;
             }
 
-            uint ssrc = RtcpReader.ReadSsrc(payload);
-            int offset = RtcpReader.GetHeaderLen();
+            var ssrc = RtcpReader.ReadSsrc(input);
+            var offset = RtcpReader.GetHeaderLen();
 
             SsrcSrtpContext ssrcContext;
             if (context.ReplayProtection.TryGetValue(ssrc, out ssrcContext) == false)
@@ -983,17 +1051,19 @@ namespace SharpSRTP.SRTP
                 context.ReplayProtection.Add(ssrc, ssrcContext);
             }
 
-            uint index = ssrcContext.S_l | E_FLAG;
+            var index = ssrcContext.S_l | E_FLAG;
 
             switch (context.Cipher)
             {
                 case SrtpCiphers.NULL:
+                    input.Slice(0, length).CopyTo(output.Slice(0, length));
                     break;
 
                 case SrtpCiphers.AES_128_F8:
                     {
-                        byte[] iv = SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, payload, index);
-                        SRTP.Encryption.F8.Encrypt(context.PayloadCTR, payload, offset, length, iv);
+                        var iv = SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, index);
+                        input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                        SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, length - offset), output.Slice(offset, length - offset), iv);
                     }
                     break;
 
@@ -1004,8 +1074,14 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.ARIA_256_CTR:
                 case SrtpCiphers.SEED_128_CTR:
                     {
-                        byte[] iv = SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, ssrcContext.S_l);
-                        SRTP.Encryption.CTR.Encrypt(context.PayloadCTR, payload, offset, length, iv);
+#if NET8_0_OR_GREATER
+                        Span<byte> iv = stackalloc byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#else
+                        var iv = new byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#endif
+                        SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, ssrcContext.S_l, iv);
+                        input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                        SRTP.Encryption.CTR.Encrypt(context.PayloadCTR, input.Slice(offset, length - offset), output.Slice(offset, length - offset), iv);
                     }
                     break;
 
@@ -1018,11 +1094,19 @@ namespace SharpSRTP.SRTP
                     {
                         var iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
                         SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, ssrcContext.S_l, iv);
-                        byte[] associatedData = GC.AllocateUninitializedArray<byte>(offset + 4);
-                        Buffer.BlockCopy(payload, 0, associatedData, 0, offset);
-                        BinaryPrimitives.WriteUInt32BigEndian(associatedData.AsSpan(offset, 4), index);
-                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, payload, offset, length, iv, context.K_e, context.N_tag, associatedData);
-                        length += context.N_tag;
+                        var associatedDataRented = ArrayPool<byte>.Shared.Rent(offset + 4);
+                        try
+                        {
+                            input.Slice(0, offset).CopyTo(associatedDataRented.AsSpan(0, offset));
+                            BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), index);
+                            input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, input.Slice(offset, length - offset), output.Slice(offset), iv, context.K_e, context.N_tag, associatedDataRented.Slice(0, offset + 4));
+                            length += context.N_tag;
+                        }
+                        finally
+                        {
+                            ArrayPool<byte>.Shared.Return(associatedDataRented);
+                        }
                     }
                     break;
 
@@ -1030,15 +1114,23 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
                     {
                         // RTCP under Double AEAD is protected only with the outer layer
-                        var outerK_e = KeyParameter.Create(context.K_e.AsArraySegment(context.K_e.Length / 2));
+                        var outerK_e = KeyParameter.Create(context.K_e.Slice(context.K_e.Length / 2));
                         var outerK_s = context.K_s.AsSpan(context.K_s.Length / 2);
                         var outerIv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
                         SRTP.Encryption.AEAD.GenerateMessageKeyIV(outerK_s, ssrc, ssrcContext.S_l, outerIv);
-                        var associatedData = GC.AllocateUninitializedArray<byte>(offset + 4);
-                        Buffer.BlockCopy(payload, 0, associatedData, 0, offset);
-                        BinaryPrimitives.WriteUInt32BigEndian(associatedData.AsSpan(offset, 4), index);
-                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, payload, offset, length, outerIv, outerK_e, context.N_tag / 2, associatedData);
-                        length += context.N_tag / 2;
+                        var associatedDataRented = ArrayPool<byte>.Shared.Rent(offset + 4);
+                        try
+                        {
+                            input.Slice(0, offset).CopyTo(associatedDataRented.AsSpan(0, offset));
+                            BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), index);
+                            input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, input.Slice(offset, length - offset), output.Slice(offset), outerIv, outerK_e, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));
+                            length += context.N_tag / 2;
+                        }
+                        finally
+                        {
+                            ArrayPool<byte>.Shared.Return(associatedDataRented);
+                        }
                     }
                     break;
 
@@ -1049,20 +1141,20 @@ namespace SharpSRTP.SRTP
                     }
             }
 
-            BinaryPrimitives.WriteUInt32BigEndian(payload.AsSpan(length, 4), index);
+            BinaryPrimitives.WriteUInt32BigEndian(output.Slice(length, 4), index);
             length += 4;
 
             var mki = context.Mki;
             if (mki.Length > 0)
             {
-                mki.CopyTo(payload.AsMemory(length, mki.Length));
+                mki.Span.CopyTo(output.Slice(length, mki.Length));
                 length += mki.Length;
             }
 
             if (context.Auth != SrtpAuth.NONE)
             {
-                byte[] auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, payload, 0, length);
-                System.Buffer.BlockCopy(auth, 0, payload, length, context.N_tag);
+                var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, output.Slice(0, length));
+                auth.AsSpan(0, context.N_tag).CopyTo(output.Slice(length, context.N_tag));
                 length += context.N_tag;
             }
 
@@ -1072,20 +1164,24 @@ namespace SharpSRTP.SRTP
             return 0;
         }
 
-        public virtual int UnprotectRtcp(byte[] payload, int length, out int outputBufferLength)
+        public virtual int UnprotectRtcp(ReadOnlyBytes input, Bytes output, out int outputBufferLength)
         {
             var context = this;
+            var length = input.Length;
 
-            if (payload == null)
+#if !NET8_0_OR_GREATER
+            if (output == null)
             {
-                throw new ArgumentNullException(nameof(payload));
+                throw new ArgumentNullException(nameof(output));
             }
+#endif
 
+            ReadOnlySpan<byte> inputSpan = input;
             var mki = context.Mki;
 
-            for (int i = 0; i < mki.Length; i++)
+            for (var i = 0; i < mki.Length; i++)
             {
-                if (payload[length - context.N_tag - mki.Length + i] != mki.Span[i])
+                if (inputSpan[length - context.N_tag - mki.Length + i] != mki.Span[i])
                 {
                     outputBufferLength = 0;
                     return ERROR_MKI_CHECK_FAILED;
@@ -1098,8 +1194,8 @@ namespace SharpSRTP.SRTP
                 return ERROR_MASTER_KEY_ROTATION_REQUIRED;
             }
 
-            uint ssrc = RtcpReader.ReadSsrc(payload);
-            int offset = RtcpReader.GetHeaderLen();
+            var ssrc = RtcpReader.ReadSsrc(input);
+            var offset = RtcpReader.GetHeaderLen();
 
             SsrcSrtpContext ssrcContext;
             if (context.ReplayProtection.TryGetValue(ssrc, out ssrcContext) == false)
@@ -1108,8 +1204,8 @@ namespace SharpSRTP.SRTP
                 context.ReplayProtection.Add(ssrc, ssrcContext);
             }
 
-            uint index = RtcpReader.SrtcpReadIndex(payload, context.N_a > 0 ? (context.N_tag + mki.Length) : 0);
-            bool isEncrypted = false;
+            var index = RtcpReader.SrtcpReadIndex(input, context.N_a > 0 ? (context.N_tag + mki.Length) : 0);
+            var isEncrypted = false;
 
             if ((index & E_FLAG) == E_FLAG)
             {
@@ -1119,10 +1215,10 @@ namespace SharpSRTP.SRTP
 
             if (context.Auth != SrtpAuth.NONE)
             {
-                byte[] auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, payload, 0, length - context.N_tag - mki.Length);
-                for (int i = 0; i < context.N_tag; i++)
+                var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, input.Slice(0, length - context.N_tag - mki.Length));
+                for (var i = 0; i < context.N_tag; i++)
                 {
-                    if (payload[length - context.N_tag + i] != auth[i])
+                    if (inputSpan[length - context.N_tag + i] != auth[i])
                     {
                         outputBufferLength = 0;
                         return ERROR_HMAC_CHECK_FAILED;
@@ -1142,15 +1238,19 @@ namespace SharpSRTP.SRTP
                 {
                     case SrtpCiphers.NULL:
                         {
-                            outputBufferLength = length - 4 - context.N_tag - mki.Length;
+                            var dataLen = length - 4 - context.N_tag - mki.Length;
+                            input.Slice(0, dataLen).CopyTo(output.Slice(0, dataLen));
+                            outputBufferLength = dataLen;
                         }
                         break;
 
                     case SrtpCiphers.AES_128_F8:
                         {
-                            byte[] iv = SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, payload, index);
-                            SRTP.Encryption.F8.Encrypt(context.PayloadCTR, payload, offset, length - 4 - context.N_tag - mki.Length, iv);
-                            outputBufferLength = length - 4 - context.N_tag - mki.Length;
+                            var decLen = length - 4 - context.N_tag - mki.Length;
+                            var iv = SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, index);
+                            input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                            SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), iv);
+                            outputBufferLength = decLen;
                         }
                         break;
 
@@ -1161,9 +1261,16 @@ namespace SharpSRTP.SRTP
                     case SrtpCiphers.ARIA_256_CTR:
                     case SrtpCiphers.SEED_128_CTR:
                         {
-                            byte[] iv = SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, ssrcContext.S_l);
-                            SRTP.Encryption.CTR.Encrypt(context.PayloadCTR, payload, offset, length - 4 - context.N_tag - mki.Length, iv);
-                            outputBufferLength = length - 4 - context.N_tag - mki.Length;
+                            var decLen = length - 4 - context.N_tag - mki.Length;
+#if NET8_0_OR_GREATER
+                            Span<byte> iv = stackalloc byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#else
+                            var iv = new byte[SRTP.Encryption.CTR.BLOCK_SIZE];
+#endif
+                            SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, ssrcContext.S_l, iv);
+                            input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                            SRTP.Encryption.CTR.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), iv);
+                            outputBufferLength = decLen;
                         }
                         break;
 
@@ -1176,11 +1283,19 @@ namespace SharpSRTP.SRTP
                         {
                             var iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
                             SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, ssrcContext.S_l, iv);
-                            byte[] associatedData = GC.AllocateUninitializedArray<byte>(offset + 4);
-                            Buffer.BlockCopy(payload, 0, associatedData, 0, offset);
-                            BinaryPrimitives.WriteUInt32BigEndian(associatedData.AsSpan(offset, 4), index);
-                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, payload, offset, length - 4 - mki.Length, iv, context.K_e, context.N_tag, associatedData);
-                            outputBufferLength = length - 4 - context.N_tag - mki.Length;
+                            var associatedDataRented = ArrayPool<byte>.Shared.Rent(offset + 4);
+                            try
+                            {
+                                input.Slice(0, offset).CopyTo(associatedDataRented.AsSpan(0, offset));
+                                BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), index);
+                                input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), iv, context.K_e, context.N_tag, associatedDataRented.Slice(0, offset + 4));
+                                outputBufferLength = length - 4 - context.N_tag - mki.Length;
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(associatedDataRented);
+                            }
                         }
                         break;
 
@@ -1188,15 +1303,23 @@ namespace SharpSRTP.SRTP
                     case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
                         {
                             // RTCP under Double AEAD is protected only with the outer layer
-                            var outerK_e = KeyParameter.Create(context.K_e.AsArraySegment(context.K_e.Length / 2));
+                            var outerK_e = KeyParameter.Create(context.K_e.Slice(context.K_e.Length / 2));
                             var outerK_s = context.K_s.AsSpan(context.K_s.Length / 2);
                             var outerIv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
                             SRTP.Encryption.AEAD.GenerateMessageKeyIV(outerK_s, ssrc, ssrcContext.S_l, outerIv);
-                            var associatedData = GC.AllocateUninitializedArray<byte>(offset + 4);
-                            Buffer.BlockCopy(payload, 0, associatedData, 0, offset);
-                            BinaryPrimitives.WriteUInt32BigEndian(associatedData.AsSpan(offset, 4), index);
-                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, payload, offset, length - 4 - mki.Length, outerIv, outerK_e, context.N_tag / 2, associatedData);
-                            outputBufferLength = length - 4 - context.N_tag / 2 - mki.Length;
+                            var associatedDataRented = ArrayPool<byte>.Shared.Rent(offset + 4);
+                            try
+                            {
+                                input.Slice(0, offset).CopyTo(associatedDataRented.AsSpan(0, offset));
+                                BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), index);
+                                input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), outerIv, outerK_e, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));
+                                outputBufferLength = length - 4 - context.N_tag / 2 - mki.Length;
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(associatedDataRented);
+                            }
                         }
                         break;
 
@@ -1209,7 +1332,9 @@ namespace SharpSRTP.SRTP
             }
             else
             {
-                outputBufferLength = length;
+                var dataLen = length - 4 - context.N_tag - mki.Length;
+                input.Slice(0, dataLen).CopyTo(output.Slice(0, dataLen));
+                outputBufferLength = dataLen;
             }
 
             return 0;
@@ -1256,8 +1381,8 @@ namespace SharpSRTP.SRTP
         /// </summary>
         public virtual bool IncrementMasterKeyUseCounter()
         {
-            long currentValue = Interlocked.Increment(ref _masterKeySentCounter);
-            long maxAllowedValue = _contextType == SrtpContextType.RTP ? 281474976710656L : 2147483648L;
+            var currentValue = Interlocked.Increment(ref _masterKeySentCounter);
+            var maxAllowedValue = _contextType == SrtpContextType.RTP ? 281474976710656L : 2147483648L;
             if (currentValue >= maxAllowedValue)
             {
                 OnRekeyingRequested?.Invoke(this, new EventArgs());

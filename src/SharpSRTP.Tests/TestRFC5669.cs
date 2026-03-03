@@ -1,4 +1,4 @@
-﻿// SharpSRTP
+// SharpSRTP
 // Copyright (C) 2025 Lukas Volf
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -61,7 +61,8 @@ namespace SharpSRTP.Tests
 
             uint roc = 0;
             ulong index = SrtpContext.GenerateRtpIndex(roc, sequenceNumber);
-            byte[] iv = CTR.GenerateMessageKeyIV(k_s, ssrc, index);
+            byte[] iv = new byte[CTR.BLOCK_SIZE];
+            CTR.GenerateMessageKeyIV(k_s, ssrc, index, iv);
 
             var seed = new SeedEngine();
             seed.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
@@ -69,7 +70,7 @@ namespace SharpSRTP.Tests
             var hmac = new HMac(new Sha1Digest());
             hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_a));
 
-            CTR.Encrypt(seed, payload, offset, length, iv);
+            CTR.Encrypt(seed, payload.AsSpan(offset, length - offset), payload.AsSpan(offset, length - offset), iv);
 
             payload[length + 0] = (byte)(roc >> 24);
             payload[length + 1] = (byte)(roc >> 16);
@@ -81,10 +82,18 @@ namespace SharpSRTP.Tests
             // It seems RFC 5669 has incorrect auth tag calculated from the original payload.
             // For a5cdaa4d9edc53763855 the following code works:
             /*
-            byte[] auth = HMAC.GenerateAuthTag(hmac, payloadRaw, 0, length);
+#if NET8_0_OR_GREATER
+            byte[] auth = HMAC.GenerateAuthTag(hmac, payloadRaw.AsSpan(0, length));
+#else
+            byte[] auth = HMAC.GenerateAuthTag(hmac, new ArraySegment<byte>(payloadRaw, 0, length));
+#endif
             */
             // However, it makes little sense to do it that way, so it's likely a bug and I've updated the test data with a different authTag produced by the standard algorithm
-            byte[] auth = HMAC.GenerateAuthTag(hmac, payload, 0, length + 4);
+#if NET8_0_OR_GREATER
+            byte[] auth = HMAC.GenerateAuthTag(hmac, payload.AsSpan(0, length + 4));
+#else
+            byte[] auth = HMAC.GenerateAuthTag(hmac, new ArraySegment<byte>(payload, 0, length + 4));
+#endif
             System.Buffer.BlockCopy(auth, 0, payload, length, n_tag); // we don't append ROC in SRTP
             var result = payload.AsSpan(0, length + n_tag).ToArray();
 
@@ -118,7 +127,7 @@ namespace SharpSRTP.Tests
 
             var cipher = new GcmBlockCipher(new SeedEngine());
             byte[] associatedData = result.AsSpan(0, offset).ToArray();
-            AEAD.Encrypt(cipher, true, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
+            AEAD.Encrypt(cipher, true, result.Slice(offset, rtpBytes.Length - offset), result.Slice(offset), iv, k_e, n_tag, associatedData.AsArraySegment());
 
             var expectedEncryptedBytes = Convert.FromHexString(expectedEncryptedRTP);
             Assert.IsTrue(result.AsSpan().SequenceEqual(expectedEncryptedBytes),
@@ -150,7 +159,7 @@ namespace SharpSRTP.Tests
 
             var cipher = new CcmBlockCipher(new SeedEngine());
             byte[] associatedData = result.AsSpan(0, offset).ToArray();
-            AEAD.Encrypt(cipher, true, result, offset, rtpBytes.Length, iv, k_e, n_tag, associatedData);
+            AEAD.Encrypt(cipher, true, result.Slice(offset, rtpBytes.Length - offset), result.Slice(offset), iv, k_e, n_tag, associatedData.AsArraySegment());
 
             var expectedEncryptedBytes = Convert.FromHexString(expectedEncryptedRTP);
             Assert.IsTrue(result.AsSpan().SequenceEqual(expectedEncryptedBytes),

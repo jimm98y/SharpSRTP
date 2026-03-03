@@ -1,3 +1,5 @@
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
 using System.Runtime.CompilerServices;
@@ -36,4 +38,48 @@ public static class BouncyCastleExtensions
             return new KeyParameter(key.Array, key.Offset, key.Count);
         }
     }
+
+#if !NET8_0_OR_GREATER
+    extension(IBlockCipher engine)
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ProcessBlock(ArraySegment<byte> input, ArraySegment<byte> output)
+        {
+            return engine.ProcessBlock(input.Array, input.Offset, output.Array, output.Offset);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ProcessBlock(byte[] input, byte[] output)
+        {
+            return engine.ProcessBlock(input, 0, output, 0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ProcessBlock(byte[] input, ArraySegment<byte> output)
+        {
+            return engine.ProcessBlock(input, 0, output.Array, output.Offset);
+        }
+    }
+
+    extension(IAeadBlockCipher engine)
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ProcessBytes(ArraySegment<byte> input, ArraySegment<byte> output)
+        {
+            return engine.ProcessBytes(input.Array, input.Offset, input.Count, output.Array, output.Offset);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ProcessAadBytes(ArraySegment<byte> input)
+        {
+            engine.ProcessAadBytes(input.Array, input.Offset, input.Count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int DoFinal(ArraySegment<byte> output)
+        {
+            return engine.DoFinal(output.Array, output.Offset);
+        }
+    }
+#endif
 }
