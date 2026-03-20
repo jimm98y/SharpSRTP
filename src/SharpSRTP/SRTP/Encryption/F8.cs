@@ -24,6 +24,14 @@ using Org.BouncyCastle.Crypto.Parameters;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
+#if NET8_0_OR_GREATER
+using Bytes = System.Span<byte>;
+using ReadOnlyBytes = System.ReadOnlySpan<byte>;
+#else
+using Bytes = byte[];
+using ReadOnlyBytes = byte[];
+#endif
+
 
 namespace SharpSRTP.SRTP.Encryption
 {
@@ -31,16 +39,16 @@ namespace SharpSRTP.SRTP.Encryption
     {
         public const int BLOCK_SIZE = 16;
 
-        public static byte[] GenerateRtpMessageKeyIV(IBlockCipher engine, byte[] k_e, byte[] k_s, byte[] rtpPacket, uint ROC)
+        public static void GenerateRtpMessageKeyIV(IBlockCipher engine, byte[] k_e, byte[] k_s, byte[] rtpPacket, uint ROC, Bytes iv)
         {
 #if NET8_0_OR_GREATER
-            Span<byte> iv = stackalloc byte[BLOCK_SIZE];
+            Span<byte> rtpIV = stackalloc byte[BLOCK_SIZE];
 #else
-            var iv = new byte[BLOCK_SIZE];
+            var rtpIV = new byte[BLOCK_SIZE];
 #endif
-            GenerateRtpIV(iv, rtpPacket, ROC);
-            byte[] iv2 = GenerateIV2(engine, k_e, k_s, iv);
-            return iv2;
+            GenerateRtpIV(rtpIV, rtpPacket, ROC);
+
+            GenerateIV2(engine, k_e, k_s, rtpIV, iv);
         }
 
         private static void GenerateRtpIV(Span<byte> iv, ReadOnlySpan<byte> rtpPacket, uint ROC)
@@ -62,7 +70,11 @@ namespace SharpSRTP.SRTP.Encryption
             var iv = new byte[BLOCK_SIZE];
 #endif
             GenerateRtcpIV(iv, rtcpPacket, index);
-            byte[] iv2 = GenerateIV2(engine, k_e, k_s, iv);
+
+            byte[] iv2 = new byte[BLOCK_SIZE];
+
+            GenerateIV2(engine, k_e, k_s, iv, iv2);
+
             return iv2;
         }
 
@@ -78,26 +90,17 @@ namespace SharpSRTP.SRTP.Encryption
             rtcpPacket.Slice(0, 8).CopyTo(iv.Slice(BLOCK_SIZE - 8, 8));
         }
 
-        private static byte[] GenerateIV2(IBlockCipher engine, byte[] k_e, byte[] k_s,
-#if NET8_0_OR_GREATER
-            ReadOnlySpan<byte>
-#else
-            byte[]
-#endif
-            iv)
+        private static void GenerateIV2(IBlockCipher engine, byte[] k_e, byte[] k_s, ReadOnlyBytes iv, Bytes iv2)
         {
-            byte[] iv2 = new byte[BLOCK_SIZE];
-            var iv2Span = iv2.AsSpan();
-
             // IV' = E(k_e XOR m, IV)
-            k_e.CopyTo(iv2Span);
+            k_e.CopyTo(iv2);
 
             // m = k_s || 0x555..5
             Span<byte> k_s_temp = stackalloc byte[BLOCK_SIZE];
             k_s_temp.Fill(0x55);
             k_s.CopyTo(k_s_temp);
 
-            BinaryExtensions.Xor128(iv2Span, k_s_temp);
+            BinaryExtensions.Xor128(iv2, k_s_temp);
 
             engine.Init(true, new KeyParameter(iv2));
 #if NET8_0_OR_GREATER
@@ -105,14 +108,12 @@ namespace SharpSRTP.SRTP.Encryption
 #else
             engine.ProcessBlock(iv, 0, iv2, 0);
 #endif
-
-            return iv2;
         }
 
         public static void Encrypt(IBlockCipher aes, Span<byte> payload, int offset, int length, ReadOnlySpan<byte> iv)
         {
             int payloadSize = length - offset;
-            int blockCount = payloadSize / BLOCK_SIZE + payloadSize % BLOCK_SIZE;
+            int blockCount = (payloadSize + BLOCK_SIZE - 1) / BLOCK_SIZE;
             byte[] cipher = ArrayPool<byte>.Shared.Rent(blockCount * BLOCK_SIZE);
 
             try

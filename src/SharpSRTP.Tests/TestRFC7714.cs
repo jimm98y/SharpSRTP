@@ -47,7 +47,8 @@ namespace SharpSRTP.Tests
             ushort sequenceNumber = RtpReader.ReadSequenceNumber(rtpBytes);
             ulong index = SrtpContext.GenerateRtpIndex(0, sequenceNumber);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            byte[] iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(k_s, ssrc, index, iv);
 
             byte[] expectedIvBytes = Convert.FromHexString(expectedIv);
             Assert.IsTrue(iv.SequenceEqual(expectedIvBytes),
@@ -71,7 +72,8 @@ namespace SharpSRTP.Tests
             int n_tag = protectionProfile.AuthTagLength >> 3;
             int offset = RtpReader.ReadHeaderLen(rtpBytes);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            byte[] iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(k_s, ssrc, index, iv);
 
             byte[] result = new byte[rtpBytes.Length + n_tag];
             Buffer.BlockCopy(rtpBytes, 0, result, 0, rtpBytes.Length);
@@ -103,7 +105,8 @@ namespace SharpSRTP.Tests
             int n_tag = protectionProfile.AuthTagLength >> 3;
             int offset = RtpReader.ReadHeaderLen(srtpBytes);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            byte[] iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(k_s, ssrc, index, iv);
 
             var cipher = new GcmBlockCipher(AesUtilities.CreateEngine());
             byte[] associatedData = new byte[offset];
@@ -124,7 +127,8 @@ namespace SharpSRTP.Tests
             byte[] k_s = Convert.FromHexString(sk_s);
             uint ssrc = RtcpReader.ReadSsrc(rtpBytes);
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            byte[] iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(k_s, ssrc, index, iv);
             var expectedIvBytes = Convert.FromHexString(expectedIv);
             Assert.IsTrue(expectedIvBytes.SequenceEqual(iv),
                 $"SRTP Decrypt RTP mismatch.\nExpected: {BitConverter.ToString(expectedIvBytes)}\nActual:   {BitConverter.ToString(iv)}");
@@ -142,7 +146,8 @@ namespace SharpSRTP.Tests
             uint ssrc = RtcpReader.ReadSsrc(rtcpBytes);
 
             int offset = RtcpReader.GetHeaderLen();
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, idx);
+            byte[] iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(k_s, ssrc, idx, iv);
 
             int n_tag = protectionProfile.AuthTagLength >> 3;
             byte[] srtcp = new byte[rtcpBytes.Length + n_tag + 4];
@@ -185,7 +190,8 @@ namespace SharpSRTP.Tests
             uint index = idx & ~SrtpContext.E_FLAG;
             int offset = RtcpReader.GetHeaderLen();
 
-            byte[] iv = AEAD.GenerateMessageKeyIV(k_s, ssrc, index);
+            byte[] iv = new byte[SRTP.Encryption.AEAD.BLOCK_SIZE];
+            AEAD.GenerateMessageKeyIV(k_s, ssrc, index, iv);
 
             var cipher = new GcmBlockCipher(AesUtilities.CreateEngine());
             byte[] associatedData = new byte[offset + 4];

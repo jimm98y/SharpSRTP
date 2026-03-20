@@ -16,26 +16,24 @@ internal sealed class Config : ManualConfig
     public Config()
     {
         Runtime[] targetRuntimes = [CoreRuntime.Core10_0, /*CoreRuntime.Core80, */ClrRuntime.Net481];
-        string[] targetVersions = ["", "0.3.1"];
+        string[] targetVersions = ["", "0.3.2", "0.3.1"];
 
-        foreach (var version in  targetVersions)
+        foreach (var version in targetVersions)
         {
-            var baseline = string.IsNullOrEmpty(version);
+            var isBaseline = string.IsNullOrEmpty(version);
 
             foreach (var targetRuntime in targetRuntimes)
             {
                 AddJob(Job.MediumRun
                     .WithRuntime(targetRuntime)
                     .WithMsBuildArguments($"/p:LibVersion={version}")
-                    .WithId(string.IsNullOrEmpty(version) ? "_" : version)
-                    .WithBaseline(baseline)
-                )
-                    .WithOrderer(new MethodJobRuntimeOrderer())
-                ;
-
-                baseline = false;
+                    .WithId(isBaseline ? "_" : version)
+                    .WithBaseline(isBaseline)
+                );
             }
         }
+
+        WithOrderer(new RuntimeGroupedOrderer());
 
         AddExporter(BenchmarkDotNet.Exporters.MarkdownExporter.GitHub);
 
@@ -49,7 +47,7 @@ internal sealed class Config : ManualConfig
         AddLogger(BenchmarkDotNet.Loggers.ConsoleLogger.Default);
     }
 
-    private sealed class MethodJobRuntimeOrderer : IOrderer
+    private sealed class RuntimeGroupedOrderer : IOrderer
     {
         public IEnumerable<BenchmarkCase> GetExecutionOrder(
             ImmutableArray<BenchmarkCase> benchmarksCase,
@@ -60,21 +58,24 @@ internal sealed class Config : ManualConfig
             ImmutableArray<BenchmarkCase> benchmarksCases,
             Summary summary)
             => benchmarksCases
-                .OrderBy(b => b.Descriptor.WorkloadMethod.Name)
-                .ThenBy(b => b.Job.Environment.Runtime?.Name)
-                .ThenBy(b => b.Job.DisplayInfo);
+                .OrderBy(b => b.Job.Environment.Runtime?.Name)
+                .ThenBy(b => b.Descriptor.WorkloadMethod.Name)
+                .ThenBy(b => b.Job.Id == "_" ? 0 : 1)
+                .ThenByDescending(b => b.Job.Id);
 
-        public string GetHighlightGroupKey(BenchmarkCase benchmarkCase) => null;
+        public string GetHighlightGroupKey(BenchmarkCase benchmarkCase)
+            => benchmarkCase.Job.Environment.Runtime?.Name;
 
         public string GetLogicalGroupKey(
             ImmutableArray<BenchmarkCase> allBenchmarksCases,
-            BenchmarkCase benchmarkCase) => null;
+            BenchmarkCase benchmarkCase)
+            => benchmarkCase.Job.Environment.Runtime?.Name;
 
         public IEnumerable<IGrouping<string, BenchmarkCase>> GetLogicalGroupOrder(
             IEnumerable<IGrouping<string, BenchmarkCase>> logicalGroups,
             IEnumerable<BenchmarkLogicalGroupRule> order = null)
-            => logicalGroups;
+            => logicalGroups.OrderBy(g => g.Key);
 
-        public bool SeparateLogicalGroups => false;
+        public bool SeparateLogicalGroups => true;
     }
 }

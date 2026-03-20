@@ -198,7 +198,8 @@ namespace SharpSRTP.Tests
             ulong index = ((ulong)roc << 16) | sequenceNumber;
 
             IBlockCipher aes = AesUtilities.CreateEngine();
-            byte[] iv = F8.GenerateRtpMessageKeyIV(aes, k_e, k_s, rtpBytes, roc);
+            byte[] iv = new byte[F8.BLOCK_SIZE];
+            F8.GenerateRtpMessageKeyIV(aes, k_e, k_s, rtpBytes, roc, iv);
 
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
             F8.Encrypt(aes, rtpBytes, offset, rtpBytes.Length, iv);

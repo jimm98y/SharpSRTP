@@ -28,6 +28,8 @@ namespace SharpSRTP.SRTP.Encryption
 {
     public static class AEAD
     {
+        public const int BLOCK_SIZE = 12;
+
         public static void Encrypt(IAeadBlockCipher engine, bool encrypt, byte[] payload, int offset, int length, byte[] iv, byte[] K_e, int N_tag, byte[] associatedData)
         {
             Encrypt(engine, encrypt, payload, offset, length, iv, new KeyParameter(K_e), N_tag, associatedData);
@@ -46,40 +48,19 @@ namespace SharpSRTP.SRTP.Encryption
             engine.DoFinal(payload, offset + len);
         }
 
-        public static byte[] GenerateMessageKeyIV(ReadOnlySpan<byte> k_s, uint ssrc, ulong index)
+        public static void GenerateMessageKeyIV(ReadOnlySpan<byte> k_s, uint ssrc, ulong index, Span<byte> iv)
         {
-            byte[] iv = GC.AllocateUninitializedArray<byte>(12);
-            k_s.Slice(0, 12).CopyTo(iv);
+            k_s.Slice(0, BLOCK_SIZE).CopyTo(iv);
 
             // XOR ssrc at offset 2 (3 bytes for 48-bit index)
-            var ssrcSpan = iv.AsSpan(2, 4);
+            var ssrcSpan = iv.Slice(2, 4);
             BinaryPrimitives.WriteUInt32BigEndian(ssrcSpan,
                 BinaryPrimitives.ReadUInt32BigEndian(ssrcSpan) ^ ssrc);
 
             // XOR index at offset 6 (6 bytes for 48-bit index)
-            var indexSpan = iv.AsSpan(4, 8);
+            var indexSpan = iv.Slice(4, 8);
             BinaryPrimitives.WriteUInt64BigEndian(indexSpan,
                 BinaryPrimitives.ReadUInt64BigEndian(indexSpan) ^ (index & 0x0000_FFFF_FFFF_FFFF));
-
-            return iv;
-        }
-
-        public static byte[] GenerateMessageKeyIV(ArraySegment<byte> k_s, uint ssrc, ulong index)
-        {
-            byte[] iv = GC.AllocateUninitializedArray<byte>(12);
-            Buffer.BlockCopy(k_s.Array, k_s.Offset, iv, 0, 12);
-
-            // XOR ssrc at offset 2 (3 bytes for 48-bit index)
-            var ssrcSpan = iv.AsSpan(2, 4);
-            BinaryPrimitives.WriteUInt32BigEndian(ssrcSpan,
-                BinaryPrimitives.ReadUInt32BigEndian(ssrcSpan) ^ ssrc);
-
-            // XOR index at offset 6 (6 bytes for 48-bit index)
-            var indexSpan = iv.AsSpan(4, 8);
-            BinaryPrimitives.WriteUInt64BigEndian(indexSpan,
-                BinaryPrimitives.ReadUInt64BigEndian(indexSpan) ^ (index & 0x0000_FFFF_FFFF_FFFF));
-
-            return iv;
         }
     }
 }

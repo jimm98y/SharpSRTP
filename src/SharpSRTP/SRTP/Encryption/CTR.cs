@@ -22,6 +22,13 @@
 using Org.BouncyCastle.Crypto;
 using System;
 using System.Buffers;
+#if NET8_0_OR_GREATER
+using Bytes = System.Span<byte>;
+using ReadOnlyBytes = System.ReadOnlySpan<byte>;
+#else
+using Bytes = byte[];
+using ReadOnlyBytes = byte[];
+#endif
 
 namespace SharpSRTP.SRTP.Encryption
 {
@@ -29,10 +36,8 @@ namespace SharpSRTP.SRTP.Encryption
     {
         public const int BLOCK_SIZE = 16;
 
-        public static byte[] GenerateSessionKeyIV(ReadOnlyMemory<byte> masterSalt, ulong index, ulong kdr, byte label)
+        public static void GenerateSessionKeyIV(ReadOnlyMemory<byte> masterSalt, ulong index, ulong kdr, byte label, Span<byte> iv)
         {
-            byte[] iv = GC.AllocateUninitializedArray<byte>(BLOCK_SIZE);
-
             // RFC 3711 - 4.3.1
             // Key derivation SHALL be defined as follows in terms of<label>, an
             // 8 - bit constant(see below), master_salt and key_derivation_rate, as
@@ -48,15 +53,13 @@ namespace SharpSRTP.SRTP.Encryption
             // *Let x = key_id XOR master_salt, where key_id and master_salt are
             //  aligned so that their least significant bits agree(right-
             //  alignment).
-            masterSalt.CopyTo(iv);
+            masterSalt.Span.CopyTo(iv);
 
             // XOR index at offset 7 (6 bytes for 48-bit index)
-            BinaryExtensions.Xor64(iv.AsSpan(6, 8), (keyId & 0x00FF_FFFF_FFFF_FFFF));
+            BinaryExtensions.Xor64(iv.Slice(6, 8), (keyId & 0x00FF_FFFF_FFFF_FFFF));
 
             iv[14] = 0;
             iv[15] = 0;
-
-            return iv;
         }
 
         private static ulong DIV(ulong x, ulong y)
@@ -91,7 +94,7 @@ namespace SharpSRTP.SRTP.Encryption
             return iv;
         }
 
-        public static void Encrypt(IBlockCipher engine, Span<byte> payload, int offset, int length, byte[] iv)
+        public static void Encrypt(IBlockCipher engine, Span<byte> payload, int offset, int length, Bytes iv)
         {
             int payloadSize = length - offset;
             byte[] cipher = ArrayPool<byte>.Shared.Rent(payloadSize);
@@ -103,7 +106,11 @@ namespace SharpSRTP.SRTP.Encryption
                 {
                     iv[14] = (byte)((i >> 8) & 0xff);
                     iv[15] = (byte)(i & 0xff);
+#if NET8_0_OR_GREATER
+                    engine.ProcessBlock(iv, cipher.AsSpan(BLOCK_SIZE * blockNo));
+#else
                     engine.ProcessBlock(iv, 0, cipher, BLOCK_SIZE * blockNo);
+#endif
                     blockNo++;
                 }
 
@@ -112,7 +119,11 @@ namespace SharpSRTP.SRTP.Encryption
                     iv[14] = (byte)((blockNo >> 8) & 0xff);
                     iv[15] = (byte)(blockNo & 0xff);
                     byte[] lastBlock = GC.AllocateUninitializedArray<byte>(BLOCK_SIZE);
+#if NET8_0_OR_GREATER
+                    engine.ProcessBlock(iv, lastBlock);
+#else
                     engine.ProcessBlock(iv, 0, lastBlock, 0);
+#endif
                     Buffer.BlockCopy(lastBlock, 0, cipher, BLOCK_SIZE * blockNo, payloadSize % BLOCK_SIZE);
                 }
 
