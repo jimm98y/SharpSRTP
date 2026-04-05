@@ -39,7 +39,7 @@ namespace SharpSRTP.SRTP.Encryption
     {
         public const int BLOCK_SIZE = 16;
 
-        public static void GenerateRtpMessageKeyIV(IBlockCipher engine, byte[] k_e, byte[] k_s, byte[] rtpPacket, uint ROC, Bytes iv)
+        public static void GenerateRtpMessageKeyIV(IBlockCipher engine, byte[] k_e, byte[] k_s, ReadOnlySpan<byte> rtpPacket, uint ROC, Bytes iv)
         {
 #if NET8_0_OR_GREATER
             Span<byte> rtpIV = stackalloc byte[BLOCK_SIZE];
@@ -103,16 +103,12 @@ namespace SharpSRTP.SRTP.Encryption
             BinaryExtensions.Xor128(iv2, k_s_temp);
 
             engine.Init(true, new KeyParameter(iv2));
-#if NET8_0_OR_GREATER
             engine.ProcessBlock(iv, iv2);
-#else
-            engine.ProcessBlock(iv, 0, iv2, 0);
-#endif
         }
 
-        public static void Encrypt(IBlockCipher aes, Span<byte> payload, int offset, int length, ReadOnlySpan<byte> iv)
+        public static void Encrypt(IBlockCipher aes, ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> iv)
         {
-            int payloadSize = length - offset;
+            int payloadSize = input.Length;
             int blockCount = (payloadSize + BLOCK_SIZE - 1) / BLOCK_SIZE;
             byte[] cipher = ArrayPool<byte>.Shared.Rent(blockCount * BLOCK_SIZE);
 
@@ -139,8 +135,9 @@ namespace SharpSRTP.SRTP.Encryption
                 }
 
                 BinaryExtensions.Xor(
-                    payload.Slice(offset, payloadSize),
-                    cipher.AsSpan(0, payloadSize));
+                    input,
+                    cipher.AsSpan(0, payloadSize),
+                    output.Slice(0, payloadSize));
             }
             finally
             {

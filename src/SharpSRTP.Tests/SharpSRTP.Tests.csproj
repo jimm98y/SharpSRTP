@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\SharpSRTP\PolyfillExtensions.cs" Link="PolyfillExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MSTest" Version="4.1.0" />
   </ItemGroup>
 

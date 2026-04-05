@@ -20,6 +20,20 @@ internal static partial class PolyfillExtensions
 
     extension<T>(ArraySegment<T> source)
     {
+        public int Length => source.Count;
+
+        public T[] ToArray()
+        {
+            var array = new T[source.Count];
+            Array.Copy(source.Array, source.Offset, array, 0, source.Count);
+            return array;
+        }
+
+        public void CopyTo(Span<T> destination)
+        {
+            new ReadOnlySpan<T>(source.Array, source.Offset, source.Count).CopyTo(destination);
+        }
+
         public ArraySegment<T> Slice(int index)
         {
             if (source.Array == null)
@@ -49,6 +63,11 @@ internal static partial class PolyfillExtensions
 
             return new ArraySegment<T>(source.Array, source.Offset + index, count);
         }
+
+        public void CopyTo(T[] destination)
+        {
+            new ReadOnlySpan<T>(source.Array, source.Offset, source.Count).CopyTo(destination);
+        }
     }
 
     extension (byte[] bytes)
@@ -66,6 +85,18 @@ internal static partial class PolyfillExtensions
             bytes.AsSpan().CopyTo(destination);
         }
     }
+#endif
+
+#if NET8_0_OR_GREATER
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Span<T> Slice<T>(this T[] array, int index) => array.AsSpan(index);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Span<T> Slice<T>(this T[] array, int index, int count) => array.AsSpan(index, count);
+#else
+    public static ArraySegment<T> Slice<T>(this T[] array, int index) => new ArraySegment<T>(array, index, array.Length - index);
+
+    public static ArraySegment<T> Slice<T>(this T[] array, int index, int count) => new ArraySegment<T>(array, index, count);
 #endif
 
     public static ArraySegment<T> AsArraySegment<T>(this T[] array) => array != null ? new ArraySegment<T>(array) : default(ArraySegment<T>);

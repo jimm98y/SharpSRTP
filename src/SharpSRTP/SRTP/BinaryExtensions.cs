@@ -12,57 +12,69 @@ namespace SharpSRTP.SRTP
     {
         public static void Xor(Span<byte> data, ReadOnlySpan<byte> other)
         {
+            Xor(data, other, data);
+        }
+
+        public static void Xor(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b, Span<byte> output)
+        {
             int i = 0;
 
 #if NET8_0_OR_GREATER
-            ref byte dRef = ref MemoryMarshal.GetReference(data);
-            ref byte oRef = ref MemoryMarshal.GetReference(other);
+            ref byte aRef = ref MemoryMarshal.GetReference(a);
+            ref byte bRef = ref MemoryMarshal.GetReference(b);
+            ref byte oRef = ref MemoryMarshal.GetReference(output);
 
             if (Vector512.IsHardwareAccelerated)
             {
-                for (; i <= data.Length - 64; i += 64)
-                    (Vector512.LoadUnsafe(ref Unsafe.Add(ref dRef, i)) ^
-                     Vector512.LoadUnsafe(ref Unsafe.Add(ref oRef, i)))
-                        .StoreUnsafe(ref Unsafe.Add(ref dRef, i));
+                for (; i <= output.Length - 64; i += 64)
+                    (Vector512.LoadUnsafe(ref Unsafe.Add(ref aRef, i)) ^
+                     Vector512.LoadUnsafe(ref Unsafe.Add(ref bRef, i)))
+                        .StoreUnsafe(ref Unsafe.Add(ref oRef, i));
             }
 
             if (Vector256.IsHardwareAccelerated)
             {
-                for (; i <= data.Length - 32; i += 32)
-                    (Vector256.LoadUnsafe(ref Unsafe.Add(ref dRef, i)) ^
-                     Vector256.LoadUnsafe(ref Unsafe.Add(ref oRef, i)))
-                        .StoreUnsafe(ref Unsafe.Add(ref dRef, i));
+                for (; i <= output.Length - 32; i += 32)
+                    (Vector256.LoadUnsafe(ref Unsafe.Add(ref aRef, i)) ^
+                     Vector256.LoadUnsafe(ref Unsafe.Add(ref bRef, i)))
+                        .StoreUnsafe(ref Unsafe.Add(ref oRef, i));
             }
 
             if (Vector128.IsHardwareAccelerated)
             {
-                for (; i <= data.Length - 16; i += 16)
-                    (Vector128.LoadUnsafe(ref Unsafe.Add(ref dRef, i)) ^
-                     Vector128.LoadUnsafe(ref Unsafe.Add(ref oRef, i)))
-                        .StoreUnsafe(ref Unsafe.Add(ref dRef, i));
+                for (; i <= output.Length - 16; i += 16)
+                    (Vector128.LoadUnsafe(ref Unsafe.Add(ref aRef, i)) ^
+                     Vector128.LoadUnsafe(ref Unsafe.Add(ref bRef, i)))
+                        .StoreUnsafe(ref Unsafe.Add(ref oRef, i));
             }
 #endif
 
-            for (; i <= data.Length - 8; i += 8)
+            for (; i <= output.Length - 8; i += 8)
             {
-                Xor64(data.Slice(i, 8), other.Slice(i, 8));
+                BinaryPrimitives.WriteUInt64BigEndian(output.Slice(i, 8),
+                    BinaryPrimitives.ReadUInt64BigEndian(a.Slice(i, 8)) ^
+                    BinaryPrimitives.ReadUInt64BigEndian(b.Slice(i, 8)));
             }
 
-            if (i <= data.Length - 4)
+            if (i <= output.Length - 4)
             {
-                Xor32(data.Slice(i, 4), other.Slice(i, 4));
+                BinaryPrimitives.WriteUInt32BigEndian(output.Slice(i, 4),
+                    BinaryPrimitives.ReadUInt32BigEndian(a.Slice(i, 4)) ^
+                    BinaryPrimitives.ReadUInt32BigEndian(b.Slice(i, 4)));
                 i += 4;
             }
 
-            if (i <= data.Length - 2)
+            if (i <= output.Length - 2)
             {
-                Xor16(data.Slice(i, 2), other.Slice(i, 2));
+                BinaryPrimitives.WriteUInt16LittleEndian(output.Slice(i, 2),
+                    (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(a.Slice(i, 2)) ^
+                             BinaryPrimitives.ReadUInt16LittleEndian(b.Slice(i, 2))));
                 i += 2;
             }
 
-            if (i < data.Length)
+            if (i < output.Length)
             {
-                data[i] ^= other[i];
+                output[i] = (byte)(a[i] ^ b[i]);
             }
         }
 

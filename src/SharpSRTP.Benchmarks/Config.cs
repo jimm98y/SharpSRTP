@@ -16,7 +16,7 @@ internal sealed class Config : ManualConfig
     public Config()
     {
         Runtime[] targetRuntimes = [CoreRuntime.Core10_0, /*CoreRuntime.Core80, */ClrRuntime.Net481];
-        string[] targetVersions = ["", "0.3.2", "0.3.1"];
+        string[] targetVersions = ["", "0.4.0", "0.3.2", "0.3.1"];
 
         foreach (var version in targetVersions)
         {

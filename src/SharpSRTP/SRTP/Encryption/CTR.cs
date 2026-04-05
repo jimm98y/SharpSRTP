@@ -22,6 +22,8 @@
 using Org.BouncyCastle.Crypto;
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
+
 #if NET8_0_OR_GREATER
 using Bytes = System.Span<byte>;
 using ReadOnlyBytes = System.ReadOnlySpan<byte>;
@@ -45,10 +47,10 @@ namespace SharpSRTP.SRTP.Encryption
             // (i.e., the 48 - bit ROC || SEQ for SRTP):
 
             // *Let r = index DIV key_derivation_rate(with DIV as defined above).
-            ulong r = DIV(index, kdr);
+            var r = DIV(index, kdr);
 
             // *Let key_id = < label > || r.
-            ulong keyId = ((ulong)label << 48) | r;
+            var keyId = ((ulong)label << 48) | r;
 
             // *Let x = key_id XOR master_salt, where key_id and master_salt are
             //  aligned so that their least significant bits agree(right-
@@ -74,62 +76,49 @@ namespace SharpSRTP.SRTP.Encryption
             }
         }
 
-        public static byte[] GenerateMessageKeyIV(ReadOnlySpan<byte> salt, uint ssrc, ulong index)
+        public static void GenerateMessageKeyIV(ReadOnlySpan<byte> salt, uint ssrc, ulong index, Span<byte> iv)
         {
             // RFC 3711 - 4.1.1
             // IV = (k_s * 2 ^ 16) XOR(SSRC * 2 ^ 64) XOR(i * 2 ^ 16)
-            byte[] iv = GC.AllocateUninitializedArray<byte>(16);
-
             salt.Slice(0, 14).CopyTo(iv);
 
             // XOR ssrc at offset 4 (3 bytes for 48-bit index)
-            BinaryExtensions.Xor32(iv.AsSpan(4, 4), ssrc);
+            BinaryExtensions.Xor32(iv.Slice(4, 4), ssrc);
 
             // XOR index at offset 8 (6 bytes for 48-bit index)
-            BinaryExtensions.Xor64(iv.AsSpan(6, 8), index & 0x0000_FFFF_FFFF_FFFF);
+            BinaryExtensions.Xor64(iv.Slice(6, 8), index & 0x0000_FFFF_FFFF_FFFF);
 
             iv[14] = 0;
             iv[15] = 0;
-
-            return iv;
         }
 
-        public static void Encrypt(IBlockCipher engine, Span<byte> payload, int offset, int length, Bytes iv)
+        public static void Encrypt(IBlockCipher engine, ReadOnlySpan<byte> input, Span<byte> output, Bytes iv)
         {
-            int payloadSize = length - offset;
-            byte[] cipher = ArrayPool<byte>.Shared.Rent(payloadSize);
+            var payloadSize = input.Length;
+            var cipher = ArrayPool<byte>.Shared.Rent(payloadSize);
 
             try
             {
-                int blockNo = 0;
-                for (int i = 0; i < payloadSize / BLOCK_SIZE; i++)
+                var blockNo = 0;
+                for (var i = 0; i < payloadSize / BLOCK_SIZE; i++)
                 {
-                    iv[14] = (byte)((i >> 8) & 0xff);
-                    iv[15] = (byte)(i & 0xff);
-#if NET8_0_OR_GREATER
-                    engine.ProcessBlock(iv, cipher.AsSpan(BLOCK_SIZE * blockNo));
-#else
-                    engine.ProcessBlock(iv, 0, cipher, BLOCK_SIZE * blockNo);
-#endif
+                    BinaryPrimitives.WriteUInt16BigEndian(iv.Slice(14, 2), (ushort)i);
+                    engine.ProcessBlock(iv, cipher.Slice(BLOCK_SIZE * blockNo, BLOCK_SIZE));
                     blockNo++;
                 }
 
                 if (payloadSize % BLOCK_SIZE != 0)
                 {
-                    iv[14] = (byte)((blockNo >> 8) & 0xff);
-                    iv[15] = (byte)(blockNo & 0xff);
-                    byte[] lastBlock = GC.AllocateUninitializedArray<byte>(BLOCK_SIZE);
-#if NET8_0_OR_GREATER
+                    BinaryPrimitives.WriteUInt16BigEndian(iv.Slice(14, 2), (ushort)blockNo);
+                    var lastBlock = GC.AllocateUninitializedArray<byte>(BLOCK_SIZE);
                     engine.ProcessBlock(iv, lastBlock);
-#else
-                    engine.ProcessBlock(iv, 0, lastBlock, 0);
-#endif
                     Buffer.BlockCopy(lastBlock, 0, cipher, BLOCK_SIZE * blockNo, payloadSize % BLOCK_SIZE);
                 }
 
                 BinaryExtensions.Xor(
-                    payload.Slice(offset, payloadSize),
-                    cipher.AsSpan(0, payloadSize));
+                    input,
+                    cipher.AsSpan(0, payloadSize),
+                    output);
             }
             finally
             {

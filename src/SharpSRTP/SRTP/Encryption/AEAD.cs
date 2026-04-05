@@ -23,6 +23,13 @@ using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
 using System.Buffers.Binary;
+#if NET8_0_OR_GREATER
+using ReadOnlyBytes = System.ReadOnlySpan<byte>;
+using Bytes = System.Span<byte>;
+#else
+using ReadOnlyBytes = System.ArraySegment<byte>;
+using Bytes = System.ArraySegment<byte>;
+#endif
 
 namespace SharpSRTP.SRTP.Encryption
 {
@@ -30,22 +37,22 @@ namespace SharpSRTP.SRTP.Encryption
     {
         public const int BLOCK_SIZE = 12;
 
-        public static void Encrypt(IAeadBlockCipher engine, bool encrypt, byte[] payload, int offset, int length, byte[] iv, byte[] K_e, int N_tag, byte[] associatedData)
+        public static void Encrypt(IAeadBlockCipher engine, bool encrypt, ReadOnlyBytes input, Bytes output, byte[] iv, byte[] K_e, int N_tag, ReadOnlyBytes associatedData)
         {
-            Encrypt(engine, encrypt, payload, offset, length, iv, new KeyParameter(K_e), N_tag, associatedData);
+            Encrypt(engine, encrypt, input, output, iv, new KeyParameter(K_e), N_tag, associatedData);
         }
 
-        public static void Encrypt(IAeadBlockCipher engine, bool encrypt, byte[] payload, int offset, int length, byte[] iv, KeyParameter K_e, int N_tag, byte[] associatedData)
+        public static void Encrypt(IAeadBlockCipher engine, bool encrypt, ReadOnlyBytes input, Bytes output, byte[] iv, KeyParameter K_e, int N_tag, ReadOnlyBytes associatedData)
         {
-            int payloadSize = length - offset;
-
-            var parameters = new AeadParameters(K_e, N_tag << 3, iv, associatedData);
+            var parameters = new AeadParameters(K_e, N_tag << 3, iv);
             engine.Init(encrypt, parameters);
 
-            int len = engine.ProcessBytes(payload, offset, payloadSize, payload, offset);
+            engine.ProcessAadBytes(associatedData);
+
+            int len = engine.ProcessBytes(input, output);
 
             // throws when the MAC fails to match
-            engine.DoFinal(payload, offset + len);
+            engine.DoFinal(output.Slice(len));
         }
 
         public static void GenerateMessageKeyIV(ReadOnlySpan<byte> k_s, uint ssrc, ulong index, Span<byte> iv)

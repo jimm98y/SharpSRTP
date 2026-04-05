@@ -45,7 +45,7 @@ namespace SharpSRTP.SRTP.Readers
             int length = ReadHeaderLenWithoutExtensions(payload);
             if ((payload[0] & 0x10) == 0x10)
             {
-                return 4 + (payload[length + 2] << 8) | payload[length + 3];
+                return 4 + System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(payload.Slice(length + 2, 2));
             }
             else
             {
@@ -58,11 +58,11 @@ namespace SharpSRTP.SRTP.Readers
             return 12 + 4 * (payload[0] & 0xf);
         }
 
-        public static byte[] ReadHeaderExtensions(ReadOnlySpan<byte> payload)
+        public static ReadOnlySpan<byte> ReadHeaderExtensions(ReadOnlySpan<byte> payload)
         {
             int length = ReadHeaderLenWithoutExtensions(payload);
             int extLen = ReadExtensionsLength(payload);
-            return payload.Slice(length, extLen).ToArray();
+            return payload.Slice(length, extLen);
         }
     }
 }
