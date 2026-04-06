@@ -27,25 +27,31 @@ namespace SharpSRTP.SRTP
             if (Vector512.IsHardwareAccelerated)
             {
                 for (; i <= output.Length - 64; i += 64)
+                {
                     (Vector512.LoadUnsafe(ref Unsafe.Add(ref aRef, i)) ^
                      Vector512.LoadUnsafe(ref Unsafe.Add(ref bRef, i)))
                         .StoreUnsafe(ref Unsafe.Add(ref oRef, i));
+                }
             }
 
             if (Vector256.IsHardwareAccelerated)
             {
                 for (; i <= output.Length - 32; i += 32)
+                {
                     (Vector256.LoadUnsafe(ref Unsafe.Add(ref aRef, i)) ^
                      Vector256.LoadUnsafe(ref Unsafe.Add(ref bRef, i)))
                         .StoreUnsafe(ref Unsafe.Add(ref oRef, i));
+                }
             }
 
             if (Vector128.IsHardwareAccelerated)
             {
                 for (; i <= output.Length - 16; i += 16)
+                {
                     (Vector128.LoadUnsafe(ref Unsafe.Add(ref aRef, i)) ^
                      Vector128.LoadUnsafe(ref Unsafe.Add(ref bRef, i)))
                         .StoreUnsafe(ref Unsafe.Add(ref oRef, i));
+                }
             }
 #endif
 
