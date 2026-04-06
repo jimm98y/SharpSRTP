@@ -1204,7 +1204,8 @@ namespace SharpSRTP.SRTP
                 context.ReplayProtection.Add(ssrc, ssrcContext);
             }
 
-            var index = RtcpReader.SrtcpReadIndex(input, context.N_a > 0 ? (context.N_tag + mki.Length) : 0);
+            var originalIndex = RtcpReader.SrtcpReadIndex(input, context.N_a > 0 ? (context.N_tag + mki.Length) : 0);
+            var index = originalIndex;
             var isEncrypted = false;
 
             if ((index & E_FLAG) == E_FLAG)
@@ -1287,7 +1288,7 @@ namespace SharpSRTP.SRTP
                             try
                             {
                                 input.Slice(0, offset).CopyTo(associatedDataRented.AsSpan(0, offset));
-                                BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), index);
+                                BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), originalIndex);
                                 input.Slice(0, offset).CopyTo(output.Slice(0, offset));
                                 SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), iv, context.K_e, context.N_tag, associatedDataRented.Slice(0, offset + 4));
                                 outputBufferLength = length - 4 - context.N_tag - mki.Length;
@@ -1311,7 +1312,7 @@ namespace SharpSRTP.SRTP
                             try
                             {
                                 input.Slice(0, offset).CopyTo(associatedDataRented.AsSpan(0, offset));
-                                BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), index);
+                                BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), originalIndex);
                                 input.Slice(0, offset).CopyTo(output.Slice(0, offset));
                                 SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), outerIv, outerK_e, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));
                                 outputBufferLength = length - 4 - context.N_tag / 2 - mki.Length;
