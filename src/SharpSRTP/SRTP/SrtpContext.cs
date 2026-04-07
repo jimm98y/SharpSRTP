@@ -911,8 +911,8 @@ namespace SharpSRTP.SRTP
                             // apply inner cryptographic algorithm
                             var innerK_e = KeyParameter.Create(context.K_e.Slice(0, context.K_e.Length / 2));
                             var innerK_s = context.K_s.AsSpan(0, context.K_s.Length / 2);
-                            SRTP.Encryption.AEAD.GenerateMessageKeyIV(innerK_s, innerSsrc, innerIndex, context.Iv16);
-                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), context.Iv16, innerK_e, context.N_tag / 2, syntheticRtpPacket.Slice(0, rtpHeaderLength));
+                            SRTP.Encryption.AEAD.GenerateMessageKeyIV(innerK_s, innerSsrc, innerIndex, context.Iv12);
+                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), context.Iv12, innerK_e, context.N_tag / 2, syntheticRtpPacket.Slice(0, rtpHeaderLength));
 
                             // copy the unprotected payload back to the output buffer
                             syntheticRtpPacket.AsSpan(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength - context.N_tag / 2).CopyTo(output.Slice(offset, syntheticRtpPacketLen - rtpHeaderLength - context.N_tag / 2));
