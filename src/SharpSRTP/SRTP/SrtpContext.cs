@@ -1248,7 +1248,7 @@ namespace SharpSRTP.SRTP
                     case SrtpCiphers.AES_128_F8:
                         {
                             var decLen = length - 4 - context.N_tag - mki.Length;
-                            var iv = SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, index);
+                            var iv = SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, originalIndex);
                             input.Slice(0, offset).CopyTo(output.Slice(0, offset));
                             SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), iv);
                             outputBufferLength = decLen;
