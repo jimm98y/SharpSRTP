@@ -436,10 +436,8 @@ namespace SharpSRTP.SRTP
                 case SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM:
                 case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
                     {
-
                         var innerSalt = masterSalt.Slice(0, masterSalt.Length / 2);
                         var innerKey = masterKey.Slice(0, masterKey.Length / 2);
-                        engineKeys.Init(true, KeyParameter.Create(masterKey));
 
                         Encryption.CTR.GenerateSessionKeyIV(innerSalt, index, kdr, (byte)label, iv);
                         engineKeys.Init(true, KeyParameter.Create(innerKey));
