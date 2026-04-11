@@ -72,9 +72,9 @@ namespace SharpSRTP.SRTP
 
             if (i <= output.Length - 2)
             {
-                BinaryPrimitives.WriteUInt16LittleEndian(output.Slice(i, 2),
-                    (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(a.Slice(i, 2)) ^
-                             BinaryPrimitives.ReadUInt16LittleEndian(b.Slice(i, 2))));
+                BinaryPrimitives.WriteUInt16BigEndian(output.Slice(i, 2),
+                    (ushort)(BinaryPrimitives.ReadUInt16BigEndian(a.Slice(i, 2)) ^
+                             BinaryPrimitives.ReadUInt16BigEndian(b.Slice(i, 2))));
                 i += 2;
             }
 
@@ -124,13 +124,13 @@ namespace SharpSRTP.SRTP
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Xor16(Span<byte> data, ReadOnlySpan<byte> other)
         {
-            Xor16(data, BinaryPrimitives.ReadUInt16LittleEndian(other));
+            Xor16(data, BinaryPrimitives.ReadUInt16BigEndian(other));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Xor16(Span<byte> data, ushort other)
         {
-            BinaryPrimitives.WriteUInt16LittleEndian(data, (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(data) ^ other));
+            BinaryPrimitives.WriteUInt16BigEndian(data, (ushort)(BinaryPrimitives.ReadUInt16BigEndian(data) ^ other));
         }
     }
 }
