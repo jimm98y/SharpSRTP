@@ -45,12 +45,11 @@ namespace SharpSRTP.SRTP.Readers
             int length = ReadHeaderLenWithoutExtensions(payload);
             if ((payload[0] & 0x10) == 0x10)
             {
-                return 4 + System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(payload.Slice(length + 2, 2));
+                var extensionLengthWords = (payload[length + 2] << 8) | payload[length + 3];
+                return 4 + (extensionLengthWords * 4);
             }
-            else
-            {
-                return 0;
-            }
+
+            return 0;
         }
 
         public static int ReadHeaderLenWithoutExtensions(ReadOnlySpan<byte> payload)
