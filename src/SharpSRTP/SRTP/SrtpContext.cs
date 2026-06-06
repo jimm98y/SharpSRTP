@@ -61,55 +61,6 @@ namespace SharpSRTP.SRTP
         public bool S_l_set { get; private set; } = false;
 
         /// <summary>
-        /// Checks and updates the replay window for the given sequence number.
-        /// </summary>
-        /// <param name="sequenceNumber">RTP/RTCP sequence number.</param>
-        /// <returns>true if the replay check passed, false when the packed was replayed.</returns>
-        /// <remarks>https://datatracker.ietf.org/doc/html/rfc2401 Appendix C</remarks>
-        public bool CheckAndUpdateReplayWindow(uint sequenceNumber)
-        {
-            int diff;
-
-            if (sequenceNumber == 0)
-            {
-                if (!S_l_set)
-                {
-                    S_l_set = true;
-                    return true; /* first is good */
-                }
-                return false; /* first == 0 or wrapped */
-            }
-            if (sequenceNumber > S_l)
-            {
-                /* new larger sequence number */
-                diff = (int)(sequenceNumber - S_l);
-                if (diff < REPLAY_WINDOW_SIZE)
-                {
-                    /* In window */
-                    Bitmap = Bitmap << diff;
-                    Bitmap |= 1; /* set bit for this packet */
-                }
-                else
-                {
-                    Bitmap = 1; /* This packet has a "way larger" */
-                }
-                S_l = sequenceNumber;
-                return true; /* larger is good */
-            }
-            diff = (int)(S_l - sequenceNumber);
-            if (diff >= REPLAY_WINDOW_SIZE)
-            {
-                return false; /* too old or wrapped */
-            }
-            if ((Bitmap & ((ulong)1 << diff)) == ((ulong)1 << diff))
-            {
-                return false; /* already seen */
-            }
-            Bitmap |= ((ulong)1 << diff); /* mark as seen */
-            return true; /* out of order but good */
-        }
-
-        /// <summary>
         /// Read-only replay check. Returns whether <paramref name="sequenceNumber"/> (a 32-bit packet
         /// index) is acceptable, WITHOUT mutating any state. Per RFC 3711 section 3.3 the replay list,
         /// s_l and ROC MUST NOT be advanced until the packet has been authenticated, so callers must do
@@ -1296,7 +1247,7 @@ namespace SharpSRTP.SRTP
                 }
             }
 
-            if (!ssrcContext.CheckAndUpdateReplayWindow(index))
+            if (!ssrcContext.CheckReplayWindow(index))
             {
                 outputBufferLength = 0;
                 return ERROR_REPLAY_CHECK_FAILED;
@@ -1304,93 +1255,104 @@ namespace SharpSRTP.SRTP
 
             if (isEncrypted)
             {
-                switch (context.Cipher)
+                try
                 {
-                    case SrtpCiphers.NULL:
-                        {
-                            var dataLen = length - 4 - context.N_tag - mki.Length;
-                            input.Slice(0, dataLen).CopyTo(output.Slice(0, dataLen));
-                            outputBufferLength = dataLen;
-                        }
-                        break;
-
-                    case SrtpCiphers.AES_128_F8:
-                        {
-                            var decLen = length - 4 - context.N_tag - mki.Length;
-                            var iv = SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, originalIndex);
-                            input.Slice(0, offset).CopyTo(output.Slice(0, offset));
-                            SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), iv);
-                            outputBufferLength = decLen;
-                        }
-                        break;
-
-                    case SrtpCiphers.AES_128_CM:
-                    case SrtpCiphers.AES_192_CM:
-                    case SrtpCiphers.AES_256_CM:
-                    case SrtpCiphers.ARIA_128_CTR:
-                    case SrtpCiphers.ARIA_256_CTR:
-                    case SrtpCiphers.SEED_128_CTR:
-                        {
-                            var decLen = length - 4 - context.N_tag - mki.Length;
-                            SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, ssrcContext.S_l, context.Iv16);
-                            input.Slice(0, offset).CopyTo(output.Slice(0, offset));
-                            SRTP.Encryption.CTR.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), context.Iv16);
-                            outputBufferLength = decLen;
-                        }
-                        break;
-
-                    case SrtpCiphers.AEAD_AES_128_GCM:
-                    case SrtpCiphers.AEAD_AES_256_GCM:
-                    case SrtpCiphers.AEAD_ARIA_128_GCM:
-                    case SrtpCiphers.AEAD_ARIA_256_GCM:
-                    case SrtpCiphers.SEED_128_CCM:
-                    case SrtpCiphers.SEED_128_GCM:
-                        {
-                            SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, ssrcContext.S_l, context.Iv12);
-                            var associatedDataRented = ArrayPool<byte>.Shared.Rent(offset + 4);
-                            try
+                    switch (context.Cipher)
+                    {
+                        case SrtpCiphers.NULL:
                             {
-                                input.Slice(0, offset).CopyTo(associatedDataRented.AsSpan(0, offset));
-                                BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), originalIndex);
+                                var dataLen = length - 4 - context.N_tag - mki.Length;
+                                input.Slice(0, dataLen).CopyTo(output.Slice(0, dataLen));
+                                outputBufferLength = dataLen;
+                            }
+                            break;
+
+                        case SrtpCiphers.AES_128_F8:
+                            {
+                                var decLen = length - 4 - context.N_tag - mki.Length;
+                                var iv = SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, originalIndex);
                                 input.Slice(0, offset).CopyTo(output.Slice(0, offset));
-                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), context.Iv12, context.K_e, context.N_tag, associatedDataRented.Slice(0, offset + 4));
-                                outputBufferLength = length - 4 - context.N_tag - mki.Length;
+                                SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), iv);
+                                outputBufferLength = decLen;
                             }
-                            finally
-                            {
-                                ArrayPool<byte>.Shared.Return(associatedDataRented);
-                            }
-                        }
-                        break;
+                            break;
 
-                    case SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM:
-                    case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
-                        {
-                            // RTCP under Double AEAD is protected only with the outer layer
-                            var outerK_e = KeyParameter.Create(context.K_e.Slice(context.K_e.Length / 2));
-                            var outerK_s = context.K_s.AsSpan(context.K_s.Length / 2);
-                            SRTP.Encryption.AEAD.GenerateMessageKeyIV(outerK_s, ssrc, ssrcContext.S_l, context.Iv12);
-                            var associatedDataRented = ArrayPool<byte>.Shared.Rent(offset + 4);
-                            try
+                        case SrtpCiphers.AES_128_CM:
+                        case SrtpCiphers.AES_192_CM:
+                        case SrtpCiphers.AES_256_CM:
+                        case SrtpCiphers.ARIA_128_CTR:
+                        case SrtpCiphers.ARIA_256_CTR:
+                        case SrtpCiphers.SEED_128_CTR:
                             {
-                                input.Slice(0, offset).CopyTo(associatedDataRented.AsSpan(0, offset));
-                                BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), originalIndex);
+                                var decLen = length - 4 - context.N_tag - mki.Length;
+                                SRTP.Encryption.CTR.GenerateMessageKeyIV(context.K_s, ssrc, ssrcContext.S_l, context.Iv16);
                                 input.Slice(0, offset).CopyTo(output.Slice(0, offset));
-                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), context.Iv12, outerK_e, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));
-                                outputBufferLength = length - 4 - context.N_tag / 2 - mki.Length;
+                                SRTP.Encryption.CTR.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), context.Iv16);
+                                outputBufferLength = decLen;
                             }
-                            finally
-                            {
-                                ArrayPool<byte>.Shared.Return(associatedDataRented);
-                            }
-                        }
-                        break;
+                            break;
 
-                    default:
-                        {
-                            outputBufferLength = 0;
-                            return ERROR_UNSUPPORTED_CIPHER;
-                        }
+                        case SrtpCiphers.AEAD_AES_128_GCM:
+                        case SrtpCiphers.AEAD_AES_256_GCM:
+                        case SrtpCiphers.AEAD_ARIA_128_GCM:
+                        case SrtpCiphers.AEAD_ARIA_256_GCM:
+                        case SrtpCiphers.SEED_128_CCM:
+                        case SrtpCiphers.SEED_128_GCM:
+                            {
+                                SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, ssrcContext.S_l, context.Iv12);
+                                var associatedDataRented = ArrayPool<byte>.Shared.Rent(offset + 4);
+                                try
+                                {
+                                    input.Slice(0, offset).CopyTo(associatedDataRented.AsSpan(0, offset));
+                                    BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), originalIndex);
+                                    input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                                    SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), context.Iv12, context.K_e, context.N_tag, associatedDataRented.Slice(0, offset + 4));
+                                    outputBufferLength = length - 4 - context.N_tag - mki.Length;
+                                }
+                                finally
+                                {
+                                    ArrayPool<byte>.Shared.Return(associatedDataRented);
+                                }
+                            }
+                            break;
+
+                        case SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM:
+                        case SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM:
+                            {
+                                // RTCP under Double AEAD is protected only with the outer layer
+                                var outerK_e = KeyParameter.Create(context.K_e.Slice(context.K_e.Length / 2));
+                                var outerK_s = context.K_s.AsSpan(context.K_s.Length / 2);
+                                SRTP.Encryption.AEAD.GenerateMessageKeyIV(outerK_s, ssrc, ssrcContext.S_l, context.Iv12);
+                                var associatedDataRented = ArrayPool<byte>.Shared.Rent(offset + 4);
+                                try
+                                {
+                                    input.Slice(0, offset).CopyTo(associatedDataRented.AsSpan(0, offset));
+                                    BinaryPrimitives.WriteUInt32BigEndian(associatedDataRented.AsSpan(offset, 4), originalIndex);
+                                    input.Slice(0, offset).CopyTo(output.Slice(0, offset));
+                                    SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), context.Iv12, outerK_e, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));
+                                    outputBufferLength = length - 4 - context.N_tag / 2 - mki.Length;
+                                }
+                                finally
+                                {
+                                    ArrayPool<byte>.Shared.Return(associatedDataRented);
+                                }
+                            }
+                            break;
+
+                        default:
+                            {
+                                outputBufferLength = 0;
+                                return ERROR_UNSUPPORTED_CIPHER;
+                            }
+                    }
+                }
+                catch (Org.BouncyCastle.Crypto.InvalidCipherTextException)
+                {
+                    // AEAD (GCM/CCM) authentication failed. Drop the packet WITHOUT advancing the replay
+                    // window / ROC, so a single unauthenticated, corrupted or reordered packet cannot desync
+                    // the ROC and cause every subsequent packet to fail to decrypt. RFC 3711 section 3.3.
+                    outputBufferLength = 0;
+                    return ERROR_HMAC_CHECK_FAILED;
                 }
             }
             else
@@ -1399,6 +1361,10 @@ namespace SharpSRTP.SRTP
                 input.Slice(0, dataLen).CopyTo(output.Slice(0, dataLen));
                 outputBufferLength = dataLen;
             }
+
+            // The packet has now been authenticated (HMAC above for HMAC profiles, or the AEAD decrypt
+            // for GCM/CCM profiles). Only now is it safe to advance the replay window.
+            ssrcContext.UpdateReplayWindow(index);
 
             return 0;
         }
