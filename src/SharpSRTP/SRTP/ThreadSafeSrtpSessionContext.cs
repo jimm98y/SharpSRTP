@@ -42,9 +42,9 @@ namespace SharpSRTP.SRTP
         private object _syncEncodeRtcpContext = new object();
         private object _syncDecodeRtcpContext = new object();
 
-        private SrtpSessionContext _srtpSessionContext;
+        private ISrtpContext _srtpSessionContext;
 
-        public ThreadSafeSrtpSessionContext(SrtpSessionContext srtpSessionContext)
+        public ThreadSafeSrtpSessionContext(ISrtpContext srtpSessionContext)
         {
             _srtpSessionContext = srtpSessionContext ?? throw new ArgumentNullException(nameof(srtpSessionContext));
         }
