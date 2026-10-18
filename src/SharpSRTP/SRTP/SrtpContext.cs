@@ -802,11 +802,14 @@ namespace SharpSRTP.SRTP
             var ssrc = RtpReader.ReadSsrc(input);
             var sequenceNumber = RtpReader.ReadSequenceNumber(input);
 
+            // A source not seen before is only remembered once one of its packets authenticates: added here, before the check,
+            //  a stream of forged packets of random SSRCs would grow the table without bound.
             SsrcSrtpContext ssrcContext;
+            bool isNewSsrc = false;
             if (context.ReplayProtection.TryGetValue(ssrc, out ssrcContext) == false)
             {
                 ssrcContext = new SsrcSrtpContext();
-                context.ReplayProtection.Add(ssrc, ssrcContext);
+                isNewSsrc = true;
             }
 
             ssrcContext.SetInitialSequence(sequenceNumber);
@@ -1015,6 +1018,8 @@ namespace SharpSRTP.SRTP
             // for GCM/CCM profiles). Only now is it safe to advance the replay window / ROC.
             // RFC 3711 section 3.3.
             ssrcContext.UpdateReplayWindow(index);
+            if (isNewSsrc)
+                context.ReplayProtection[ssrc] = ssrcContext;
 
             // because of CCM/GCM, RTP headers must be unprotected only after the payload is unprotected and HMAC is verified
             // RFC6904
@@ -1218,11 +1223,14 @@ namespace SharpSRTP.SRTP
             var ssrc = RtcpReader.ReadSsrc(input);
             var offset = RtcpReader.GetHeaderLen();
 
+            // A source not seen before is only remembered once one of its packets authenticates: added here, before the check,
+            //  a stream of forged packets of random SSRCs would grow the table without bound.
             SsrcSrtpContext ssrcContext;
+            bool isNewSsrc = false;
             if (context.ReplayProtection.TryGetValue(ssrc, out ssrcContext) == false)
             {
                 ssrcContext = new SsrcSrtpContext();
-                context.ReplayProtection.Add(ssrc, ssrcContext);
+                isNewSsrc = true;
             }
 
             var originalIndex = RtcpReader.SrtcpReadIndex(input, context.N_a > 0 ? (context.N_tag + mki.Length) : 0);
@@ -1366,6 +1374,8 @@ namespace SharpSRTP.SRTP
             // The packet has now been authenticated (HMAC above for HMAC profiles, or the AEAD decrypt
             // for GCM/CCM profiles). Only now is it safe to advance the replay window.
             ssrcContext.UpdateReplayWindow(index);
+            if (isNewSsrc)
+                context.ReplayProtection[ssrc] = ssrcContext;
 
             return 0;
         }
