@@ -786,7 +786,7 @@ namespace SharpSRTP.SRTP
             var mkiSpan = mki.Span;
             for (var i = 0; i < mki.Length; i++)
             {
-                if (inputSpan[length - mki.Length - context.N_tag + i] != mkiSpan[i])
+                if (inputSpan[length - mki.Length - (context.Auth != SrtpAuth.NONE ? context.N_tag : 0) + i] != mkiSpan[i])
                 {
                     outputBufferLength = 0;
                     return ERROR_MKI_CHECK_FAILED;
@@ -935,7 +935,7 @@ namespace SharpSRTP.SRTP
                             // form a synthetic RTP packet
                             var rtpHeaderLength = RtpReader.ReadHeaderLenWithoutExtensions(output);
                             var rtpExtensionsLength = RtpReader.ReadExtensionsLength(output);
-                            var syntheticRtpPacketLen = length - rtpExtensionsLength - (context.N_tag / 2) - ohbLength;
+                            var syntheticRtpPacketLen = length - mki.Length - rtpExtensionsLength - (context.N_tag / 2) - ohbLength;
                             var syntheticRtpPacket = ArrayPool<byte>.Shared.Rent(syntheticRtpPacketLen);
 
                             try
@@ -1179,7 +1179,7 @@ namespace SharpSRTP.SRTP
 
             if (context.Auth != SrtpAuth.NONE)
             {
-                var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, output.Slice(0, length));
+                var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, output.Slice(0, length - mki.Length));
                 auth.AsSpan(0, context.N_tag).CopyTo(output.Slice(length, context.N_tag));
                 length += context.N_tag;
             }
@@ -1207,7 +1207,7 @@ namespace SharpSRTP.SRTP
 
             for (var i = 0; i < mki.Length; i++)
             {
-                if (inputSpan[length - context.N_tag - mki.Length + i] != mki.Span[i])
+                if (inputSpan[length - (context.Auth != SrtpAuth.NONE ? context.N_tag : 0) - mki.Length + i] != mki.Span[i])
                 {
                     outputBufferLength = 0;
                     return ERROR_MKI_CHECK_FAILED;
@@ -1233,7 +1233,7 @@ namespace SharpSRTP.SRTP
                 isNewSsrc = true;
             }
 
-            var originalIndex = RtcpReader.SrtcpReadIndex(input, context.N_a > 0 ? (context.N_tag + mki.Length) : 0);
+            var originalIndex = RtcpReader.SrtcpReadIndex(input, context.N_a > 0 ? (context.N_tag + mki.Length) : mki.Length);
             var index = originalIndex;
             var isEncrypted = false;
 
