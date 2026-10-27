@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 bool isShutdown = false;
 bool isSrtpSessionRunning = false;
-var client = new DtlsSrtpClient();
+IDtlsSrtpPeer client = new DtlsSrtpClient();
 Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 IPEndPoint remoteEndpoint = IPEndPointExtensions.Parse("127.0.0.1:8888");
 socket.Connect(remoteEndpoint);

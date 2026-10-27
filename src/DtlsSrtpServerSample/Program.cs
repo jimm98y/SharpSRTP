@@ -15,7 +15,7 @@ const int RECEIVE_TIMEOUT = 0;
 EndPoint localEndpoint = IPEndPointExtensions.Parse("0.0.0.0:8888");
 EndPoint remoteEndpoint = new IPEndPoint(IPAddress.Any, 0);
 ConcurrentDictionary<string, UdpTransport> activeSessions = new ConcurrentDictionary<string, UdpTransport>();
-var server = new DtlsSrtpServer();
+IDtlsSrtpPeer server = new DtlsSrtpServer();
 
 Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 listenSocket.ReceiveTimeout = RECEIVE_TIMEOUT;

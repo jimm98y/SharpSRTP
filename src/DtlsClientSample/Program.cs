@@ -6,7 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
-DtlsClient client = new DtlsClient();
+IDtlsPeer client = new DtlsClient();
 Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 IPEndPoint remoteEndpoint = IPEndPointExtensions.Parse("127.0.0.1:8888");
 socket.Connect(remoteEndpoint);
