@@ -166,6 +166,7 @@ namespace SharpDtlsAdapter
             server.HandshakeFinished += (_, connection) => state.Connection = connection;
             server.ConnectionClosed += (_, _) => state.Closed = true;
             server.ApplicationDataReceived += (_, e) => received.Enqueue(e.Data);
+            server.AlertReceived += (_, e) => OnAlert?.Invoke(this, Conversions.ToAlert(e.Description));
 
             try
             {
@@ -192,7 +193,6 @@ namespace SharpDtlsAdapter
                     throw new InvalidOperationException("The client did not negotiate the extended master secret.");
                 }
 
-                connection.AlertReceived += (_, alert) => OnAlert?.Invoke(this, Conversions.ToAlert(alert));
                 var securityParameters = new SharpDtlsSecurityParameters(connection);
                 OnHandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(securityParameters));
                 OnHandshakeFinished(securityParameters, datagramTransport);
@@ -217,12 +217,10 @@ namespace SharpDtlsAdapter
                 RequireClientCertificate = RequireClientCertificate,
                 // Accept any certificate, as the BouncyCastle server does: the caller validates the peer certificate (e.g. its fingerprint).
                 ClientCertificateValidator = (certificate, chain) => true,
+                // shared, so a session resumes on whichever server runs the next handshake
+                TicketKeys = _ticketKeys,
+                SessionCache = _sessionCache,
             };
-
-            // shared, so a session resumes on whichever server runs the next handshake
-            server.Dtls12.TicketKeys = _ticketKeys;
-            server.Dtls12.SessionCache = _sessionCache;
-            server.Dtls13.TicketKeys = _ticketKeys;
             ConfigureServer(server);
             return server;
         }

@@ -88,7 +88,8 @@ namespace SharpDtlsAdapter
 
             // After the handshake the socket carries SRTP and nobody reads DTLS records any more, so a DTLS 1.3
             // NewSessionTicket would never be acknowledged and keep being retransmitted into the media stream.
-            server.Dtls13.TicketKeys = null;
+            // WebRTC does not resume sessions, so tickets are off for every version.
+            server.TicketKeys = null;
         }
 
         protected override void OnHandshakeFinished(IDtlsSecurityParameters securityParameters, DatagramTransport datagramTransport)

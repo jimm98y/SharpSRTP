@@ -132,8 +132,7 @@ namespace SharpDtlsAdapter
                 client.HandshakeFinished += (_, _) => state.Finished = true;
                 client.Failed += (_, ex) => state.Error ??= ex;
                 client.ApplicationDataReceived += (_, data) => received.Enqueue(data);
-                client.Dtls12.AlertReceived += (_, alert) => OnAlert?.Invoke(this, Conversions.ToAlert(alert));
-                client.Dtls13.AlertReceived += (_, alert) => OnAlert?.Invoke(this, Conversions.ToAlert(alert));
+                client.AlertReceived += (_, alert) => OnAlert?.Invoke(this, Conversions.ToAlert(alert));
                 ConfigureClient(client);
 
                 try
