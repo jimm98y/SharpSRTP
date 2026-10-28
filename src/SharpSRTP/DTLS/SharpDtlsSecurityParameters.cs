@@ -23,12 +23,11 @@ using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using Org.BouncyCastle.X509;
-using SharpSRTP.DTLS;
 using System;
 using System.Net;
 using TlsConnectionBase = SharpDTLS.TlsConnectionBase;
 
-namespace SharpDtlsAdapter
+namespace SharpSRTP.DTLS
 {
     /// <summary>
     /// <see cref="IDtlsSecurityParameters"/> over a SharpDTLS connection of any DTLS version.

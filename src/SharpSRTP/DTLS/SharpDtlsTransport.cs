@@ -20,12 +20,12 @@
 // SOFTWARE.
 
 using Org.BouncyCastle.Tls;
-using SharpSRTP.DTLS;
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using TlsConnectionBase = SharpDTLS.TlsConnectionBase;
 
-namespace SharpDtlsAdapter
+namespace SharpSRTP.DTLS
 {
     /// <summary>
     /// <see cref="IDtlsTransport"/> over a SharpDTLS connection. Like BouncyCastle's DtlsTransport it is pull-based:
@@ -55,7 +55,7 @@ namespace SharpDtlsAdapter
 
         public int Receive(byte[] buf, int off, int len, int waitMillis)
         {
-            long deadline = Environment.TickCount64 + waitMillis;
+            var elapsed = Stopwatch.StartNew();
             while (true)
             {
                 if (_received.TryDequeue(out byte[] data))
@@ -65,7 +65,7 @@ namespace SharpDtlsAdapter
                     return length;
                 }
 
-                int remaining = (int)(deadline - Environment.TickCount64);
+                int remaining = waitMillis - (int)elapsed.ElapsedMilliseconds;
                 if (_connection.IsClosed || remaining <= 0)
                 {
                     return -1;

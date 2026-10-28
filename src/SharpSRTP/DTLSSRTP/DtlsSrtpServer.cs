@@ -22,18 +22,15 @@
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Tls;
 using SharpSRTP.DTLS;
-using SharpSRTP.DTLSSRTP;
 using SharpSRTP.SRTP;
 using System;
-using SharpDtlsLibServer = SharpDTLS.DtlsServer;
-using SharpDtlsSrtp = SharpDTLS.DtlsSrtp;
 
-namespace SharpDtlsAdapter
+namespace SharpSRTP.DTLSSRTP
 {
     // Useful link for troubleshooting WebRTC in Chrome/Edge: https://learn.microsoft.com/en-us/azure/communication-services/resources/troubleshooting/voice-video-calling/references/how-to-collect-browser-verbose-log
     /// <summary>
-    /// DTLS-SRTP server implemented with SharpDTLS: a drop-in replacement for the BouncyCastle based
-    /// <see cref="SharpSRTP.DTLSSRTP.DtlsSrtpServer"/>.
+    /// The default DTLS-SRTP server, implemented with SharpDTLS: DTLS 1.2 and 1.3. <see cref="BcDtlsSrtpServer"/>
+    /// implements the same interface with BouncyCastle (DTLS 1.2 only).
     /// </summary>
     public class DtlsSrtpServer : DtlsServer, IDtlsSrtpPeer
     {
@@ -56,22 +53,22 @@ namespace SharpDtlsAdapter
         {
             return new ushort[]
             {
-                SharpDtlsSrtp.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM,
-                SharpDtlsSrtp.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM,
-                SharpDtlsSrtp.SRTP_AEAD_AES_256_GCM,
-                SharpDtlsSrtp.SRTP_AEAD_ARIA_256_GCM,
-                SharpDtlsSrtp.SRTP_AEAD_AES_128_GCM,
-                SharpDtlsSrtp.SRTP_AEAD_ARIA_128_GCM,
-                SharpDtlsSrtp.SRTP_ARIA_256_CTR_HMAC_SHA1_80,
-                SharpDtlsSrtp.SRTP_AES128_CM_HMAC_SHA1_80,
-                SharpDtlsSrtp.SRTP_ARIA_128_CTR_HMAC_SHA1_80,
-                SharpDtlsSrtp.SRTP_ARIA_256_CTR_HMAC_SHA1_32,
-                SharpDtlsSrtp.SRTP_AES128_CM_HMAC_SHA1_32,
-                SharpDtlsSrtp.SRTP_ARIA_128_CTR_HMAC_SHA1_32,
+                SharpDTLS.DtlsSrtp.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM,
+                SharpDTLS.DtlsSrtp.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM,
+                SharpDTLS.DtlsSrtp.SRTP_AEAD_AES_256_GCM,
+                SharpDTLS.DtlsSrtp.SRTP_AEAD_ARIA_256_GCM,
+                SharpDTLS.DtlsSrtp.SRTP_AEAD_AES_128_GCM,
+                SharpDTLS.DtlsSrtp.SRTP_AEAD_ARIA_128_GCM,
+                SharpDTLS.DtlsSrtp.SRTP_ARIA_256_CTR_HMAC_SHA1_80,
+                SharpDTLS.DtlsSrtp.SRTP_AES128_CM_HMAC_SHA1_80,
+                SharpDTLS.DtlsSrtp.SRTP_ARIA_128_CTR_HMAC_SHA1_80,
+                SharpDTLS.DtlsSrtp.SRTP_ARIA_256_CTR_HMAC_SHA1_32,
+                SharpDTLS.DtlsSrtp.SRTP_AES128_CM_HMAC_SHA1_32,
+                SharpDTLS.DtlsSrtp.SRTP_ARIA_128_CTR_HMAC_SHA1_32,
 
                 // do not offer NULL profiles to make sure these do not get selected by accident
-                //SharpDtlsSrtp.SRTP_NULL_HMAC_SHA1_80,
-                //SharpDtlsSrtp.SRTP_NULL_HMAC_SHA1_32,
+                //SharpDTLS.DtlsSrtp.SRTP_NULL_HMAC_SHA1_80,
+                //SharpDTLS.DtlsSrtp.SRTP_NULL_HMAC_SHA1_32,
             };
         }
 
@@ -80,7 +77,7 @@ namespace SharpDtlsAdapter
             return "WebRTC";
         }
 
-        protected override void ConfigureServer(SharpDtlsLibServer server)
+        protected override void ConfigureServer(SharpDTLS.DtlsServer server)
         {
             base.ConfigureServer(server);
             server.SrtpProtectionProfiles = GetSupportedProtectionProfiles();

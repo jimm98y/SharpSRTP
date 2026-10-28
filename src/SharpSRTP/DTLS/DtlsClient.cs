@@ -22,19 +22,17 @@
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.X509;
-using SharpSRTP.DTLS;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using DtlsVersion = SharpDTLS.DtlsVersion;
-using SharpDtlsLibClient = SharpDTLS.DtlsClient;
 
-namespace SharpDtlsAdapter
+namespace SharpSRTP.DTLS
 {
     /// <summary>
-    /// DTLS client implemented with SharpDTLS: a drop-in replacement for the BouncyCastle based
-    /// <see cref="SharpSRTP.DTLS.DtlsClient"/> that also negotiates DTLS 1.3.
+    /// The default DTLS client, implemented with SharpDTLS: DTLS 1.2 and 1.3. <see cref="BcDtlsClient"/> implements the
+    /// same interface with BouncyCastle (DTLS 1.2 only).
     /// </summary>
     public class DtlsClient : IDtlsPeer
     {
@@ -107,7 +105,7 @@ namespace SharpDtlsAdapter
         }
 
         /// <summary>Applies further settings to the SharpDTLS client before the handshake begins.</summary>
-        protected virtual void ConfigureClient(SharpDtlsLibClient client)
+        protected virtual void ConfigureClient(SharpDTLS.DtlsClient client)
         { }
 
         /// <summary>Called after <see cref="OnHandshakeCompleted"/>, before <see cref="DoHandshake"/> returns.</summary>
@@ -130,7 +128,7 @@ namespace SharpDtlsAdapter
                 }
 
                 var transport = new ClientTransportAdapter(datagramTransport);
-                var client = new SharpDtlsLibClient(transport)
+                var client = new SharpDTLS.DtlsClient(transport)
                 {
                     MinimumVersion = MinimumVersion,
                     MaximumVersion = MaximumVersion,

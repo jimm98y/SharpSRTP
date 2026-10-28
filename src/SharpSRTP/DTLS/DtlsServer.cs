@@ -22,7 +22,6 @@
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.X509;
-using SharpSRTP.DTLS;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -31,15 +30,14 @@ using System.Net;
 using DtlsVersion = SharpDTLS.DtlsVersion;
 using IServerTransport = SharpDTLS.UDP.IServerTransport;
 using SessionTicketKeys = SharpDTLS.SessionTicketKeys;
-using SharpDtlsLibServer = SharpDTLS.DtlsServer;
 using TlsConnectionBase = SharpDTLS.TlsConnectionBase;
 using TlsSessionCache = SharpDTLS.TlsSessionCache;
 
-namespace SharpDtlsAdapter
+namespace SharpSRTP.DTLS
 {
     /// <summary>
-    /// DTLS server implemented with SharpDTLS: a drop-in replacement for the BouncyCastle based
-    /// <see cref="SharpSRTP.DTLS.DtlsServer"/> that also negotiates DTLS 1.3.
+    /// The default DTLS server, implemented with SharpDTLS: DTLS 1.2 and 1.3. <see cref="BcDtlsServer"/> implements the
+    /// same interface with BouncyCastle (DTLS 1.2 only).
     /// </summary>
     /// <remarks>
     /// As with BouncyCastle, every <see cref="DoHandshake"/> runs its own SharpDTLS server, referenced only from the
@@ -55,7 +53,7 @@ namespace SharpDtlsAdapter
         private readonly SessionTicketKeys _ticketKeys = new SessionTicketKeys();
         private readonly TlsSessionCache _sessionCache = new TlsSessionCache();
         private readonly VerifierServerTransport _verifierTransport = new VerifierServerTransport();
-        private SharpDtlsLibServer _verifier;
+        private SharpDTLS.DtlsServer _verifier;
         private X509Certificate _x509Certificate;
         private AsymmetricCipherKeyPair _keyPair;
 
@@ -130,7 +128,7 @@ namespace SharpDtlsAdapter
         }
 
         /// <summary>Applies further settings to each SharpDTLS server, including the one verifying cookies.</summary>
-        protected virtual void ConfigureServer(SharpDtlsLibServer server)
+        protected virtual void ConfigureServer(SharpDTLS.DtlsServer server)
         { }
 
         /// <summary>Called after <see cref="OnHandshakeCompleted"/>, before <see cref="DoHandshake"/> returns.</summary>
@@ -221,9 +219,9 @@ namespace SharpDtlsAdapter
             }
         }
 
-        private SharpDtlsLibServer CreateServer(IServerTransport transport)
+        private SharpDTLS.DtlsServer CreateServer(IServerTransport transport)
         {
-            var server = new SharpDtlsLibServer(transport, _keyPair, _x509Certificate)
+            var server = new SharpDTLS.DtlsServer(transport, _keyPair, _x509Certificate)
             {
                 MinimumVersion = MinimumVersion,
                 MaximumVersion = MaximumVersion,

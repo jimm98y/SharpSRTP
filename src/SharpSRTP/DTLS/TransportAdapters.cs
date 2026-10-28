@@ -20,14 +20,13 @@
 // SOFTWARE.
 
 using Org.BouncyCastle.Tls;
-using SharpSRTP.DTLS;
 using SharpSRTP.UDP;
 using System;
 using System.Net;
 using IClientTransport = SharpDTLS.UDP.IClientTransport;
 using IServerTransport = SharpDTLS.UDP.IServerTransport;
 
-namespace SharpDtlsAdapter
+namespace SharpSRTP.DTLS
 {
     /// <summary>
     /// SharpDTLS client transport over a pull-based <see cref="DatagramTransport"/>: received datagrams are only

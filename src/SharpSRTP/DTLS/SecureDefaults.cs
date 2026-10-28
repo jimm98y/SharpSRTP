@@ -24,7 +24,7 @@ using System.Collections.Generic;
 using DtlsVersion = SharpDTLS.DtlsVersion;
 using NamedGroups = SharpDTLS.NamedGroups;
 
-namespace SharpDtlsAdapter
+namespace SharpSRTP.DTLS
 {
     /// <summary>
     /// What the SharpDTLS peers allow by default: DTLS 1.2 and 1.3 only (RFC 8996 deprecates DTLS 1.0), forward-secret

@@ -22,12 +22,10 @@
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.X509;
-using SharpSRTP;
-using SharpSRTP.DTLS;
 using System;
 using SharpDtlsAlert = SharpDTLS.AlertDescription;
 
-namespace SharpDtlsAdapter
+namespace SharpSRTP.DTLS
 {
     internal static class Conversions
     {

@@ -10,7 +10,6 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using DtlsSrtpServer = SharpDtlsAdapter.DtlsSrtpServer;
 
 const int RECEIVE_TIMEOUT = 0;
 EndPoint localEndpoint = IPEndPointExtensions.Parse("0.0.0.0:8888");

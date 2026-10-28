@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharpSRTP\SharpSRTP.csproj" />
-    <ProjectReference Include="..\SharpDtlsAdapter\SharpDtlsAdapter.csproj" />
   </ItemGroup>
 
 </Project>

@@ -51,7 +51,7 @@ SharpSRTP is not thread-safe. If multiple threads need to access the same SRTP c
 you can consider using `ThreadSafeSrtpSessionContext` wrapper which provides thread safety at the cost of some performance.
 
 ## DTLS
-The DTLS implementation in SharpSRTP is based upon BouncyCastle and supports DTLS 1.2 only. The DTLS peers are used through the library-independent `IDtlsPeer`, `IDtlsServerPeer` and `IDtlsSrtpPeer` interfaces, so they can be replaced by another DTLS library. The samples use the [SharpDTLS](https://github.com/jimm98y/SharpDTLS) based `DtlsClient`, `DtlsServer`, `DtlsSrtpClient` and `DtlsSrtpServer` from the `SharpDtlsAdapter` project, which also support DTLS 1.3.
+The DTLS implementation in SharpSRTP is based upon [SharpDTLS](https://github.com/jimm98y/SharpDTLS) and supports DTLS 1.2 and DTLS 1.3. The BouncyCastle based implementation (DTLS 1.2 only) is available as `BcDtlsClient`, `BcDtlsServer`, `BcDtlsSrtpClient` and `BcDtlsSrtpServer`. The DTLS peers are used through the library-independent `IDtlsPeer`, `IDtlsServerPeer` and `IDtlsSrtpPeer` interfaces, so they can be replaced by another DTLS library.
 
 ### DTLS Server
 Start with generating the TLS certificate. Self-signed RSA SHA256 certificate can be generated as follows:
@@ -119,7 +119,7 @@ Send data to the client:
 ```cs
 dtlsTransport.Send(buffer, 0, buffer.Length);
 ```
-To modify the offered crypto suites for the DTLS handshake, simply override `GetSupportedCipherSuites` and return a different set of crypto suites. To support a different version of DTLS, override `GetSupportedVersions` and return a different version. Note that as of January 2026, BouncyCastle still does not support DTLS 1.3.
+To modify the offered crypto suites for the DTLS handshake, simply set `CipherSuites`. To support a different version of DTLS, set `MinimumVersion` and `MaximumVersion`. Note that as of January 2026, BouncyCastle still does not support DTLS 1.3.
 ### DTLS Client
 Start with creating the TLS certificate. Certificate type of the client must match the certificate type on the server, meaning if the server uses RSA certificate, the client has to use RSA certificate as well:
 ```cs
@@ -127,7 +127,7 @@ var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.U
 ```
 Create the DTLS client:
 ```cs
-DtlsClient client = new DtlsClient(null, rsaCertificate.certificate, rsaCertificate.key, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
+DtlsClient client = new DtlsClient(rsaCertificate.certificate, rsaCertificate.key, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
 ```
 Optionally, you can let the client auto-generate the matching certificate:
 ```cs

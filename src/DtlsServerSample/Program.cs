@@ -8,7 +8,6 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using DtlsServer = SharpDtlsAdapter.DtlsServer;
 
 const int RECEIVE_TIMEOUT = 0;
 const int INACTIVE_SESSION_TIMEOUT = 60000;
