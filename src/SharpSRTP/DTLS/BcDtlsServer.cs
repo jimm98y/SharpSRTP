@@ -31,7 +31,8 @@ using System.Net;
 
 namespace SharpSRTP.DTLS
 {
-    public class DtlsServer : DefaultTlsServer, IDtlsServerPeer
+    /// <summary>DTLS server implemented with BouncyCastle (DTLS 1.2); the default is <see cref="DtlsServer"/>, implemented with SharpDTLS.</summary>
+    public class BcDtlsServer : DefaultTlsServer, IDtlsServerPeer
     {
         private readonly object _syncRoot = new object();
         private DtlsVerifier _verifier;
@@ -48,11 +49,11 @@ namespace SharpSRTP.DTLS
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
-        public DtlsServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : 
+        public BcDtlsServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : 
             this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         {  }
 
-        public DtlsServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
+        public BcDtlsServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
         {
             if (certificate == null || privateKey == null)
             {

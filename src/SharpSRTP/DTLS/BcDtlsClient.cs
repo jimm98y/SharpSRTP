@@ -31,7 +31,8 @@ using System.Collections.Generic;
 
 namespace SharpSRTP.DTLS
 {
-    public class DtlsClient : DefaultTlsClient, IDtlsPeer
+    /// <summary>DTLS client implemented with BouncyCastle (DTLS 1.2); the default is <see cref="DtlsClient"/>, implemented with SharpDTLS.</summary>
+    public class BcDtlsClient : DefaultTlsClient, IDtlsPeer
     {
         private readonly object _syncRoot = new object();
         protected DatagramTransport _clientDatagramTransport = null;
@@ -52,11 +53,11 @@ namespace SharpSRTP.DTLS
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
-        public DtlsClient(TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
+        public BcDtlsClient(TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
             : this(new BcTlsCrypto(), session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
         { }
 
-        public DtlsClient(TlsCrypto crypto, TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
+        public BcDtlsClient(TlsCrypto crypto, TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
         {
             this._session = session;
             SetCertificate(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm);
@@ -320,9 +321,9 @@ namespace SharpSRTP.DTLS
         internal class DTlsAuthentication : TlsAuthentication
         {
             private readonly TlsContext _context;
-            private readonly DtlsClient _client;
+            private readonly BcDtlsClient _client;
 
-            public DTlsAuthentication(TlsContext context, DtlsClient client)
+            public DTlsAuthentication(TlsContext context, BcDtlsClient client)
             {
                 this._client = client ?? throw new ArgumentNullException(nameof(client));
                 this._context = context;
