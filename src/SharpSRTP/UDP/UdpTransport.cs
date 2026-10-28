@@ -100,9 +100,12 @@ namespace SharpSRTP.UDP
             if (_remote == null)
             {
 #if NET8_0_OR_GREATER
-                this._socket.ReceiveTimeout = waitMillis;
                 try
                 {
+                    if (!WaitForData(waitMillis))
+                    {
+                        return -1;
+                    }
                     EndPoint remote = AnyEndPoint;
                     return this._socket.ReceiveFrom(buffer, ref remote);
                 }
@@ -141,9 +144,12 @@ namespace SharpSRTP.UDP
 
         private int ReceiveFromSocket(byte[] buf, int off, int len, int waitMillis)
         {
-            this._socket.ReceiveTimeout = waitMillis;
             try
             {
+                if (!WaitForData(waitMillis))
+                {
+                    return -1;
+                }
                 EndPoint remote = AnyEndPoint;
                 return this._socket.ReceiveFrom(buf, off, len, SocketFlags.None, ref remote);
             }
@@ -152,6 +158,14 @@ namespace SharpSRTP.UDP
                 return -1;
             }
         }
+
+        /// <summary>
+        /// Waits up to <paramref name="waitMillis"/> (0 or less: indefinitely) for a datagram. Polling rather than setting
+        /// Socket.ReceiveTimeout: a receive that times out leaves a Windows socket in an indeterminate state, and a datagram
+        /// arriving at that moment can be lost.
+        /// </summary>
+        private bool WaitForData(int waitMillis)
+            => this._socket.Poll(waitMillis <= 0 ? -1 : (int)Math.Min((long)waitMillis * 1000, int.MaxValue), SelectMode.SelectRead);
 
         public virtual void Send(byte[] buf, int off, int len)
         {
