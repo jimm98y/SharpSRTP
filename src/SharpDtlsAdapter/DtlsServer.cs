@@ -25,14 +25,15 @@ using Org.BouncyCastle.X509;
 using SharpSRTP.DTLS;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
-using Dtls12SessionCache = SharpDTLS.Protocol12.Dtls12SessionCache;
 using DtlsVersion = SharpDTLS.DtlsVersion;
 using IServerTransport = SharpDTLS.UDP.IServerTransport;
 using SessionTicketKeys = SharpDTLS.SessionTicketKeys;
 using SharpDtlsLibServer = SharpDTLS.DtlsServer;
 using TlsConnectionBase = SharpDTLS.TlsConnectionBase;
+using TlsSessionCache = SharpDTLS.TlsSessionCache;
 
 namespace SharpDtlsAdapter
 {
@@ -52,7 +53,7 @@ namespace SharpDtlsAdapter
 
         private readonly object _syncRoot = new object();
         private readonly SessionTicketKeys _ticketKeys = new SessionTicketKeys();
-        private readonly Dtls12SessionCache _sessionCache = new Dtls12SessionCache();
+        private readonly TlsSessionCache _sessionCache = new TlsSessionCache();
         private readonly VerifierServerTransport _verifierTransport = new VerifierServerTransport();
         private SharpDtlsLibServer _verifier;
         private X509Certificate _x509Certificate;
@@ -70,11 +71,23 @@ namespace SharpDtlsAdapter
         /// <summary>Request and require a client certificate, as the BouncyCastle server does.</summary>
         public bool RequireClientCertificate { get; set; } = true;
 
-        /// <summary>The oldest DTLS version accepted; DTLS 1.2 by default.</summary>
-        public ushort MinimumVersion { get; set; } = DtlsVersion.Dtls12;
+        private ushort _minimumVersion = DtlsVersion.Dtls12;
+        private ushort _maximumVersion = DtlsVersion.Dtls13;
 
-        /// <summary>The newest DTLS version accepted; DTLS 1.3 by default.</summary>
-        public ushort MaximumVersion { get; set; } = DtlsVersion.Dtls13;
+        /// <summary>The oldest DTLS version accepted: DTLS 1.2 (the default) or DTLS 1.3; older versions are not allowed (RFC 8996).</summary>
+        public ushort MinimumVersion { get => _minimumVersion; set => _minimumVersion = SecureDefaults.CheckVersion(value); }
+
+        /// <summary>The newest DTLS version accepted: DTLS 1.3 (the default) or DTLS 1.2.</summary>
+        public ushort MaximumVersion { get => _maximumVersion; set => _maximumVersion = SecureDefaults.CheckVersion(value); }
+
+        /// <summary>
+        /// Cipher suites in preference order, DTLS 1.3 and 1.2 in one list; by default only (EC)DHE with AES-GCM or
+        /// ChaCha20-Poly1305.
+        /// </summary>
+        public IList<ushort> CipherSuites { get; set; } = new List<ushort>(SecureDefaults.CipherSuites);
+
+        /// <summary>DTLS 1.3 key exchange groups in preference order; by default the X25519/ML-KEM-768 hybrid, X25519, P-256 and P-384.</summary>
+        public IList<ushort> SupportedGroups { get; set; } = new List<ushort>(SecureDefaults.SupportedGroups);
 
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
@@ -214,6 +227,8 @@ namespace SharpDtlsAdapter
             {
                 MinimumVersion = MinimumVersion,
                 MaximumVersion = MaximumVersion,
+                CipherSuites = CipherSuites,
+                SupportedGroups = SupportedGroups,
                 RequireClientCertificate = RequireClientCertificate,
                 // Accept any certificate, as the BouncyCastle server does: the caller validates the peer certificate (e.g. its fingerprint).
                 ClientCertificateValidator = (certificate, chain) => true,

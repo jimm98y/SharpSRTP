@@ -25,6 +25,7 @@ using Org.BouncyCastle.X509;
 using SharpSRTP.DTLS;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using DtlsVersion = SharpDTLS.DtlsVersion;
 using SharpDtlsLibClient = SharpDTLS.DtlsClient;
@@ -55,11 +56,23 @@ namespace SharpDtlsAdapter
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
         public Certificate PeerCertificate { get; private set; }
 
-        /// <summary>The oldest DTLS version offered; DTLS 1.2 by default.</summary>
-        public ushort MinimumVersion { get; set; } = DtlsVersion.Dtls12;
+        private ushort _minimumVersion = DtlsVersion.Dtls12;
+        private ushort _maximumVersion = DtlsVersion.Dtls13;
 
-        /// <summary>The newest DTLS version offered; DTLS 1.3 by default.</summary>
-        public ushort MaximumVersion { get; set; } = DtlsVersion.Dtls13;
+        /// <summary>The oldest DTLS version offered: DTLS 1.2 (the default) or DTLS 1.3; older versions are not allowed (RFC 8996).</summary>
+        public ushort MinimumVersion { get => _minimumVersion; set => _minimumVersion = SecureDefaults.CheckVersion(value); }
+
+        /// <summary>The newest DTLS version offered: DTLS 1.3 (the default) or DTLS 1.2.</summary>
+        public ushort MaximumVersion { get => _maximumVersion; set => _maximumVersion = SecureDefaults.CheckVersion(value); }
+
+        /// <summary>
+        /// Cipher suites in preference order, DTLS 1.3 and 1.2 in one list; by default only (EC)DHE with AES-GCM or
+        /// ChaCha20-Poly1305.
+        /// </summary>
+        public IList<ushort> CipherSuites { get; set; } = new List<ushort>(SecureDefaults.CipherSuites);
+
+        /// <summary>DTLS 1.3 key exchange groups in preference order; by default the X25519/ML-KEM-768 hybrid, X25519, P-256 and P-384.</summary>
+        public IList<ushort> SupportedGroups { get; set; } = new List<ushort>(SecureDefaults.SupportedGroups);
 
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
@@ -121,6 +134,8 @@ namespace SharpDtlsAdapter
                 {
                     MinimumVersion = MinimumVersion,
                     MaximumVersion = MaximumVersion,
+                    CipherSuites = CipherSuites,
+                    SupportedGroups = SupportedGroups,
                     // Accept any certificate, as the BouncyCastle client does: the caller validates PeerCertificate (e.g. its fingerprint).
                     ServerCertificateValidator = (certificate, chain) => true,
                     ClientCertificate = _x509Certificate,
