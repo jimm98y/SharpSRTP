@@ -20,6 +20,7 @@
 // SOFTWARE.
 
 using Org.BouncyCastle.Tls;
+using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
 using System;
 using System.Collections.Generic;
@@ -88,6 +89,33 @@ namespace SharpSRTP.DTLSSRTP
             };
         }
 
+        /// <summary>
+        /// Derives the SRTP master keys from a completed DTLS-SRTP handshake (RFC 5764 §4.2) using the connection's
+        /// keying material exporter, so it works for every DTLS version.
+        /// </summary>
+        public static DtlsSrtpKeys CreateMasterKeys(IDtlsSecurityParameters dtlsSecurityParameters, bool requireExtendedMasterSecret = true)
+        {
+            if (dtlsSecurityParameters == null)
+            {
+                throw new ArgumentNullException(nameof(dtlsSecurityParameters));
+            }
+
+            // verify that we have extended master secret before computing the keys
+            if (!dtlsSecurityParameters.IsExtendedMasterSecret && requireExtendedMasterSecret)
+            {
+                throw new InvalidOperationException();
+            }
+
+            int protectionProfile = dtlsSecurityParameters.SrtpProtectionProfile ?? throw new InvalidOperationException("use_srtp was not negotiated.");
+            var srtpSecurityParams = DtlsProtectionProfiles[protectionProfile];
+
+            // 2 * (SRTPSecurityParams.master_key_len + SRTPSecurityParams.master_salt_len) bytes of data
+            int sharedSecretLength = (2 * (srtpSecurityParams.CipherKeyLength + srtpSecurityParams.CipherSaltLength)) >> 3;
+            byte[] sharedSecret = dtlsSecurityParameters.ExportKeyingMaterial(ExporterLabel.dtls_srtp, null, sharedSecretLength);
+            return CreateMasterKeys(protectionProfile, dtlsSecurityParameters.SrtpMki, sharedSecret);
+        }
+
+        [Obsolete("Use CreateMasterKeys(IDtlsSecurityParameters, bool), which also supports DTLS 1.3.")]
         public static DtlsSrtpKeys CreateMasterKeys(int protectionProfile, byte[] mki, SecurityParameters dtlsSecurityParameters, bool requireExtendedMasterSecret = true)
         {
             // verify that we have extended master secret before computing the keys

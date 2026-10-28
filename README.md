@@ -51,7 +51,7 @@ SharpSRTP is not thread-safe. If multiple threads need to access the same SRTP c
 you can consider using `ThreadSafeSrtpSessionContext` wrapper which provides thread safety at the cost of some performance.
 
 ## DTLS
-The current DTLS implementation is based upon BouncyCastle and supports DTLS 1.2 only.
+The DTLS implementation in SharpSRTP is based upon BouncyCastle and supports DTLS 1.2 only. The DTLS peers are used through the library-independent `IDtlsPeer`, `IDtlsServerPeer` and `IDtlsSrtpPeer` interfaces, so they can be replaced by another DTLS library. The samples use the [SharpDTLS](https://github.com/jimm98y/SharpDTLS) based `DtlsClient`, `DtlsServer`, `DtlsSrtpClient` and `DtlsSrtpServer` from the `SharpDtlsAdapter` project, which also support DTLS 1.3.
 
 ### DTLS Server
 Start with generating the TLS certificate. Self-signed RSA SHA256 certificate can be generated as follows:
@@ -96,7 +96,7 @@ while(!isShutdown)
 
             var session = Task.Run(() =>
             {
-                 DtlsTransport dtlsTransport = server.DoHandshake(transport, out string error, null);
+                 IDtlsTransport dtlsTransport = server.DoHandshake(out string error, transport, null);
                  if (dtlsTransport != null)
                  {
                     ...
@@ -143,7 +143,7 @@ UdpTransport udpClientTransport = new UdpTransport(socket);
 ```
 Connect the client:
 ```cs
-DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
+IDtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
 ```
 Receive data to the server:
 ```cs

@@ -27,12 +27,14 @@ using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
+using System.Net;
 
 namespace SharpSRTP.DTLS
 {
-    public class DtlsServer : DefaultTlsServer, IDtlsPeer
+    public class DtlsServer : DefaultTlsServer, IDtlsServerPeer
     {
         private readonly object _syncRoot = new object();
+        private DtlsVerifier _verifier;
         protected DatagramTransport _clientDatagramTransport = null;
 
         public int TimeoutMilliseconds { get; set; } = 20000;
@@ -131,7 +133,31 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null)
+        public virtual IDtlsRequest VerifyRequest(EndPoint remoteEndpoint, byte[] data, int offset, int length, DatagramSender sender)
+        {
+            if (remoteEndpoint == null)
+            {
+                throw new ArgumentNullException(nameof(remoteEndpoint));
+            }
+
+            DtlsVerifier verifier;
+            lock (_syncRoot)
+            {
+                verifier = _verifier ??= new DtlsVerifier(Crypto);
+            }
+
+            SocketAddress address = remoteEndpoint.Serialize();
+            byte[] clientID = new byte[address.Size];
+            for (int i = 0; i < clientID.Length; i++)
+            {
+                clientID[i] = address[i];
+            }
+
+            DtlsRequest request = verifier.VerifyRequest(clientID, data, offset, length, sender);
+            return request == null ? null : new BcDtlsRequest(request, remoteEndpoint);
+        }
+
+        public virtual IDtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, IDtlsRequest request = null)
         {
             lock (_syncRoot)
             {
@@ -146,7 +172,7 @@ namespace SharpSRTP.DTLS
                 {
                     DtlsServerProtocol serverProtocol = new DtlsServerProtocol();
                     _clientDatagramTransport = datagramTransport;
-                    transport = serverProtocol.Accept(this, datagramTransport, request);
+                    transport = serverProtocol.Accept(this, datagramTransport, (request as BcDtlsRequest)?.Request);
                     _clientDatagramTransport = null;
                 }
                 catch (Exception ex)
@@ -156,8 +182,16 @@ namespace SharpSRTP.DTLS
                 }
 
                 handshakeError = null;
-                return transport;
+                return new BcDtlsTransport(transport);
             }
+        }
+
+        /// <summary>
+        /// The use_srtp data negotiated in the handshake, or null when DTLS-SRTP is not used.
+        /// </summary>
+        protected virtual UseSrtpData GetNegotiatedSrtpData()
+        {
+            return null;
         }
 
         public override void NotifyAlertRaised(short alertLevel, short alertDescription, string message, Exception cause)
@@ -277,7 +311,7 @@ namespace SharpSRTP.DTLS
                 Log.Debug("Server 'tls-unique': " + ToHexString(tlsUnique));
             }
 
-            OnHandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
+            OnHandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(new BcDtlsSecurityParameters(m_context, GetNegotiatedSrtpData())));
         }
 
         public override void ProcessClientExtensions(IDictionary<int, byte[]> clientExtensions)

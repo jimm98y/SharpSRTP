@@ -102,12 +102,26 @@ namespace SharpSRTP.DTLS
 
     public class DtlsHandshakeCompletedEventArgs : EventArgs
     {
-        public SecurityParameters SecurityParameters { get; }
+        public IDtlsSecurityParameters SecurityParameters { get; }
 
-        public DtlsHandshakeCompletedEventArgs(SecurityParameters securityParameters)
+        public DtlsHandshakeCompletedEventArgs(IDtlsSecurityParameters securityParameters)
         {
             SecurityParameters = securityParameters;
         }
+    }
+
+    /// <summary>
+    /// An established DTLS association, independent of the DTLS library that negotiated it.
+    /// </summary>
+    public interface IDtlsTransport
+    {
+        int GetReceiveLimit();
+        int GetSendLimit();
+
+        /// <summary>Receives one application data record; returns its length, or -1 on timeout.</summary>
+        int Receive(byte[] buf, int off, int len, int waitMillis);
+        void Send(byte[] buf, int off, int len);
+        void Close();
     }
 
     public interface IDtlsPeer
@@ -123,6 +137,6 @@ namespace SharpSRTP.DTLS
         short CertificateHashAlgorithm { get; }
         void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm);
 
-        DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null);
+        IDtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, IDtlsRequest request = null);
     }
 }

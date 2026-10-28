@@ -128,8 +128,8 @@ namespace SharpSRTP.DTLSSRTP
                 throw new TlsFatalAlert(AlertDescription.internal_error);
             }
 
-            // verify the mki sent by the server matches our mki
-            if (_srtpData.Mki != null && serverSrtpExtension.Mki != null && !_srtpData.Mki.AsSpan().SequenceEqual(serverSrtpExtension.Mki))
+            // verify the mki sent by the server matches our mki; an empty one means the server declined it (RFC 5764 4.1.1)
+            if (_srtpData.Mki != null && serverSrtpExtension.Mki != null && serverSrtpExtension.Mki.Length > 0 && !_srtpData.Mki.AsSpan().SequenceEqual(serverSrtpExtension.Mki))
             {
                 throw new TlsFatalAlert(AlertDescription.illegal_parameter);
             }
@@ -145,16 +145,14 @@ namespace SharpSRTP.DTLSSRTP
             return extensions;
         }
 
-        public virtual SrtpSessionContext CreateSessionContext(SecurityParameters securityParameters)
+        protected override UseSrtpData GetNegotiatedSrtpData()
         {
-            // this should only be called from OnHandshakeCompleted so we should still have _srtpData from the connection
-            if (m_context == null)
-            {
-                throw new InvalidOperationException();
-            }
+            return _srtpData;
+        }
 
-            int selectedProtectionProfile = _srtpData.ProtectionProfiles[0];
-            DtlsSrtpKeys keys = DtlsSrtpProtocol.CreateMasterKeys(selectedProtectionProfile, _srtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
+        public virtual SrtpSessionContext CreateSessionContext(IDtlsSecurityParameters securityParameters)
+        {
+            DtlsSrtpKeys keys = DtlsSrtpProtocol.CreateMasterKeys(securityParameters, ForceUseExtendedMasterSecret);
             return DtlsSrtpProtocol.CreateSrtpClientSessionContext(keys);
         }
     }

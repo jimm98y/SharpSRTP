@@ -126,16 +126,14 @@ namespace SharpSRTP.DTLSSRTP
             return extensions;
         }
 
-        public virtual SrtpSessionContext CreateSessionContext(SecurityParameters securityParameters)
+        protected override UseSrtpData GetNegotiatedSrtpData()
         {
-            // this should only be called from OnHandshakeCompleted so we should still have _srtpData from the connection
-            if (m_context == null)
-            {
-                throw new InvalidOperationException();
-            }
+            return _srtpData;
+        }
 
-            int selectedProtectionProfile = _srtpData.ProtectionProfiles[0];
-            DtlsSrtpKeys keys = DtlsSrtpProtocol.CreateMasterKeys(_srtpData.ProtectionProfiles[0], _srtpData.Mki, securityParameters, ForceUseExtendedMasterSecret);
+        public virtual SrtpSessionContext CreateSessionContext(IDtlsSecurityParameters securityParameters)
+        {
+            DtlsSrtpKeys keys = DtlsSrtpProtocol.CreateMasterKeys(securityParameters, ForceUseExtendedMasterSecret);
             return DtlsSrtpProtocol.CreateSrtpServerSessionContext(keys);
         }
     }

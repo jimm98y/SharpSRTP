@@ -136,7 +136,7 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public virtual DtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, DtlsRequest request = null)
+        public virtual IDtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, IDtlsRequest request = null)
         {
             lock (_syncRoot)
             {
@@ -156,8 +156,16 @@ namespace SharpSRTP.DTLS
                 }
 
                 handshakeError = null;
-                return transport;
+                return new BcDtlsTransport(transport);
             }
+        }
+
+        /// <summary>
+        /// The use_srtp data negotiated in the handshake, or null when DTLS-SRTP is not used.
+        /// </summary>
+        protected virtual UseSrtpData GetNegotiatedSrtpData()
+        {
+            return null;
         }
 
         public override TlsSession GetSessionToResume()
@@ -281,7 +289,7 @@ namespace SharpSRTP.DTLS
                 }
             }
 
-            OnHandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(m_context.SecurityParameters));
+            OnHandshakeCompleted?.Invoke(this, new DtlsHandshakeCompletedEventArgs(new BcDtlsSecurityParameters(m_context, GetNegotiatedSrtpData())));
         }
 
         public override IDictionary<int, byte[]> GetClientExtensions()

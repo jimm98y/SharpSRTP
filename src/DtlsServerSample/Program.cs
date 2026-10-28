@@ -1,7 +1,4 @@
-﻿using Org.BouncyCastle.Tls;
-using Org.BouncyCastle.Tls.Crypto;
-using Org.BouncyCastle.Tls.Crypto.Impl.BC;
-using SharpSRTP.DTLS;
+﻿using SharpSRTP.DTLS;
 using SharpSRTP.UDP;
 using System;
 using System.Collections.Concurrent;
@@ -11,15 +8,14 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DtlsServer = SharpDtlsAdapter.DtlsServer;
 
 const int RECEIVE_TIMEOUT = 0;
 const int INACTIVE_SESSION_TIMEOUT = 60000;
 EndPoint localEndpoint = IPEndPointExtensions.Parse("0.0.0.0:8888");
 EndPoint remoteEndpoint = new IPEndPoint(IPAddress.Any, 0);
 ConcurrentDictionary<string, UdpTransport> activeSessions = new ConcurrentDictionary<string, UdpTransport>();
-IDtlsPeer server = new DtlsServer();
-TlsCrypto serverCrypto = new BcTlsCrypto();
-DtlsVerifier verifier = new DtlsVerifier(serverCrypto);
+IDtlsServerPeer server = new DtlsServer();
 Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 listenSocket.ReceiveTimeout = RECEIVE_TIMEOUT;
 
@@ -78,13 +74,12 @@ while (!isShutdown)
         else
         {
             // new session
-            DtlsRequest request = null;
+            IDtlsRequest request = null;
 
             // optionally start with HelloVerify
             if (isHelloVerifyEnabled)
             {
-                var clientID = remoteEndpoint.Serialize().Buffer.ToArray();
-                request = verifier.VerifyRequest(clientID, buffer, 0, length, new UdpSender(listenSocket, remoteEndpoint, UdpTransport.MTU));
+                request = server.VerifyRequest(remoteEndpoint, buffer, 0, length, new UdpSender(listenSocket, remoteEndpoint, UdpTransport.MTU));
 
                 if (request == null)
                 {
@@ -107,7 +102,7 @@ while (!isShutdown)
                     var session = Task.Run(() =>
                     {
                         Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
-                        DtlsTransport dtlsTransport = server.DoHandshake(out string error, transport, request);
+                        IDtlsTransport dtlsTransport = server.DoHandshake(out string error, transport, request);
 
                         if (dtlsTransport != null)
                         {

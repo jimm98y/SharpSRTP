@@ -21,6 +21,7 @@
 
 using Org.BouncyCastle.Tls;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -35,13 +36,16 @@ namespace SharpSRTP.UDP
         public const int MAX_RECEIVE_QUEUE_ITEMS = 32;
         public const int MTU = 1472; // 1500 - 20 (IP) - 8 (UDP)
 
+        // ReceiveFrom only uses it as the address family template, the sender's address is returned in a new instance
+        private static readonly EndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
+
         private readonly Socket _socket;
         private readonly EndPoint _remote;
         private readonly int _mtu = MTU;
         private readonly Action<UdpTransport> _onClose;
         private readonly BlockingCollection<byte[]> _receiveQueue = new BlockingCollection<byte[]>();
 
-        public string RemoteEndpoint { get { return _remote.ToString(); } }
+        public string RemoteEndpoint { get { return _remote?.ToString(); } }
         public DateTime LastReceived { get; private set; } = DateTime.UtcNow;
         public DateTime LastSent { get; private set; } = DateTime.UtcNow;
         public DateTime LastUsed { get { return LastReceived > LastSent ? LastReceived : LastSent; } }
@@ -52,6 +56,12 @@ namespace SharpSRTP.UDP
             this._remote = remote;
             this._mtu = mtu;
             this._onClose = onClose;
+        }
+
+        /// <summary>Takes the next queued datagram as it was added, without copying it.</summary>
+        public bool TryTakeFromReceiveQueue(out byte[] data, int waitMillis)
+        {
+            return _receiveQueue.TryTake(out data, waitMillis);
         }
 
         public bool TryAddToReceiveQueue(byte[] data, int maxReceiveQueueSize = MAX_RECEIVE_QUEUE_ITEMS)
@@ -77,6 +87,11 @@ namespace SharpSRTP.UDP
 
         public virtual int Receive(byte[] buf, int off, int len, int waitMillis)
         {
+            if (_remote == null)
+            {
+                return ReceiveFromSocket(buf, off, len, waitMillis);
+            }
+
             return Receive(buf.AsSpan(off, len), waitMillis);
         }
 
@@ -84,19 +99,34 @@ namespace SharpSRTP.UDP
         {
             if (_remote == null)
             {
+#if NET8_0_OR_GREATER
                 this._socket.ReceiveTimeout = waitMillis;
                 try
                 {
-                    EndPoint remote = new IPEndPoint(IPAddress.Any, 0);
-                    var byteBuffer = buffer.ToArray();
-                    int len = this._socket.ReceiveFrom(byteBuffer, ref remote);
-                    byteBuffer.AsSpan().CopyTo(buffer);
-                    return len;
+                    EndPoint remote = AnyEndPoint;
+                    return this._socket.ReceiveFrom(buffer, ref remote);
                 }
-                catch(SocketException)
+                catch (SocketException)
                 {
                     return -1;
                 }
+#else
+                // no span overloads on the socket here: receive into a pooled array and copy only what arrived
+                byte[] rented = ArrayPool<byte>.Shared.Rent(buffer.Length);
+                try
+                {
+                    int len = ReceiveFromSocket(rented, 0, buffer.Length, waitMillis);
+                    if (len > 0)
+                    {
+                        rented.AsSpan(0, len).CopyTo(buffer);
+                    }
+                    return len;
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+#endif
             }
             else
             {
@@ -105,6 +135,20 @@ namespace SharpSRTP.UDP
                     data.AsSpan().CopyTo(buffer);
                     return data.Length;
                 }
+                return -1;
+            }
+        }
+
+        private int ReceiveFromSocket(byte[] buf, int off, int len, int waitMillis)
+        {
+            this._socket.ReceiveTimeout = waitMillis;
+            try
+            {
+                EndPoint remote = AnyEndPoint;
+                return this._socket.ReceiveFrom(buf, off, len, SocketFlags.None, ref remote);
+            }
+            catch (SocketException)
+            {
                 return -1;
             }
         }
@@ -121,20 +165,48 @@ namespace SharpSRTP.UDP
                 throw new TlsFatalAlert(AlertDescription.internal_error);
             }
 
-            Send(buf.AsSpan(off, len));
+            SendToSocket(buf, off, len);
         }
 
         public virtual void Send(ReadOnlySpan<byte> buffer)
+        {
+#if NET8_0_OR_GREATER
+            LastSent = DateTime.UtcNow;
+
+            if (_remote == null)
+            {
+                _socket.Send(buffer);
+            }
+            else
+            {
+                _socket.SendTo(buffer, _remote);
+            }
+#else
+            // no span overloads on the socket here: send from a pooled array
+            byte[] rented = ArrayPool<byte>.Shared.Rent(buffer.Length);
+            try
+            {
+                buffer.CopyTo(rented);
+                SendToSocket(rented, 0, buffer.Length);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+#endif
+        }
+
+        private void SendToSocket(byte[] buf, int off, int len)
         {
             LastSent = DateTime.UtcNow;
 
             if (_remote == null)
             {
-                _socket.Send(buffer.ToArray());
+                _socket.Send(buf, off, len, SocketFlags.None);
             }
             else
             {
-                _socket.SendTo(buffer.ToArray(), _remote);
+                _socket.SendTo(buf, off, len, SocketFlags.None, _remote);
             }
         }
 
