@@ -42,16 +42,16 @@ namespace SharpSRTP.SRTP
         // What netstandard2.0 offers as well, so that a library built against it runs here too.
 
         int ProtectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
-            => ProtectRtp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+            => ProtectRtp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
 
         int UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
-            => UnprotectRtp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+            => UnprotectRtp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
 
         int ProtectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
-            => ProtectRtcp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+            => ProtectRtcp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
 
         int UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
-            => UnprotectRtcp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+            => UnprotectRtcp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
 #endif
     }
 
@@ -85,12 +85,4 @@ namespace SharpSRTP.SRTP
             => context.UnprotectRtcp(new System.ArraySegment<byte>(payload, 0, length), payload, out outputBufferLength);
 #endif
     }
-
-#if NET8_0_OR_GREATER
-    internal static class SrtpOverloads
-    {
-        // netstandard2.0 refuses a missing output, where a span would quietly be an empty one
-        public static byte[] NotNull(byte[] output) => output ?? throw new System.ArgumentNullException(nameof(output));
-    }
-#endif
 }

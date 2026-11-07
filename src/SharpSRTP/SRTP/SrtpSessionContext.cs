@@ -77,16 +77,16 @@ namespace SharpSRTP.SRTP
         // What netstandard2.0 offers as well, so that a library built against it runs here too.
 
         public int ProtectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
-            => ProtectRtp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+            => ProtectRtp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
 
         public int UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
-            => UnprotectRtp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+            => UnprotectRtp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
 
         public int ProtectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
-            => ProtectRtcp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+            => ProtectRtcp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
 
         public int UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
-            => UnprotectRtcp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+            => UnprotectRtcp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
 #endif
     }
 }
