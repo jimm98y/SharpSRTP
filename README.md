@@ -39,12 +39,12 @@ Currently implemented [DTLS-SRTP protection profiles](https://www.iana.org/assig
 1. SRTP_AEAD_AES_256_GCM [RFC7714](https://datatracker.ietf.org/doc/html/rfc7714)
 1. DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM	[RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)
 1. DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM	[RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)
-1. SRTP_ARIA_128_CTR_HMAC_SHA1_80 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
-1. SRTP_ARIA_128_CTR_HMAC_SHA1_32 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
-1. SRTP_ARIA_256_CTR_HMAC_SHA1_80 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
-1. SRTP_ARIA_256_CTR_HMAC_SHA1_32 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
-1. SRTP_AEAD_ARIA_128_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
-1. SRTP_AEAD_ARIA_256_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
+1. SRTP_ARIA_128_CTR_HMAC_SHA1_80 [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
+1. SRTP_ARIA_128_CTR_HMAC_SHA1_32 [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
+1. SRTP_ARIA_256_CTR_HMAC_SHA1_80 [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
+1. SRTP_ARIA_256_CTR_HMAC_SHA1_32 [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
+1. SRTP_AEAD_ARIA_128_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
+1. SRTP_AEAD_ARIA_256_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
 
 ## Thread Safety
 SharpSRTP is not thread-safe. If multiple threads need to access the same SRTP context, proper synchronization mechanisms must be implemented by the user. If this is not possible, 
@@ -62,7 +62,7 @@ var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.U
 Create the DTLS server:
 ```cs
 DtlsServer server = new DtlsServer(rsaCertificate.Certificate, rsaCertificate.PrivateKey, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
-````
+```
 Create the DTLS transport. Here we will use UDP on localhost, port 8888:
 ```cs
 EndPoint localEndpoint = new IPEndPoint(IPAddress.Any, 8888);
@@ -84,7 +84,7 @@ while(!isShutdown)
     {
         if(transport != null)
         {
-            if (!transport.TryAddToReceiveQueue(buffer.ToArray()))
+            if (!transport.TryAddToReceiveQueue(buffer.Take(length).ToArray()))
             {
                 throw new Exception("Receive queue full!");
             }
@@ -145,7 +145,7 @@ Connect the client:
 ```cs
 IDtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
 ```
-Receive data to the server:
+Send data to the server:
 ```cs
 dtlsTransport.Send(buffer, 0, buffer.Length);
 ```
@@ -204,7 +204,7 @@ To encrypt RTCP and create SRTCP:
 ```cs
 byte[] rtcp = ...
 byte[] rtcpBuffer = new byte[context.CalculateRequiredSrtcpPayloadLength(rtcp.Length)];
-Buffer.BlockCopy(rtcp, 0, rtcpBuffer, 0, rtcp.Length];
+Buffer.BlockCopy(rtcp, 0, rtcpBuffer, 0, rtcp.Length);
 context.ProtectRtcp(rtcpBuffer, rtcp.Length, out int length);
 byte[] srtcp = rtcpBuffer.Take(length).ToArray();
 ```
@@ -246,7 +246,7 @@ var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("WebRTC", DateTi
 ```
 Create the DTLS-SRTP client:
 ```cs
-var client = new DtlsSrtpClient(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256)
+var client = new DtlsSrtpClient(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
 ```
 Subscribe for `OnSessionStarted`:
 ```cs
