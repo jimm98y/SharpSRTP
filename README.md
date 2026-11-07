@@ -127,7 +127,7 @@ var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.U
 ```
 Create the DTLS client:
 ```cs
-DtlsClient client = new DtlsClient(rsaCertificate.certificate, rsaCertificate.key, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
+DtlsClient client = new DtlsClient(rsaCertificate.Certificate, rsaCertificate.PrivateKey, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
 ```
 Optionally, you can let the client auto-generate the matching certificate:
 ```cs
@@ -169,7 +169,7 @@ SrtpKeys keys = SrtpProtocol.CreateMasterKeys(cryptoSuite, MKI);
 ```
 Obtain the generated master key + master salt to send it to the client:
 ```cs
-byte[] masterKeySalt = keys.MasterKeySalt;
+byte[] masterKeySalt = keys.MasterKeySalt.ToArray();
 ```
 Create a new SRTP context using those keys:
 ```cs
