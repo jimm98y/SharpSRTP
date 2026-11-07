@@ -1,0 +1,16 @@
+*REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.IBlockCipher)
+*REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.IBlockCipher).ProcessBlock(byte[] input, byte[] output) -> int
+*REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.IBlockCipher).ProcessBlock(byte[] input, System.ArraySegment<byte> output) -> int
+*REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.IBlockCipher).ProcessBlock(System.ArraySegment<byte> input, System.ArraySegment<byte> output) -> int
+*REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher)
+*REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher).DoFinal(System.ArraySegment<byte> output) -> int
+*REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher).ProcessAadBytes(System.ArraySegment<byte> input) -> void
+*REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher).ProcessBytes(System.ArraySegment<byte> input, System.ArraySegment<byte> output) -> int
+*REMOVED*static BouncyCastleExtensions.Create(System.ReadOnlyMemory<byte> memory) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
+*REMOVED*static BouncyCastleExtensions.DoFinal(this Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, System.ArraySegment<byte> output) -> int
+*REMOVED*static BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter).Create(System.ReadOnlyMemory<byte> memory) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
+*REMOVED*static BouncyCastleExtensions.ProcessAadBytes(this Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, System.ArraySegment<byte> input) -> void
+*REMOVED*static BouncyCastleExtensions.ProcessBlock(this Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] input, byte[] output) -> int
+*REMOVED*static BouncyCastleExtensions.ProcessBlock(this Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] input, System.ArraySegment<byte> output) -> int
+*REMOVED*static BouncyCastleExtensions.ProcessBlock(this Org.BouncyCastle.Crypto.IBlockCipher engine, System.ArraySegment<byte> input, System.ArraySegment<byte> output) -> int
+*REMOVED*static BouncyCastleExtensions.ProcessBytes(this Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, System.ArraySegment<byte> input, System.ArraySegment<byte> output) -> int

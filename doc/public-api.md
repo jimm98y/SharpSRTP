@@ -62,6 +62,8 @@ The baseline is 0.5.8. `CompatibilitySuppressions.xml` holds two kinds of entrie
   BouncyCastle peers are `BcDtls*` now); `IDtlsPeer.DoHandshake` takes an `IDtlsRequest` and
   `IDtlsSrtpPeer.CreateSessionContext` an `IDtlsSecurityParameters`; and
   `DtlsHandshakeCompletedEventArgs` no longer carries BouncyCastle's `SecurityParameters`.
+- **`BouncyCastleExtensions` is internal**, against 0.5.8. It was public and in no namespace, so it
+  turned up in the global namespace of every program referencing SharpSRTP.
 - **The frameworks against one another**, as 0.5.8 already was. netstandard2.0 has the
   `ArraySegment` and `byte[]` overloads, net8.0 the `Span` ones in their place, so a library built
   against the netstandard2.0 SharpSRTP cannot call these members when it runs on net8.0 or later.

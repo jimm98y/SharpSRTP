@@ -1,0 +1,4 @@
+*REMOVED*static BouncyCastleExtensions.Create(System.ReadOnlyMemory<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
+*REMOVED*static BouncyCastleExtensions.Create(System.ReadOnlySpan<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
+*REMOVED*static BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter).Create(System.ReadOnlyMemory<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
+*REMOVED*static BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter).Create(System.ReadOnlySpan<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter

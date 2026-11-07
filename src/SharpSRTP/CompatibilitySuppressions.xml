@@ -3,15 +3,31 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:BouncyCastleExtensions.&lt;G&gt;$04B95E1E534F564A204CCCA9DC7AC2C1.&lt;M&gt;$4C07FA85E1E9A131F8176095C7B4E109</Target>
-    <Left>lib/netstandard2.0/SharpSRTP.dll</Left>
-    <Right>lib/net8.0/SharpSRTP.dll</Right>
+    <Target>T:BouncyCastleExtensions</Target>
+    <Left>lib/net10.0/SharpSRTP.dll</Left>
+    <Right>lib/net10.0/SharpSRTP.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:BouncyCastleExtensions.&lt;G&gt;$CB0B324AB0B26A8D2A22738DB3B00F2F.&lt;M&gt;$407B43685305425602DD9B666331C9D0</Target>
-    <Left>lib/netstandard2.0/SharpSRTP.dll</Left>
+    <Target>T:BouncyCastleExtensions</Target>
+    <Left>lib/net481/SharpSRTP.dll</Left>
+    <Right>lib/net481/SharpSRTP.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:BouncyCastleExtensions</Target>
+    <Left>lib/net8.0/SharpSRTP.dll</Left>
     <Right>lib/net8.0/SharpSRTP.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:BouncyCastleExtensions</Target>
+    <Left>lib/netstandard2.0/SharpSRTP.dll</Left>
+    <Right>lib/netstandard2.0/SharpSRTP.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -474,42 +490,6 @@
     <Left>lib/net8.0/SharpSRTP.dll</Left>
     <Right>lib/net8.0/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:BouncyCastleExtensions.DoFinal(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher,System.ArraySegment{System.Byte})</Target>
-    <Left>lib/netstandard2.0/SharpSRTP.dll</Left>
-    <Right>lib/net8.0/SharpSRTP.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:BouncyCastleExtensions.ProcessAadBytes(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher,System.ArraySegment{System.Byte})</Target>
-    <Left>lib/netstandard2.0/SharpSRTP.dll</Left>
-    <Right>lib/net8.0/SharpSRTP.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:BouncyCastleExtensions.ProcessBlock(Org.BouncyCastle.Crypto.IBlockCipher,System.ArraySegment{System.Byte},System.ArraySegment{System.Byte})</Target>
-    <Left>lib/netstandard2.0/SharpSRTP.dll</Left>
-    <Right>lib/net8.0/SharpSRTP.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:BouncyCastleExtensions.ProcessBlock(Org.BouncyCastle.Crypto.IBlockCipher,System.Byte[],System.ArraySegment{System.Byte})</Target>
-    <Left>lib/netstandard2.0/SharpSRTP.dll</Left>
-    <Right>lib/net8.0/SharpSRTP.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:BouncyCastleExtensions.ProcessBlock(Org.BouncyCastle.Crypto.IBlockCipher,System.Byte[],System.Byte[])</Target>
-    <Left>lib/netstandard2.0/SharpSRTP.dll</Left>
-    <Right>lib/net8.0/SharpSRTP.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:BouncyCastleExtensions.ProcessBytes(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher,System.ArraySegment{System.Byte},System.ArraySegment{System.Byte})</Target>
-    <Left>lib/netstandard2.0/SharpSRTP.dll</Left>
-    <Right>lib/net8.0/SharpSRTP.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>

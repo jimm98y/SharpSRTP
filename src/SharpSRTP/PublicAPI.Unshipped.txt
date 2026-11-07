@@ -1,0 +1,4 @@
+*REMOVED*BouncyCastleExtensions
+*REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter)
+*REMOVED*static BouncyCastleExtensions.Create(System.ArraySegment<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
+*REMOVED*static BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter).Create(System.ArraySegment<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
