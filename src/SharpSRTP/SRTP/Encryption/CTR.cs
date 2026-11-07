@@ -92,6 +92,12 @@ namespace SharpSRTP.SRTP.Encryption
             iv[15] = 0;
         }
 
+#if NET8_0_OR_GREATER
+        // What netstandard2.0 offers as well, so that a library built against it runs here too.
+        public static void Encrypt(IBlockCipher engine, ReadOnlySpan<byte> input, Span<byte> output, byte[] iv)
+            => Encrypt(engine, input, output, (Bytes)iv);
+
+#endif
         public static void Encrypt(IBlockCipher engine, ReadOnlySpan<byte> input, Span<byte> output, Bytes iv)
         {
             var payloadSize = input.Length;

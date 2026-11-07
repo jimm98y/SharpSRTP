@@ -72,5 +72,21 @@ namespace SharpSRTP.SRTP
         {
             return DecodeRtcpContext.UnprotectRtcp(input, output, out outputBufferLength);
         }
+
+#if NET8_0_OR_GREATER
+        // What netstandard2.0 offers as well, so that a library built against it runs here too.
+
+        public int ProtectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
+            => ProtectRtp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+
+        public int UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
+            => UnprotectRtp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+
+        public int ProtectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
+            => ProtectRtcp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+
+        public int UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
+            => UnprotectRtcp((ReadOnlyBytes)input, (Bytes)SrtpOverloads.NotNull(output), out outputBufferLength);
+#endif
     }
 }

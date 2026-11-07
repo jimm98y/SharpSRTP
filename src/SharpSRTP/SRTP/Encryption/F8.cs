@@ -39,6 +39,12 @@ namespace SharpSRTP.SRTP.Encryption
     {
         public const int BLOCK_SIZE = 16;
 
+#if NET8_0_OR_GREATER
+        // What netstandard2.0 offers as well, so that a library built against it runs here too.
+        public static void GenerateRtpMessageKeyIV(IBlockCipher engine, byte[] k_e, byte[] k_s, ReadOnlySpan<byte> rtpPacket, uint ROC, byte[] iv)
+            => GenerateRtpMessageKeyIV(engine, k_e, k_s, rtpPacket, ROC, (Bytes)iv);
+
+#endif
         public static void GenerateRtpMessageKeyIV(IBlockCipher engine, byte[] k_e, byte[] k_s, ReadOnlySpan<byte> rtpPacket, uint ROC, Bytes iv)
         {
 #if NET8_0_OR_GREATER

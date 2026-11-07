@@ -2,3 +2,28 @@
 *REMOVED*static BouncyCastleExtensions.Create(System.ReadOnlySpan<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
 *REMOVED*static BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter).Create(System.ReadOnlyMemory<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
 *REMOVED*static BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter).Create(System.ReadOnlySpan<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
+SharpSRTP.SRTP.ISrtpContext.ProtectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.ISrtpContext.ProtectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.ISrtpContext.UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.ISrtpContext.UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.SrtpContext.ProtectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.SrtpSessionContext.ProtectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.SrtpSessionContext.ProtectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.SrtpSessionContext.UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.SrtpSessionContext.UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.ProtectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.ProtectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+static SharpSRTP.SRTP.Authentication.HMAC.GenerateAuthTag(Org.BouncyCastle.Crypto.Macs.HMac hmac, System.ArraySegment<byte> payload) -> byte[]
+static SharpSRTP.SRTP.Encryption.AEAD.Encrypt(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, bool encrypt, System.ArraySegment<byte> input, System.ArraySegment<byte> output, byte[] iv, Org.BouncyCastle.Crypto.Parameters.KeyParameter K_e, int N_tag, System.ArraySegment<byte> associatedData) -> void
+static SharpSRTP.SRTP.Encryption.AEAD.Encrypt(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, bool encrypt, System.ArraySegment<byte> input, System.ArraySegment<byte> output, byte[] iv, byte[] K_e, int N_tag, System.ArraySegment<byte> associatedData) -> void
+static SharpSRTP.SRTP.Encryption.CTR.Encrypt(Org.BouncyCastle.Crypto.IBlockCipher engine, System.ReadOnlySpan<byte> input, System.Span<byte> output, byte[] iv) -> void
+static SharpSRTP.SRTP.Encryption.F8.GenerateRtpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] k_e, byte[] k_s, System.ReadOnlySpan<byte> rtpPacket, uint ROC, byte[] iv) -> void
+static SharpSRTP.SRTP.SrtpContextExtensions.ProtectRtcp(this SharpSRTP.SRTP.ISrtpContext context, byte[] payload, int length, out int outputBufferLength) -> int
+static SharpSRTP.SRTP.SrtpContextExtensions.ProtectRtp(this SharpSRTP.SRTP.ISrtpContext context, byte[] payload, int length, out int outputBufferLength) -> int
+static SharpSRTP.SRTP.SrtpContextExtensions.UnprotectRtcp(this SharpSRTP.SRTP.ISrtpContext context, byte[] payload, int length, out int outputBufferLength) -> int
+static SharpSRTP.SRTP.SrtpContextExtensions.UnprotectRtp(this SharpSRTP.SRTP.ISrtpContext context, byte[] payload, int length, out int outputBufferLength) -> int
+virtual SharpSRTP.SRTP.SrtpContext.ProtectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+virtual SharpSRTP.SRTP.SrtpContext.UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
+virtual SharpSRTP.SRTP.SrtpContext.UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int

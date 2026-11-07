@@ -31,6 +31,12 @@ namespace SharpSRTP.SRTP.Authentication
 {
     public static class HMAC
     {
+#if NET8_0_OR_GREATER
+        // What netstandard2.0 offers as well, so that a library built against it runs here too.
+        public static byte[] GenerateAuthTag(HMac hmac, System.ArraySegment<byte> payload)
+            => GenerateAuthTag(hmac, (ReadOnlyBytes)payload);
+
+#endif
         public static byte[] GenerateAuthTag(HMac hmac, ReadOnlyBytes payload)
         {
 #if NET8_0_OR_GREATER
