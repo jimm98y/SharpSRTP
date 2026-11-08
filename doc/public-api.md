@@ -1,21 +1,20 @@
 # Public API
 
-What SharpSRTP exposes is written down, and a change to it does not build until it is written down
-too. Two checks do this, both on every `dotnet build` of the library:
+What SharpSRTP exposes is written down, and a removal from it does not build until it is written down too, an addition warns until it is. Two checks do this, both on every `dotnet build` of the library:
 
 - **The API files.** `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt` in `src/SharpSRTP` list
   every public type and member that all four target frameworks share. What only some of them offer
   is in `src/SharpSRTP/PublicAPI/<framework>/`: the `ArraySegment` and `byte[]` overloads of
   netstandard2.0 and net481, and the `Span` overloads of net8.0 and net10.0. Shipped is the API as
-  released; Unshipped is what changed since. A public symbol missing from them fails the build with
-  RS0016, a listed one that is gone with RS0017.
+  released; Unshipped is what changed since. A public symbol missing from them is a warning, RS0016, until it is
+  listed - an addition breaks no one - and a listed one that is gone fails the build with RS0017.
 - **Package validation.** The package being built is compared with the last release
   (`PackageValidationBaselineVersion` in `SharpSRTP.csproj`), and every binary or source breaking
   change fails the build with a CP error. It also compares the target frameworks with one another.
 
 ## Adding to the API
 
-Build, and accept the RS0016 fix in the IDE ("Add to public API"), or from the command line:
+List what the RS0016 warnings name: accept their fix in the IDE ("Add to public API"), or from the command line:
 
 ```
 dotnet format analyzers src/SharpSRTP/SharpSRTP.csproj --diagnostics RS0016 --severity warn
@@ -23,7 +22,7 @@ dotnet format analyzers src/SharpSRTP/SharpSRTP.csproj --diagnostics RS0016 --se
 
 That writes into the `PublicAPI.Unshipped.txt` next to the project, which is right for anything
 every framework has. A member inside `#if NET8_0_OR_GREATER` (or its `#else`) belongs in the
-`PublicAPI.Unshipped.txt` of each framework it exists on instead; the RS0016 error says which
+`PublicAPI.Unshipped.txt` of each framework it exists on instead; the RS0016 warning says which
 framework it was reported for.
 
 ## Removing or changing the API
