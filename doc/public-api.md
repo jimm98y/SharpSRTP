@@ -63,6 +63,9 @@ The baseline is 0.5.8. `CompatibilitySuppressions.xml` holds two kinds of entrie
   `DtlsHandshakeCompletedEventArgs` no longer carries BouncyCastle's `SecurityParameters`.
 - **`BouncyCastleExtensions` is internal**, against 0.5.8. It was public and in no namespace, so it
   turned up in the global namespace of every program referencing SharpSRTP.
+- **`ExtendedSrtpProtectionProfile` declares no constants of its own**, against 0.5.8. BouncyCastle
+  2.7.0 added them to `SrtpProtectionProfile`, its base class, so `ExtendedSrtpProtectionProfile.X`
+  still compiles with the same values; only the field on the derived type is gone.
 - **The frameworks against one another.** net8.0 and later have the `ArraySegment` and `byte[]`
   overloads of netstandard2.0 as well as their own `Span` ones, each handing over to its `Span`
   overload (on `ISrtpContext` as default implementations, so an implementation of it has nothing to

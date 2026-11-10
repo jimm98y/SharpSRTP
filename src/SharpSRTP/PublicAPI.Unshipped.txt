@@ -1,4 +1,14 @@
 *REMOVED*BouncyCastleExtensions
 *REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter)
+*REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 9 -> int
+*REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 10 -> int
+*REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DRAFT_SRTP_AES256_CM_SHA1_32 = 4 -> int
+*REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DRAFT_SRTP_AES256_CM_SHA1_80 = 3 -> int
+*REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_128_GCM = 15 -> int
+*REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_256_GCM = 16 -> int
+*REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_32 = 12 -> int
+*REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_80 = 11 -> int
+*REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_32 = 14 -> int
+*REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_80 = 13 -> int
 *REMOVED*static BouncyCastleExtensions.Create(System.ArraySegment<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
 *REMOVED*static BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter).Create(System.ArraySegment<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
