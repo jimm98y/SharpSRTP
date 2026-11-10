@@ -119,7 +119,7 @@ Send data to the client:
 ```cs
 dtlsTransport.Send(buffer, 0, buffer.Length);
 ```
-To modify the offered crypto suites for the DTLS handshake, simply set `CipherSuites`. To support a different version of DTLS, set `MinimumVersion` and `MaximumVersion`. Note that as of January 2026, BouncyCastle still does not support DTLS 1.3.
+To modify the offered crypto suites for the DTLS handshake, simply set `CipherSuites`. DTLS 1.2 and DTLS 1.3 are both offered by default; to restrict the version, set `MinimumVersion` and `MaximumVersion` (`SharpDTLS.DtlsVersion.Dtls12` or `Dtls13`). The BouncyCastle based `BcDtls*` peers support DTLS 1.2 only, because BouncyCastle (2.7.0) does not support DTLS 1.3 yet.
 ### DTLS Client
 Start with creating the TLS certificate. Certificate type of the client must match the certificate type on the server, meaning if the server uses RSA certificate, the client has to use RSA certificate as well:
 ```cs
