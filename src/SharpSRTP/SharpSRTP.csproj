@@ -23,7 +23,11 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" PrivateAssets="all" />
-		<PackageReference Include="SharpDTLS" Version="0.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- SharpDTLS main, for the fixes made after its 0.0.1 package -->
+		<ProjectReference Include="..\..\..\SharpDTLS\src\SharpDTLS\SharpDTLS.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>
