@@ -5,7 +5,7 @@ What SharpSRTP exposes is written down, and a removal from it does not build unt
 - **The API files.** `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt` in `src/SharpSRTP` list
   every public type and member that all four target frameworks share. What only some of them offer
   is in `src/SharpSRTP/PublicAPI/<framework>/`: the `ArraySegment` and `byte[]` overloads of
-  netstandard2.0 and net481, and the `Span` overloads of net8.0 and net10.0. Shipped is the API as
+  netstandard2.0 and net472, and the `Span` overloads of net8.0 and net10.0. Shipped is the API as
   released; Unshipped is what changed since. A public symbol missing from them is a warning, RS0016, until it is
   listed - an addition breaks no one - and a listed one that is gone fails the build with RS0017.
 - **Package validation.** The package being built is compared with the last release

@@ -12,7 +12,7 @@
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:BouncyCastleExtensions</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
@@ -257,224 +257,224 @@
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLS.DtlsClient._clientDatagramTransport</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLS.DtlsServer._clientDatagramTransport</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DRAFT_SRTP_AES256_CM_SHA1_32</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DRAFT_SRTP_AES256_CM_SHA1_80</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_128_GCM</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_256_GCM</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_32</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_80</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_32</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_80</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsClient.#ctor(Org.BouncyCastle.Tls.Crypto.TlsCrypto,Org.BouncyCastle.Tls.TlsSession,Org.BouncyCastle.Tls.Certificate,Org.BouncyCastle.Crypto.AsymmetricKeyParameter,System.Int16,System.Int16)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsClient.#ctor(Org.BouncyCastle.Tls.TlsSession,Org.BouncyCastle.Tls.Certificate,Org.BouncyCastle.Crypto.AsymmetricKeyParameter,System.Int16,System.Int16)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsClient.DoHandshake(System.String@,Org.BouncyCastle.Tls.DatagramTransport,Org.BouncyCastle.Tls.DtlsRequest)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsClient.get_RemoteCertificate</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsClient.IsServerCertificateRsa(Org.BouncyCastle.Tls.TlsServerCertificate)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsClient.ToHexString(System.Byte[])</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsHandshakeCompletedEventArgs.#ctor(Org.BouncyCastle.Tls.SecurityParameters)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsHandshakeCompletedEventArgs.get_SecurityParameters</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsServer.#ctor(Org.BouncyCastle.Tls.Crypto.TlsCrypto,Org.BouncyCastle.Tls.Certificate,Org.BouncyCastle.Crypto.AsymmetricKeyParameter,System.Int16,System.Int16)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsServer.DoHandshake(System.String@,Org.BouncyCastle.Tls.DatagramTransport,Org.BouncyCastle.Tls.DtlsRequest)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.DtlsServer.ToHexString(System.Byte[])</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.IDtlsPeer.DoHandshake(System.String@,Org.BouncyCastle.Tls.DatagramTransport,Org.BouncyCastle.Tls.DtlsRequest)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLSSRTP.DtlsSrtpClient.#ctor(Org.BouncyCastle.Tls.Certificate,Org.BouncyCastle.Crypto.AsymmetricKeyParameter,System.Int16,System.Int16,Org.BouncyCastle.Tls.TlsSession)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLSSRTP.DtlsSrtpClient.#ctor(Org.BouncyCastle.Tls.Crypto.TlsCrypto,Org.BouncyCastle.Tls.Certificate,Org.BouncyCastle.Crypto.AsymmetricKeyParameter,System.Int16,System.Int16,Org.BouncyCastle.Tls.TlsSession)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLSSRTP.DtlsSrtpClient.CreateSessionContext(Org.BouncyCastle.Tls.SecurityParameters)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLSSRTP.DtlsSrtpClient.GetSupportedProtectionProfiles</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLSSRTP.DtlsSrtpServer.#ctor(Org.BouncyCastle.Tls.Crypto.TlsCrypto,Org.BouncyCastle.Tls.Certificate,Org.BouncyCastle.Crypto.AsymmetricKeyParameter,System.Int16,System.Int16)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLSSRTP.DtlsSrtpServer.CreateSessionContext(Org.BouncyCastle.Tls.SecurityParameters)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLSSRTP.DtlsSrtpServer.GetSupportedProtectionProfiles</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:SharpSRTP.DTLSSRTP.IDtlsSrtpPeer.CreateSessionContext(Org.BouncyCastle.Tls.SecurityParameters)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
@@ -943,14 +943,14 @@
     <DiagnosticId>CP0006</DiagnosticId>
     <Target>M:SharpSRTP.DTLS.IDtlsPeer.DoHandshake(System.String@,Org.BouncyCastle.Tls.DatagramTransport,SharpSRTP.DTLS.IDtlsRequest)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0006</DiagnosticId>
     <Target>M:SharpSRTP.DTLSSRTP.IDtlsSrtpPeer.CreateSessionContext(SharpSRTP.DTLS.IDtlsSecurityParameters)</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
@@ -1023,14 +1023,14 @@
     <DiagnosticId>CP0007</DiagnosticId>
     <Target>T:SharpSRTP.DTLS.DtlsClient</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0007</DiagnosticId>
     <Target>T:SharpSRTP.DTLS.DtlsServer</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
@@ -1093,28 +1093,28 @@
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:SharpSRTP.DTLS.DtlsClient</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:SharpSRTP.DTLS.DtlsServer</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:SharpSRTP.DTLSSRTP.DtlsSrtpClient</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:SharpSRTP.DTLSSRTP.DtlsSrtpServer</Target>
     <Left>lib/net481/SharpSRTP.dll</Left>
-    <Right>lib/net481/SharpSRTP.dll</Right>
+    <Right>lib/net472/SharpSRTP.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
