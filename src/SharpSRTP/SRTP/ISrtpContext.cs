@@ -37,6 +37,22 @@ namespace SharpSRTP.SRTP
         int CalculateRequiredSrtcpPayloadLength(int rtpLen);
         int ProtectRtcp(ReadOnlyBytes input, Bytes output, out int outputBufferLength);
         int UnprotectRtcp(ReadOnlyBytes input, Bytes output, out int outputBufferLength);
+
+#if NET8_0_OR_GREATER
+        // What netstandard2.0 offers as well, so that a library built against it runs here too.
+
+        int ProtectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
+            => ProtectRtp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
+
+        int UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
+            => UnprotectRtp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
+
+        int ProtectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
+            => ProtectRtcp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
+
+        int UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength)
+            => UnprotectRtcp((ReadOnlyBytes)input, (Bytes)(output ?? throw new System.ArgumentNullException(nameof(output))), out outputBufferLength);
+#endif
     }
 
     public static class SrtpContextExtensions
@@ -52,5 +68,21 @@ namespace SharpSRTP.SRTP
 
         public static int UnprotectRtcp(this ISrtpContext context, Bytes payload, int length, out int outputBufferLength)
             => context.UnprotectRtcp(payload.Slice(0, length), payload, out outputBufferLength);
+
+#if NET8_0_OR_GREATER
+        // What netstandard2.0 offers as well, so that a library built against it runs here too.
+
+        public static int ProtectRtp(this ISrtpContext context, byte[] payload, int length, out int outputBufferLength)
+            => context.ProtectRtp(new System.ArraySegment<byte>(payload, 0, length), payload, out outputBufferLength);
+
+        public static int UnprotectRtp(this ISrtpContext context, byte[] payload, int length, out int outputBufferLength)
+            => context.UnprotectRtp(new System.ArraySegment<byte>(payload, 0, length), payload, out outputBufferLength);
+
+        public static int ProtectRtcp(this ISrtpContext context, byte[] payload, int length, out int outputBufferLength)
+            => context.ProtectRtcp(new System.ArraySegment<byte>(payload, 0, length), payload, out outputBufferLength);
+
+        public static int UnprotectRtcp(this ISrtpContext context, byte[] payload, int length, out int outputBufferLength)
+            => context.UnprotectRtcp(new System.ArraySegment<byte>(payload, 0, length), payload, out outputBufferLength);
+#endif
     }
 }

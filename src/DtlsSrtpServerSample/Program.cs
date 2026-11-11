@@ -1,4 +1,4 @@
-﻿using Org.BouncyCastle.Tls;
+﻿using SharpSRTP.DTLS;
 using SharpSRTP.DTLSSRTP;
 using SharpSRTP.SRTP;
 using SharpSRTP.UDP;
@@ -99,7 +99,7 @@ while (!isShutdown)
 
                 var dtlsSession = Task.Run(() =>
                 {
-                    DtlsTransport dtlsTransport = server.DoHandshake(out string error, transport, null);
+                    IDtlsTransport dtlsTransport = server.DoHandshake(out string error, transport, null);
                     if (dtlsTransport == null)
                     {
                         Console.WriteLine($"Handshake with {remoteEndpoint} failed with {error}");

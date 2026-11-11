@@ -39,19 +39,19 @@ Currently implemented [DTLS-SRTP protection profiles](https://www.iana.org/assig
 1. SRTP_AEAD_AES_256_GCM [RFC7714](https://datatracker.ietf.org/doc/html/rfc7714)
 1. DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM	[RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)
 1. DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM	[RFC8723](https://datatracker.ietf.org/doc/html/rfc8723)
-1. SRTP_ARIA_128_CTR_HMAC_SHA1_80 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
-1. SRTP_ARIA_128_CTR_HMAC_SHA1_32 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
-1. SRTP_ARIA_256_CTR_HMAC_SHA1_80 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
-1. SRTP_ARIA_256_CTR_HMAC_SHA1_32 [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
-1. SRTP_AEAD_ARIA_128_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
-1. SRTP_AEAD_ARIA_256_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc4568)
+1. SRTP_ARIA_128_CTR_HMAC_SHA1_80 [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
+1. SRTP_ARIA_128_CTR_HMAC_SHA1_32 [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
+1. SRTP_ARIA_256_CTR_HMAC_SHA1_80 [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
+1. SRTP_ARIA_256_CTR_HMAC_SHA1_32 [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
+1. SRTP_AEAD_ARIA_128_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
+1. SRTP_AEAD_ARIA_256_GCM [RFC8269](https://datatracker.ietf.org/doc/html/rfc8269)
 
 ## Thread Safety
 SharpSRTP is not thread-safe. If multiple threads need to access the same SRTP context, proper synchronization mechanisms must be implemented by the user. If this is not possible, 
 you can consider using `ThreadSafeSrtpSessionContext` wrapper which provides thread safety at the cost of some performance.
 
 ## DTLS
-The current DTLS implementation is based upon BouncyCastle and supports DTLS 1.2 only.
+The DTLS implementation in SharpSRTP is based upon [SharpDTLS](https://github.com/jimm98y/SharpDTLS) and supports DTLS 1.2 and DTLS 1.3. The BouncyCastle based implementation (DTLS 1.2 only) is available as `BcDtlsClient`, `BcDtlsServer`, `BcDtlsSrtpClient` and `BcDtlsSrtpServer`. The DTLS peers are used through the library-independent `IDtlsPeer`, `IDtlsServerPeer` and `IDtlsSrtpPeer` interfaces, so they can be replaced by another DTLS library.
 
 ### DTLS Server
 Start with generating the TLS certificate. Self-signed RSA SHA256 certificate can be generated as follows:
@@ -62,7 +62,7 @@ var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.U
 Create the DTLS server:
 ```cs
 DtlsServer server = new DtlsServer(rsaCertificate.Certificate, rsaCertificate.PrivateKey, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
-````
+```
 Create the DTLS transport. Here we will use UDP on localhost, port 8888:
 ```cs
 EndPoint localEndpoint = new IPEndPoint(IPAddress.Any, 8888);
@@ -84,7 +84,7 @@ while(!isShutdown)
     {
         if(transport != null)
         {
-            if (!transport.TryAddToReceiveQueue(buffer.ToArray()))
+            if (!transport.TryAddToReceiveQueue(buffer.Take(length).ToArray()))
             {
                 throw new Exception("Receive queue full!");
             }
@@ -96,7 +96,7 @@ while(!isShutdown)
 
             var session = Task.Run(() =>
             {
-                 DtlsTransport dtlsTransport = server.DoHandshake(transport, out string error, null);
+                 IDtlsTransport dtlsTransport = server.DoHandshake(out string error, transport, null);
                  if (dtlsTransport != null)
                  {
                     ...
@@ -119,7 +119,7 @@ Send data to the client:
 ```cs
 dtlsTransport.Send(buffer, 0, buffer.Length);
 ```
-To modify the offered crypto suites for the DTLS handshake, simply override `GetSupportedCipherSuites` and return a different set of crypto suites. To support a different version of DTLS, override `GetSupportedVersions` and return a different version. Note that as of January 2026, BouncyCastle still does not support DTLS 1.3.
+To modify the offered crypto suites for the DTLS handshake, simply set `CipherSuites`. DTLS 1.2 and DTLS 1.3 are both offered by default; to restrict the version, set `MinimumVersion` and `MaximumVersion` (`SharpDTLS.DtlsVersion.Dtls12` or `Dtls13`). The BouncyCastle based `BcDtls*` peers support DTLS 1.2 only, because BouncyCastle (2.7.0) does not support DTLS 1.3 yet.
 ### DTLS Client
 Start with creating the TLS certificate. Certificate type of the client must match the certificate type on the server, meaning if the server uses RSA certificate, the client has to use RSA certificate as well:
 ```cs
@@ -127,7 +127,7 @@ var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.U
 ```
 Create the DTLS client:
 ```cs
-DtlsClient client = new DtlsClient(null, rsaCertificate.certificate, rsaCertificate.key, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
+DtlsClient client = new DtlsClient(rsaCertificate.Certificate, rsaCertificate.PrivateKey, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
 ```
 Optionally, you can let the client auto-generate the matching certificate:
 ```cs
@@ -143,9 +143,9 @@ UdpTransport udpClientTransport = new UdpTransport(socket);
 ```
 Connect the client:
 ```cs
-DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
+IDtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
 ```
-Receive data to the server:
+Send data to the server:
 ```cs
 dtlsTransport.Send(buffer, 0, buffer.Length);
 ```
@@ -169,7 +169,7 @@ SrtpKeys keys = SrtpProtocol.CreateMasterKeys(cryptoSuite, MKI);
 ```
 Obtain the generated master key + master salt to send it to the client:
 ```cs
-byte[] masterKeySalt = keys.MasterKeySalt;
+byte[] masterKeySalt = keys.MasterKeySalt.ToArray();
 ```
 Create a new SRTP context using those keys:
 ```cs
@@ -204,7 +204,7 @@ To encrypt RTCP and create SRTCP:
 ```cs
 byte[] rtcp = ...
 byte[] rtcpBuffer = new byte[context.CalculateRequiredSrtcpPayloadLength(rtcp.Length)];
-Buffer.BlockCopy(rtcp, 0, rtcpBuffer, 0, rtcp.Length];
+Buffer.BlockCopy(rtcp, 0, rtcpBuffer, 0, rtcp.Length);
 context.ProtectRtcp(rtcpBuffer, rtcp.Length, out int length);
 byte[] srtcp = rtcpBuffer.Take(length).ToArray();
 ```
@@ -246,7 +246,7 @@ var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("WebRTC", DateTi
 ```
 Create the DTLS-SRTP client:
 ```cs
-var client = new DtlsSrtpClient(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256)
+var client = new DtlsSrtpClient(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
 ```
 Subscribe for `OnSessionStarted`:
 ```cs

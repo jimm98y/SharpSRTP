@@ -43,6 +43,6 @@ namespace SharpSRTP.DTLSSRTP
     public interface IDtlsSrtpPeer : IDtlsPeer
     {
         event EventHandler<DtlsSessionStartedEventArgs> OnSessionStarted;
-        SrtpSessionContext CreateSessionContext(SecurityParameters securityParameters);
+        SrtpSessionContext CreateSessionContext(IDtlsSecurityParameters securityParameters);
     }
 }

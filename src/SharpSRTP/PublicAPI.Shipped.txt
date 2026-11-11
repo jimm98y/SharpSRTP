@@ -1,0 +1,580 @@
+BouncyCastleExtensions
+BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter)
+const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 9 -> int
+const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 10 -> int
+const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DRAFT_SRTP_AES256_CM_SHA1_32 = 4 -> int
+const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DRAFT_SRTP_AES256_CM_SHA1_80 = 3 -> int
+const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_128_GCM = 15 -> int
+const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_256_GCM = 16 -> int
+const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_32 = 12 -> int
+const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_128_CTR_HMAC_SHA1_80 = 11 -> int
+const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_32 = 14 -> int
+const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_80 = 13 -> int
+const SharpSRTP.SRTP.Encryption.AEAD.BLOCK_SIZE = 12 -> int
+const SharpSRTP.SRTP.Encryption.CTR.BLOCK_SIZE = 16 -> int
+const SharpSRTP.SRTP.Encryption.F8.BLOCK_SIZE = 16 -> int
+const SharpSRTP.SRTP.SrtpContext.ERROR_GENERIC = -1 -> int
+const SharpSRTP.SRTP.SrtpContext.ERROR_HMAC_CHECK_FAILED = -3 -> int
+const SharpSRTP.SRTP.SrtpContext.ERROR_MASTER_KEY_ROTATION_REQUIRED = -5 -> int
+const SharpSRTP.SRTP.SrtpContext.ERROR_MKI_CHECK_FAILED = -6 -> int
+const SharpSRTP.SRTP.SrtpContext.ERROR_REPLAY_CHECK_FAILED = -4 -> int
+const SharpSRTP.SRTP.SrtpContext.ERROR_UNSUPPORTED_CIPHER = -2 -> int
+const SharpSRTP.SRTP.SrtpContext.E_FLAG = 2147483648 -> uint
+const SharpSRTP.SRTP.SrtpCryptoSuites.AEAD_AES_128_GCM = "AEAD_AES_128_GCM" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AEAD_AES_256_GCM = "AEAD_AES_256_GCM" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AES_192_CM_HMAC_SHA1_32 = "AES_192_CM_HMAC_SHA1_32" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AES_192_CM_HMAC_SHA1_80 = "AES_192_CM_HMAC_SHA1_80" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AES_256_CM_HMAC_SHA1_32 = "AES_256_CM_HMAC_SHA1_32" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AES_256_CM_HMAC_SHA1_80 = "AES_256_CM_HMAC_SHA1_80" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_32 = "AES_CM_128_HMAC_SHA1_32" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_80 = "AES_CM_128_HMAC_SHA1_80" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AES_CM_192_HMAC_SHA1_32 = "AES_CM_192_HMAC_SHA1_32" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AES_CM_192_HMAC_SHA1_80 = "AES_CM_192_HMAC_SHA1_80" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AES_CM_256_HMAC_SHA1_32 = "AES_CM_256_HMAC_SHA1_32" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.AES_CM_256_HMAC_SHA1_80 = "AES_CM_256_HMAC_SHA1_80" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.F8_128_HMAC_SHA1_80 = "F8_128_HMAC_SHA1_80" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.SEED_128_CCM_80 = "SEED_128_CCM_80" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.SEED_128_GCM_96 = "SEED_128_GCM_96" -> string
+const SharpSRTP.SRTP.SrtpCryptoSuites.SEED_CTR_128_HMAC_SHA1_80 = "SEED_CTR_128_HMAC_SHA1_80" -> string
+const SharpSRTP.SRTP.SsrcSrtpContext.REPLAY_WINDOW_SIZE = 64 -> int
+const SharpSRTP.UDP.UdpTransport.MAX_RECEIVE_QUEUE_ITEMS = 32 -> int
+const SharpSRTP.UDP.UdpTransport.MTU = 1472 -> int
+override SharpSRTP.DTLS.BcDtlsClient.GetAuthentication() -> Org.BouncyCastle.Tls.TlsAuthentication
+override SharpSRTP.DTLS.BcDtlsClient.GetClientExtensions() -> System.Collections.Generic.IDictionary<int, byte[]>
+override SharpSRTP.DTLS.BcDtlsClient.GetHandshakeTimeoutMillis() -> int
+override SharpSRTP.DTLS.BcDtlsClient.GetSessionToResume() -> Org.BouncyCastle.Tls.TlsSession
+override SharpSRTP.DTLS.BcDtlsClient.GetSupportedCipherSuites() -> int[]
+override SharpSRTP.DTLS.BcDtlsClient.GetSupportedVersions() -> Org.BouncyCastle.Tls.ProtocolVersion[]
+override SharpSRTP.DTLS.BcDtlsClient.NotifyAlertRaised(short alertLevel, short alertDescription, string message, System.Exception cause) -> void
+override SharpSRTP.DTLS.BcDtlsClient.NotifyAlertReceived(short level, short alertDescription) -> void
+override SharpSRTP.DTLS.BcDtlsClient.NotifyHandshakeComplete() -> void
+override SharpSRTP.DTLS.BcDtlsClient.NotifyServerVersion(Org.BouncyCastle.Tls.ProtocolVersion serverVersion) -> void
+override SharpSRTP.DTLS.BcDtlsClient.ProcessServerExtensions(System.Collections.Generic.IDictionary<int, byte[]> serverExtensions) -> void
+override SharpSRTP.DTLS.BcDtlsClient.RequiresExtendedMasterSecret() -> bool
+override SharpSRTP.DTLS.BcDtlsServer.GetCertificateRequest() -> Org.BouncyCastle.Tls.CertificateRequest
+override SharpSRTP.DTLS.BcDtlsServer.GetECDsaSignerCredentials() -> Org.BouncyCastle.Tls.TlsCredentialedSigner
+override SharpSRTP.DTLS.BcDtlsServer.GetHandshakeTimeoutMillis() -> int
+override SharpSRTP.DTLS.BcDtlsServer.GetRsaSignerCredentials() -> Org.BouncyCastle.Tls.TlsCredentialedSigner
+override SharpSRTP.DTLS.BcDtlsServer.GetSelectedCipherSuite() -> int
+override SharpSRTP.DTLS.BcDtlsServer.GetServerExtensions() -> System.Collections.Generic.IDictionary<int, byte[]>
+override SharpSRTP.DTLS.BcDtlsServer.GetServerExtensionsForConnection(System.Collections.Generic.IDictionary<int, byte[]> serverExtensions) -> void
+override SharpSRTP.DTLS.BcDtlsServer.GetServerVersion() -> Org.BouncyCastle.Tls.ProtocolVersion
+override SharpSRTP.DTLS.BcDtlsServer.GetSupportedCipherSuites() -> int[]
+override SharpSRTP.DTLS.BcDtlsServer.GetSupportedVersions() -> Org.BouncyCastle.Tls.ProtocolVersion[]
+override SharpSRTP.DTLS.BcDtlsServer.NotifyAlertRaised(short alertLevel, short alertDescription, string message, System.Exception cause) -> void
+override SharpSRTP.DTLS.BcDtlsServer.NotifyAlertReceived(short level, short alertDescription) -> void
+override SharpSRTP.DTLS.BcDtlsServer.NotifyClientCertificate(Org.BouncyCastle.Tls.Certificate clientCertificate) -> void
+override SharpSRTP.DTLS.BcDtlsServer.NotifyHandshakeComplete() -> void
+override SharpSRTP.DTLS.BcDtlsServer.ProcessClientExtensions(System.Collections.Generic.IDictionary<int, byte[]> clientExtensions) -> void
+override SharpSRTP.DTLS.BcDtlsServer.RequiresExtendedMasterSecret() -> bool
+override SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.GetCertificateCommonName() -> string
+override SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.GetClientExtensions() -> System.Collections.Generic.IDictionary<int, byte[]>
+override SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.GetNegotiatedSrtpData() -> Org.BouncyCastle.Tls.UseSrtpData
+override SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.ProcessServerExtensions(System.Collections.Generic.IDictionary<int, byte[]> serverExtensions) -> void
+override SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.GetCertificateCommonName() -> string
+override SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.GetNegotiatedSrtpData() -> Org.BouncyCastle.Tls.UseSrtpData
+override SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.GetServerExtensions() -> System.Collections.Generic.IDictionary<int, byte[]>
+override SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.ProcessClientExtensions(System.Collections.Generic.IDictionary<int, byte[]> clientExtensions) -> void
+override SharpSRTP.DTLSSRTP.DtlsSrtpClient.ConfigureClient(SharpDTLS.DtlsClient client) -> void
+override SharpSRTP.DTLSSRTP.DtlsSrtpClient.GetCertificateCommonName() -> string
+override SharpSRTP.DTLSSRTP.DtlsSrtpClient.OnHandshakeFinished(SharpSRTP.DTLS.IDtlsSecurityParameters securityParameters, Org.BouncyCastle.Tls.DatagramTransport datagramTransport) -> void
+override SharpSRTP.DTLSSRTP.DtlsSrtpServer.ConfigureServer(SharpDTLS.DtlsServer server) -> void
+override SharpSRTP.DTLSSRTP.DtlsSrtpServer.GetCertificateCommonName() -> string
+override SharpSRTP.DTLSSRTP.DtlsSrtpServer.OnHandshakeFinished(SharpSRTP.DTLS.IDtlsSecurityParameters securityParameters, Org.BouncyCastle.Tls.DatagramTransport datagramTransport) -> void
+SharpSRTP.DTLS.BcDtlsClient
+SharpSRTP.DTLS.BcDtlsClient.AutogenerateCertificate.get -> bool
+SharpSRTP.DTLS.BcDtlsClient.AutogenerateCertificate.set -> void
+SharpSRTP.DTLS.BcDtlsClient.BcDtlsClient(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, Org.BouncyCastle.Tls.TlsSession session = null, Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+SharpSRTP.DTLS.BcDtlsClient.BcDtlsClient(Org.BouncyCastle.Tls.TlsSession session = null, Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+SharpSRTP.DTLS.BcDtlsClient.Certificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.BcDtlsClient.CertificateHashAlgorithm.get -> short
+SharpSRTP.DTLS.BcDtlsClient.CertificatePrivateKey.get -> Org.BouncyCastle.Crypto.AsymmetricKeyParameter
+SharpSRTP.DTLS.BcDtlsClient.CertificateSignatureAlgorithm.get -> short
+SharpSRTP.DTLS.BcDtlsClient.ForceUseExtendedMasterSecret.get -> bool
+SharpSRTP.DTLS.BcDtlsClient.ForceUseExtendedMasterSecret.set -> void
+SharpSRTP.DTLS.BcDtlsClient.OnAlert -> System.EventHandler<SharpSRTP.DTLS.DtlsAlertEventArgs>
+SharpSRTP.DTLS.BcDtlsClient.OnHandshakeCompleted -> System.EventHandler<SharpSRTP.DTLS.DtlsHandshakeCompletedEventArgs>
+SharpSRTP.DTLS.BcDtlsClient.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.BcDtlsClient.RemoteCertificate.get -> Org.BouncyCastle.Tls.TlsServerCertificate
+SharpSRTP.DTLS.BcDtlsClient.TimeoutMilliseconds.get -> int
+SharpSRTP.DTLS.BcDtlsClient.TimeoutMilliseconds.set -> void
+SharpSRTP.DTLS.BcDtlsClient._clientDatagramTransport -> Org.BouncyCastle.Tls.DatagramTransport
+SharpSRTP.DTLS.BcDtlsSecurityParameters
+SharpSRTP.DTLS.BcDtlsSecurityParameters.ApplicationProtocol.get -> string
+SharpSRTP.DTLS.BcDtlsSecurityParameters.BcDtlsSecurityParameters(Org.BouncyCastle.Tls.TlsContext context, Org.BouncyCastle.Tls.UseSrtpData srtpData = null) -> void
+SharpSRTP.DTLS.BcDtlsSecurityParameters.CipherSuite.get -> int
+SharpSRTP.DTLS.BcDtlsSecurityParameters.ClientRandom.get -> byte[]
+SharpSRTP.DTLS.BcDtlsSecurityParameters.ExportKeyingMaterial(string label, byte[] context, int length) -> byte[]
+SharpSRTP.DTLS.BcDtlsSecurityParameters.IsExtendedMasterSecret.get -> bool
+SharpSRTP.DTLS.BcDtlsSecurityParameters.IsResumed.get -> bool
+SharpSRTP.DTLS.BcDtlsSecurityParameters.LocalCertificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.BcDtlsSecurityParameters.NegotiatedVersion.get -> int
+SharpSRTP.DTLS.BcDtlsSecurityParameters.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.BcDtlsSecurityParameters.ServerRandom.get -> byte[]
+SharpSRTP.DTLS.BcDtlsSecurityParameters.SrtpMki.get -> byte[]
+SharpSRTP.DTLS.BcDtlsSecurityParameters.SrtpProtectionProfile.get -> int?
+SharpSRTP.DTLS.BcDtlsServer
+SharpSRTP.DTLS.BcDtlsServer.BcDtlsServer(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+SharpSRTP.DTLS.BcDtlsServer.BcDtlsServer(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+SharpSRTP.DTLS.BcDtlsServer.Certificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.BcDtlsServer.CertificateHashAlgorithm.get -> short
+SharpSRTP.DTLS.BcDtlsServer.CertificatePrivateKey.get -> Org.BouncyCastle.Crypto.AsymmetricKeyParameter
+SharpSRTP.DTLS.BcDtlsServer.CertificateSignatureAlgorithm.get -> short
+SharpSRTP.DTLS.BcDtlsServer.ForceUseExtendedMasterSecret.get -> bool
+SharpSRTP.DTLS.BcDtlsServer.ForceUseExtendedMasterSecret.set -> void
+SharpSRTP.DTLS.BcDtlsServer.OnAlert -> System.EventHandler<SharpSRTP.DTLS.DtlsAlertEventArgs>
+SharpSRTP.DTLS.BcDtlsServer.OnHandshakeCompleted -> System.EventHandler<SharpSRTP.DTLS.DtlsHandshakeCompletedEventArgs>
+SharpSRTP.DTLS.BcDtlsServer.TimeoutMilliseconds.get -> int
+SharpSRTP.DTLS.BcDtlsServer.TimeoutMilliseconds.set -> void
+SharpSRTP.DTLS.BcDtlsServer._clientDatagramTransport -> Org.BouncyCastle.Tls.DatagramTransport
+SharpSRTP.DTLS.BcDtlsTransport
+SharpSRTP.DTLS.BcDtlsTransport.BcDtlsTransport(Org.BouncyCastle.Tls.DtlsTransport transport) -> void
+SharpSRTP.DTLS.BcDtlsTransport.Close() -> void
+SharpSRTP.DTLS.BcDtlsTransport.GetReceiveLimit() -> int
+SharpSRTP.DTLS.BcDtlsTransport.GetSendLimit() -> int
+SharpSRTP.DTLS.BcDtlsTransport.Receive(byte[] buf, int off, int len, int waitMillis) -> int
+SharpSRTP.DTLS.BcDtlsTransport.Send(byte[] buf, int off, int len) -> void
+SharpSRTP.DTLS.BcDtlsTransport.Transport.get -> Org.BouncyCastle.Tls.DtlsTransport
+SharpSRTP.DTLS.DtlsAlertEventArgs
+SharpSRTP.DTLS.DtlsAlertEventArgs.AlertType.get -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.DtlsAlertEventArgs.Description.get -> string
+SharpSRTP.DTLS.DtlsAlertEventArgs.DtlsAlertEventArgs(SharpSRTP.DTLS.TlsAlertLevelsEnum level, SharpSRTP.DTLS.TlsAlertTypesEnum type, string description) -> void
+SharpSRTP.DTLS.DtlsAlertEventArgs.Level.get -> SharpSRTP.DTLS.TlsAlertLevelsEnum
+SharpSRTP.DTLS.DtlsCertificateUtils
+SharpSRTP.DTLS.DtlsCertificateUtils.DtlsCertificateUtils() -> void
+SharpSRTP.DTLS.DtlsClient
+SharpSRTP.DTLS.DtlsClient.AutogenerateCertificate.get -> bool
+SharpSRTP.DTLS.DtlsClient.AutogenerateCertificate.set -> void
+SharpSRTP.DTLS.DtlsClient.Certificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.DtlsClient.CertificateHashAlgorithm.get -> short
+SharpSRTP.DTLS.DtlsClient.CertificatePrivateKey.get -> Org.BouncyCastle.Crypto.AsymmetricKeyParameter
+SharpSRTP.DTLS.DtlsClient.CertificateSignatureAlgorithm.get -> short
+SharpSRTP.DTLS.DtlsClient.CipherSuites.get -> System.Collections.Generic.IList<ushort>
+SharpSRTP.DTLS.DtlsClient.CipherSuites.set -> void
+SharpSRTP.DTLS.DtlsClient.DtlsClient(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+SharpSRTP.DTLS.DtlsClient.ForceUseExtendedMasterSecret.get -> bool
+SharpSRTP.DTLS.DtlsClient.ForceUseExtendedMasterSecret.set -> void
+SharpSRTP.DTLS.DtlsClient.MaximumVersion.get -> ushort
+SharpSRTP.DTLS.DtlsClient.MaximumVersion.set -> void
+SharpSRTP.DTLS.DtlsClient.MinimumVersion.get -> ushort
+SharpSRTP.DTLS.DtlsClient.MinimumVersion.set -> void
+SharpSRTP.DTLS.DtlsClient.OnAlert -> System.EventHandler<SharpSRTP.DTLS.DtlsAlertEventArgs>
+SharpSRTP.DTLS.DtlsClient.OnHandshakeCompleted -> System.EventHandler<SharpSRTP.DTLS.DtlsHandshakeCompletedEventArgs>
+SharpSRTP.DTLS.DtlsClient.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.DtlsClient.SupportedGroups.get -> System.Collections.Generic.IList<ushort>
+SharpSRTP.DTLS.DtlsClient.SupportedGroups.set -> void
+SharpSRTP.DTLS.DtlsClient.TimeoutMilliseconds.get -> int
+SharpSRTP.DTLS.DtlsClient.TimeoutMilliseconds.set -> void
+SharpSRTP.DTLS.DtlsHandshakeCompletedEventArgs
+SharpSRTP.DTLS.DtlsHandshakeCompletedEventArgs.DtlsHandshakeCompletedEventArgs(SharpSRTP.DTLS.IDtlsSecurityParameters securityParameters) -> void
+SharpSRTP.DTLS.DtlsHandshakeCompletedEventArgs.SecurityParameters.get -> SharpSRTP.DTLS.IDtlsSecurityParameters
+SharpSRTP.DTLS.DtlsServer
+SharpSRTP.DTLS.DtlsServer.Certificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.DtlsServer.CertificateHashAlgorithm.get -> short
+SharpSRTP.DTLS.DtlsServer.CertificatePrivateKey.get -> Org.BouncyCastle.Crypto.AsymmetricKeyParameter
+SharpSRTP.DTLS.DtlsServer.CertificateSignatureAlgorithm.get -> short
+SharpSRTP.DTLS.DtlsServer.CipherSuites.get -> System.Collections.Generic.IList<ushort>
+SharpSRTP.DTLS.DtlsServer.CipherSuites.set -> void
+SharpSRTP.DTLS.DtlsServer.DtlsServer(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+SharpSRTP.DTLS.DtlsServer.ForceUseExtendedMasterSecret.get -> bool
+SharpSRTP.DTLS.DtlsServer.ForceUseExtendedMasterSecret.set -> void
+SharpSRTP.DTLS.DtlsServer.MaximumVersion.get -> ushort
+SharpSRTP.DTLS.DtlsServer.MaximumVersion.set -> void
+SharpSRTP.DTLS.DtlsServer.MinimumVersion.get -> ushort
+SharpSRTP.DTLS.DtlsServer.MinimumVersion.set -> void
+SharpSRTP.DTLS.DtlsServer.OnAlert -> System.EventHandler<SharpSRTP.DTLS.DtlsAlertEventArgs>
+SharpSRTP.DTLS.DtlsServer.OnHandshakeCompleted -> System.EventHandler<SharpSRTP.DTLS.DtlsHandshakeCompletedEventArgs>
+SharpSRTP.DTLS.DtlsServer.RequireClientCertificate.get -> bool
+SharpSRTP.DTLS.DtlsServer.RequireClientCertificate.set -> void
+SharpSRTP.DTLS.DtlsServer.SupportedGroups.get -> System.Collections.Generic.IList<ushort>
+SharpSRTP.DTLS.DtlsServer.SupportedGroups.set -> void
+SharpSRTP.DTLS.DtlsServer.TimeoutMilliseconds.get -> int
+SharpSRTP.DTLS.DtlsServer.TimeoutMilliseconds.set -> void
+SharpSRTP.DTLS.IDtlsPeer
+SharpSRTP.DTLS.IDtlsPeer.Certificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.IDtlsPeer.CertificateHashAlgorithm.get -> short
+SharpSRTP.DTLS.IDtlsPeer.CertificatePrivateKey.get -> Org.BouncyCastle.Crypto.AsymmetricKeyParameter
+SharpSRTP.DTLS.IDtlsPeer.CertificateSignatureAlgorithm.get -> short
+SharpSRTP.DTLS.IDtlsPeer.DoHandshake(out string handshakeError, Org.BouncyCastle.Tls.DatagramTransport datagramTransport, SharpSRTP.DTLS.IDtlsRequest request = null) -> SharpSRTP.DTLS.IDtlsTransport
+SharpSRTP.DTLS.IDtlsPeer.ForceUseExtendedMasterSecret.get -> bool
+SharpSRTP.DTLS.IDtlsPeer.ForceUseExtendedMasterSecret.set -> void
+SharpSRTP.DTLS.IDtlsPeer.OnAlert -> System.EventHandler<SharpSRTP.DTLS.DtlsAlertEventArgs>
+SharpSRTP.DTLS.IDtlsPeer.OnHandshakeCompleted -> System.EventHandler<SharpSRTP.DTLS.DtlsHandshakeCompletedEventArgs>
+SharpSRTP.DTLS.IDtlsPeer.SetCertificate(Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm) -> void
+SharpSRTP.DTLS.IDtlsPeer.TimeoutMilliseconds.get -> int
+SharpSRTP.DTLS.IDtlsPeer.TimeoutMilliseconds.set -> void
+SharpSRTP.DTLS.IDtlsRequest
+SharpSRTP.DTLS.IDtlsRequest.RemoteEndpoint.get -> System.Net.EndPoint
+SharpSRTP.DTLS.IDtlsSecurityParameters
+SharpSRTP.DTLS.IDtlsSecurityParameters.ApplicationProtocol.get -> string
+SharpSRTP.DTLS.IDtlsSecurityParameters.CipherSuite.get -> int
+SharpSRTP.DTLS.IDtlsSecurityParameters.ClientRandom.get -> byte[]
+SharpSRTP.DTLS.IDtlsSecurityParameters.ExportKeyingMaterial(string label, byte[] context, int length) -> byte[]
+SharpSRTP.DTLS.IDtlsSecurityParameters.IsExtendedMasterSecret.get -> bool
+SharpSRTP.DTLS.IDtlsSecurityParameters.IsResumed.get -> bool
+SharpSRTP.DTLS.IDtlsSecurityParameters.LocalCertificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.IDtlsSecurityParameters.NegotiatedVersion.get -> int
+SharpSRTP.DTLS.IDtlsSecurityParameters.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.IDtlsSecurityParameters.ServerRandom.get -> byte[]
+SharpSRTP.DTLS.IDtlsSecurityParameters.SrtpMki.get -> byte[]
+SharpSRTP.DTLS.IDtlsSecurityParameters.SrtpProtectionProfile.get -> int?
+SharpSRTP.DTLS.IDtlsServerPeer
+SharpSRTP.DTLS.IDtlsServerPeer.VerifyRequest(System.Net.EndPoint remoteEndpoint, byte[] data, int offset, int length, Org.BouncyCastle.Tls.DatagramSender sender) -> SharpSRTP.DTLS.IDtlsRequest
+SharpSRTP.DTLS.IDtlsTransport
+SharpSRTP.DTLS.IDtlsTransport.Close() -> void
+SharpSRTP.DTLS.IDtlsTransport.GetReceiveLimit() -> int
+SharpSRTP.DTLS.IDtlsTransport.GetSendLimit() -> int
+SharpSRTP.DTLS.IDtlsTransport.Receive(byte[] buf, int off, int len, int waitMillis) -> int
+SharpSRTP.DTLS.IDtlsTransport.Send(byte[] buf, int off, int len) -> void
+SharpSRTP.DTLS.SharpDtlsSecurityParameters
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.ApplicationProtocol.get -> string
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.CipherSuite.get -> int
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.ClientRandom.get -> byte[]
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.Connection.get -> SharpDTLS.TlsConnectionBase
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.ExportKeyingMaterial(string label, byte[] context, int length) -> byte[]
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.IsExtendedMasterSecret.get -> bool
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.IsResumed.get -> bool
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.LocalCertificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.NegotiatedVersion.get -> int
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.ServerRandom.get -> byte[]
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.SharpDtlsSecurityParameters(SharpDTLS.TlsConnectionBase connection) -> void
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.SrtpMki.get -> byte[]
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.SrtpProtectionProfile.get -> int?
+SharpSRTP.DTLS.TlsAlertLevelsEnum
+SharpSRTP.DTLS.TlsAlertLevelsEnum.Fatal = 2 -> SharpSRTP.DTLS.TlsAlertLevelsEnum
+SharpSRTP.DTLS.TlsAlertLevelsEnum.Warn = 1 -> SharpSRTP.DTLS.TlsAlertLevelsEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.AccessDenied = 49 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.BadCertificate = 42 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.BadCertificateHashValueReserved = 114 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.BadCertificateStatusResponse = 113 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.BadRecordMac = 20 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.CertificateExpired = 45 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.CertificateRequired = 116 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.CertificateRevoked = 44 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.CertificateUnknown = 46 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.CertificateUnobtainableReserved = 111 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.CloseNotify = 0 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.DecodeError = 50 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.DecompressionFailureReserved = 30 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.DecryptError = 51 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.DecryptionFailedReserved = 21 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.EchRequired = 121 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.ExportRestrictionReserved = 60 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.GeneralError = 117 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.HandshakeFailure = 40 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.IllegalParameter = 47 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.InappropriateFallback = 86 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.InsufficientSecurity = 71 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.InternalEror = 80 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.MissingExtension = 109 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.NoApplicationProtocol = 120 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.NoCertificateReserved = 41 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.NoRenegotiationReserved = 100 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.ProtocolVersion = 70 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.RecordOverflow = 22 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.TooManyCidsRequested = 52 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.Unassigned = 255 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.UnexpectedMessage = 10 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.UnknownCA = 48 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.UnknownPskIdentity = 115 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.UnrecognizedName = 112 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.UnsupportedCertificate = 43 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.UnsupportedExtension = 110 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLS.TlsAlertTypesEnum.UserCanceled = 90 -> SharpSRTP.DTLS.TlsAlertTypesEnum
+SharpSRTP.DTLSSRTP.BcDtlsSrtpClient
+SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.BcDtlsSrtpClient(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4, Org.BouncyCastle.Tls.TlsSession session = null) -> void
+SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.BcDtlsSrtpClient(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4, Org.BouncyCastle.Tls.TlsSession session = null) -> void
+SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.MkiLength.get -> int
+SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.OnSessionStarted -> System.EventHandler<SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs>
+SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.SetMKI(byte[] mki) -> void
+SharpSRTP.DTLSSRTP.BcDtlsSrtpServer
+SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.BcDtlsSrtpServer(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.BcDtlsSrtpServer(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.ForceDisableMKI.get -> bool
+SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.ForceDisableMKI.set -> void
+SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.OnSessionStarted -> System.EventHandler<SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs>
+SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs
+SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs.ClientDatagramTransport.get -> Org.BouncyCastle.Tls.DatagramTransport
+SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs.Context.get -> SharpSRTP.SRTP.SrtpSessionContext
+SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs.DtlsSessionStartedEventArgs(SharpSRTP.SRTP.SrtpSessionContext context, Org.BouncyCastle.Tls.Certificate peerCertificate, Org.BouncyCastle.Tls.DatagramTransport clientDatagramTransport) -> void
+SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+SharpSRTP.DTLSSRTP.DtlsSrtpClient
+SharpSRTP.DTLSSRTP.DtlsSrtpClient.DtlsSrtpClient(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+SharpSRTP.DTLSSRTP.DtlsSrtpClient.MkiLength.get -> int
+SharpSRTP.DTLSSRTP.DtlsSrtpClient.OnSessionStarted -> System.EventHandler<SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs>
+SharpSRTP.DTLSSRTP.DtlsSrtpClient.SetMKI(byte[] mki) -> void
+SharpSRTP.DTLSSRTP.DtlsSrtpKeys
+SharpSRTP.DTLSSRTP.DtlsSrtpKeys.ClientWriteMasterKey.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.DTLSSRTP.DtlsSrtpKeys.ClientWriteMasterSalt.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.DTLSSRTP.DtlsSrtpKeys.DtlsSrtpKeys(SharpSRTP.SRTP.SrtpProtectionProfileConfiguration protectionProfile, System.ReadOnlyMemory<byte> clientWriteMasterKey, System.ReadOnlyMemory<byte> clientWriteMasterSalt, System.ReadOnlyMemory<byte> serverWriteMasterKey, System.ReadOnlyMemory<byte> serverWriteMasterSalt, System.ReadOnlyMemory<byte> mki = default(System.ReadOnlyMemory<byte>)) -> void
+SharpSRTP.DTLSSRTP.DtlsSrtpKeys.Mki.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.DTLSSRTP.DtlsSrtpKeys.ProtectionProfile.get -> SharpSRTP.SRTP.SrtpProtectionProfileConfiguration
+SharpSRTP.DTLSSRTP.DtlsSrtpKeys.ServerWriteMasterKey.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.DTLSSRTP.DtlsSrtpKeys.ServerWriteMasterSalt.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.DTLSSRTP.DtlsSrtpProtocol
+SharpSRTP.DTLSSRTP.DtlsSrtpServer
+SharpSRTP.DTLSSRTP.DtlsSrtpServer.DtlsSrtpServer(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+SharpSRTP.DTLSSRTP.DtlsSrtpServer.ForceDisableMKI.get -> bool
+SharpSRTP.DTLSSRTP.DtlsSrtpServer.ForceDisableMKI.set -> void
+SharpSRTP.DTLSSRTP.DtlsSrtpServer.OnSessionStarted -> System.EventHandler<SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs>
+SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile
+SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.ExtendedSrtpProtectionProfile() -> void
+SharpSRTP.DTLSSRTP.IDtlsSrtpPeer
+SharpSRTP.DTLSSRTP.IDtlsSrtpPeer.CreateSessionContext(SharpSRTP.DTLS.IDtlsSecurityParameters securityParameters) -> SharpSRTP.SRTP.SrtpSessionContext
+SharpSRTP.DTLSSRTP.IDtlsSrtpPeer.OnSessionStarted -> System.EventHandler<SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs>
+SharpSRTP.Log
+SharpSRTP.SRTP.Authentication.HMAC
+SharpSRTP.SRTP.Encryption.AEAD
+SharpSRTP.SRTP.Encryption.CTR
+SharpSRTP.SRTP.Encryption.F8
+SharpSRTP.SRTP.ISrtpContext
+SharpSRTP.SRTP.ISrtpContext.CalculateRequiredSrtcpPayloadLength(int rtpLen) -> int
+SharpSRTP.SRTP.ISrtpContext.CalculateRequiredSrtpPayloadLength(int rtpLen) -> int
+SharpSRTP.SRTP.Readers.RtcpReader
+SharpSRTP.SRTP.Readers.RtpReader
+SharpSRTP.SRTP.SrtpAuth
+SharpSRTP.SRTP.SrtpAuth.HMAC_SHA1 = 1 -> SharpSRTP.SRTP.SrtpAuth
+SharpSRTP.SRTP.SrtpAuth.NONE = 0 -> SharpSRTP.SRTP.SrtpAuth
+SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.AEAD_AES_128_GCM = 8 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.AEAD_AES_256_GCM = 9 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.AEAD_ARIA_128_GCM = 12 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.AEAD_ARIA_256_GCM = 13 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.AES_128_CM = 1 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.AES_128_F8 = 2 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.AES_192_CM = 6 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.AES_256_CM = 7 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.ARIA_128_CTR = 10 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.ARIA_256_CTR = 11 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 128 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM = 129 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.NULL = 0 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.SEED_128_CCM = 4 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.SEED_128_CTR = 3 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpCiphers.SEED_128_GCM = 5 -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpContext
+SharpSRTP.SRTP.SrtpContext.Auth.get -> SharpSRTP.SRTP.SrtpAuth
+SharpSRTP.SRTP.SrtpContext.Auth.set -> void
+SharpSRTP.SRTP.SrtpContext.Cipher.get -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpContext.Cipher.set -> void
+SharpSRTP.SRTP.SrtpContext.ContextType.get -> SharpSRTP.SRTP.SrtpContextType
+SharpSRTP.SRTP.SrtpContext.HeaderCTR.get -> Org.BouncyCastle.Crypto.IBlockCipher
+SharpSRTP.SRTP.SrtpContext.HeaderF8.get -> Org.BouncyCastle.Crypto.IBlockCipher
+SharpSRTP.SRTP.SrtpContext.HMAC.get -> Org.BouncyCastle.Crypto.Macs.HMac
+SharpSRTP.SRTP.SrtpContext.Iv12.get -> byte[]
+SharpSRTP.SRTP.SrtpContext.Iv16.get -> byte[]
+SharpSRTP.SRTP.SrtpContext.KeyDerivationRate.get -> ulong
+SharpSRTP.SRTP.SrtpContext.KeyDerivationRate.set -> void
+SharpSRTP.SRTP.SrtpContext.K_a.get -> byte[]
+SharpSRTP.SRTP.SrtpContext.K_a.set -> void
+SharpSRTP.SRTP.SrtpContext.K_e.get -> byte[]
+SharpSRTP.SRTP.SrtpContext.K_e.set -> void
+SharpSRTP.SRTP.SrtpContext.K_he.get -> byte[]
+SharpSRTP.SRTP.SrtpContext.K_he.set -> void
+SharpSRTP.SRTP.SrtpContext.K_hs.get -> byte[]
+SharpSRTP.SRTP.SrtpContext.K_hs.set -> void
+SharpSRTP.SRTP.SrtpContext.K_s.get -> byte[]
+SharpSRTP.SRTP.SrtpContext.K_s.set -> void
+SharpSRTP.SRTP.SrtpContext.MasterKey.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.SRTP.SrtpContext.MasterKey.set -> void
+SharpSRTP.SRTP.SrtpContext.MasterKeySentCounter.get -> long
+SharpSRTP.SRTP.SrtpContext.MasterSalt.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.SRTP.SrtpContext.MasterSalt.set -> void
+SharpSRTP.SRTP.SrtpContext.Mki.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.SRTP.SrtpContext.N_a.get -> int
+SharpSRTP.SRTP.SrtpContext.N_a.set -> void
+SharpSRTP.SRTP.SrtpContext.N_e.get -> int
+SharpSRTP.SRTP.SrtpContext.N_e.set -> void
+SharpSRTP.SRTP.SrtpContext.N_s.get -> int
+SharpSRTP.SRTP.SrtpContext.N_s.set -> void
+SharpSRTP.SRTP.SrtpContext.N_tag.get -> int
+SharpSRTP.SRTP.SrtpContext.N_tag.set -> void
+SharpSRTP.SRTP.SrtpContext.OnRekeyingRequested -> System.EventHandler<System.EventArgs>
+SharpSRTP.SRTP.SrtpContext.PayloadAEAD.get -> Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher
+SharpSRTP.SRTP.SrtpContext.PayloadCTR.get -> Org.BouncyCastle.Crypto.IBlockCipher
+SharpSRTP.SRTP.SrtpContext.PayloadF8.get -> Org.BouncyCastle.Crypto.IBlockCipher
+SharpSRTP.SRTP.SrtpContext.ProtectionProfile.get -> SharpSRTP.SRTP.SrtpProtectionProfileConfiguration
+SharpSRTP.SRTP.SrtpContext.ProtectionProfile.set -> void
+SharpSRTP.SRTP.SrtpContext.ProtectUnprotectRtpHeaderExtensions(System.ReadOnlySpan<byte> payload, System.Span<byte> rtpExtensions, System.ReadOnlySpan<byte> rtpExtensionsMask, uint ssrc, uint roc, ulong index) -> int
+SharpSRTP.SRTP.SrtpContext.ReplayProtection.get -> System.Collections.Generic.Dictionary<uint, SharpSRTP.SRTP.SsrcSrtpContext>
+SharpSRTP.SRTP.SrtpContext.Roc.get -> uint
+SharpSRTP.SRTP.SrtpContext.Roc.set -> void
+SharpSRTP.SRTP.SrtpContext.RtpHeaderExtensionsEncryptionMask.get -> byte[]
+SharpSRTP.SRTP.SrtpContext.RtpHeaderExtensionsEncryptionMask.set -> void
+SharpSRTP.SRTP.SrtpContext.SrtpContext(SharpSRTP.SRTP.SrtpContextType contextType, SharpSRTP.SRTP.SrtpProtectionProfileConfiguration protectionProfile, System.ReadOnlyMemory<byte> masterKey, System.ReadOnlyMemory<byte> masterSalt, System.ReadOnlyMemory<byte> mki = default(System.ReadOnlyMemory<byte>)) -> void
+SharpSRTP.SRTP.SrtpContext.SRTP_PREFIX_LENGTH.get -> int
+SharpSRTP.SRTP.SrtpContext.SRTP_PREFIX_LENGTH.set -> void
+SharpSRTP.SRTP.SrtpContextExtensions
+SharpSRTP.SRTP.SrtpContextType
+SharpSRTP.SRTP.SrtpContextType.RTCP = 1 -> SharpSRTP.SRTP.SrtpContextType
+SharpSRTP.SRTP.SrtpContextType.RTP = 0 -> SharpSRTP.SRTP.SrtpContextType
+SharpSRTP.SRTP.SrtpCryptoSuites
+SharpSRTP.SRTP.SrtpCryptoSuites.SrtpCryptoSuites() -> void
+SharpSRTP.SRTP.SrtpKeys
+SharpSRTP.SRTP.SrtpKeys.MasterKey.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.SRTP.SrtpKeys.MasterKeySalt.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.SRTP.SrtpKeys.MasterSalt.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.SRTP.SrtpKeys.Mki.get -> System.ReadOnlyMemory<byte>
+SharpSRTP.SRTP.SrtpKeys.ProtectionProfile.get -> SharpSRTP.SRTP.SrtpProtectionProfileConfiguration
+SharpSRTP.SRTP.SrtpKeys.SrtpKeys(SharpSRTP.SRTP.SrtpProtectionProfileConfiguration protectionProfile, byte[] masterKeySalt, byte[] mki = null) -> void
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.Auth.get -> SharpSRTP.SRTP.SrtpAuth
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.Auth.set -> void
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.AuthKeyLength.get -> int
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.AuthKeyLength.set -> void
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.AuthTagLength.get -> int
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.AuthTagLength.set -> void
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.Cipher.get -> SharpSRTP.SRTP.SrtpCiphers
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.Cipher.set -> void
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.CipherKeyLength.get -> int
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.CipherKeyLength.set -> void
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.CipherSaltLength.get -> int
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.CipherSaltLength.set -> void
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.MaximumLifetime.get -> int
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.MaximumLifetime.set -> void
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.SrtpPrefixLength.get -> int
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.SrtpPrefixLength.set -> void
+SharpSRTP.SRTP.SrtpProtectionProfileConfiguration.SrtpProtectionProfileConfiguration(SharpSRTP.SRTP.SrtpCiphers cipher, int cipherKeyLength, int cipherSaltLength, int maximumLifetime, SharpSRTP.SRTP.SrtpAuth auth, int authKeyLength, int authTagLength, int srtpPrefixLength = 0) -> void
+SharpSRTP.SRTP.SrtpProtocol
+SharpSRTP.SRTP.SrtpSessionContext
+SharpSRTP.SRTP.SrtpSessionContext.CalculateRequiredSrtcpPayloadLength(int rtpLen) -> int
+SharpSRTP.SRTP.SrtpSessionContext.CalculateRequiredSrtpPayloadLength(int rtpLen) -> int
+SharpSRTP.SRTP.SrtpSessionContext.DecodeRtcpContext.get -> SharpSRTP.SRTP.SrtpContext
+SharpSRTP.SRTP.SrtpSessionContext.DecodeRtpContext.get -> SharpSRTP.SRTP.SrtpContext
+SharpSRTP.SRTP.SrtpSessionContext.EncodeRtcpContext.get -> SharpSRTP.SRTP.SrtpContext
+SharpSRTP.SRTP.SrtpSessionContext.EncodeRtpContext.get -> SharpSRTP.SRTP.SrtpContext
+SharpSRTP.SRTP.SrtpSessionContext.SrtpSessionContext(SharpSRTP.SRTP.SrtpContext encodeRtpContext, SharpSRTP.SRTP.SrtpContext decodeRtpContext, SharpSRTP.SRTP.SrtpContext encodeRtcpContext, SharpSRTP.SRTP.SrtpContext decodeRtcpContext) -> void
+SharpSRTP.SRTP.SsrcSrtpContext
+SharpSRTP.SRTP.SsrcSrtpContext.Bitmap.get -> ulong
+SharpSRTP.SRTP.SsrcSrtpContext.CheckReplayWindow(uint sequenceNumber) -> bool
+SharpSRTP.SRTP.SsrcSrtpContext.LastSeqSet.get -> bool
+SharpSRTP.SRTP.SsrcSrtpContext.OutboundRoc.get -> uint
+SharpSRTP.SRTP.SsrcSrtpContext.OutboundRoc.set -> void
+SharpSRTP.SRTP.SsrcSrtpContext.SetInitialSequence(uint sequenceNumber) -> void
+SharpSRTP.SRTP.SsrcSrtpContext.SetSequence(uint sequenceNumber) -> void
+SharpSRTP.SRTP.SsrcSrtpContext.SsrcSrtpContext() -> void
+SharpSRTP.SRTP.SsrcSrtpContext.S_l.get -> uint
+SharpSRTP.SRTP.SsrcSrtpContext.S_l_set.get -> bool
+SharpSRTP.SRTP.SsrcSrtpContext.UpdateReplayWindow(uint sequenceNumber) -> void
+SharpSRTP.SRTP.ThreadSafeSrtpSessionContext
+SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.CalculateRequiredSrtcpPayloadLength(int rtpLen) -> int
+SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.CalculateRequiredSrtpPayloadLength(int rtpLen) -> int
+SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.ThreadSafeSrtpSessionContext(SharpSRTP.SRTP.ISrtpContext srtpSessionContext) -> void
+SharpSRTP.UDP.IPEndPointExtensions
+SharpSRTP.UDP.UdpSender
+SharpSRTP.UDP.UdpSender.GetSendLimit() -> int
+SharpSRTP.UDP.UdpSender.Send(byte[] buf, int off, int len) -> void
+SharpSRTP.UDP.UdpSender.UdpSender(System.Net.Sockets.Socket socket, System.Net.EndPoint remote, int mtu) -> void
+SharpSRTP.UDP.UdpTransport
+SharpSRTP.UDP.UdpTransport.LastReceived.get -> System.DateTime
+SharpSRTP.UDP.UdpTransport.LastSent.get -> System.DateTime
+SharpSRTP.UDP.UdpTransport.LastUsed.get -> System.DateTime
+SharpSRTP.UDP.UdpTransport.RemoteEndpoint.get -> string
+SharpSRTP.UDP.UdpTransport.TryAddToReceiveQueue(byte[] data, int maxReceiveQueueSize = 32) -> bool
+SharpSRTP.UDP.UdpTransport.TryTakeFromReceiveQueue(out byte[] data, int waitMillis) -> bool
+SharpSRTP.UDP.UdpTransport.UdpTransport(System.Net.Sockets.Socket socket, System.Net.EndPoint remote = null, int mtu = 1472, System.Action<SharpSRTP.UDP.UdpTransport> onClose = null) -> void
+static BouncyCastleExtensions.Create(System.ArraySegment<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
+static BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter).Create(System.ArraySegment<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
+static readonly SharpSRTP.DTLSSRTP.DtlsSrtpProtocol.DtlsProtectionProfiles -> System.Collections.Generic.Dictionary<int, SharpSRTP.SRTP.SrtpProtectionProfileConfiguration>
+static readonly SharpSRTP.SRTP.SrtpProtocol.SrtpCryptoSuites -> System.Collections.Generic.Dictionary<string, SharpSRTP.SRTP.SrtpProtectionProfileConfiguration>
+static SharpSRTP.DTLS.BcDtlsClient.IsServerCertificateRsa(Org.BouncyCastle.Tls.TlsServerCertificate serverCertificate) -> bool
+static SharpSRTP.DTLS.DtlsCertificateUtils.Fingerprint(Org.BouncyCastle.Asn1.X509.X509CertificateStructure c, string algorithm = "SHA256") -> string
+static SharpSRTP.DTLS.DtlsCertificateUtils.GenerateCertificate(string name, System.DateTime notBefore, System.DateTime notAfter, bool useRSA) -> (Org.BouncyCastle.Tls.Certificate Certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter PrivateKey)
+static SharpSRTP.DTLS.DtlsCertificateUtils.GenerateECDSACertificate(string name, System.DateTime notBefore, System.DateTime notAfter, string curve = "secp256r1", string signatureAlgorithm = "SHA256WITHECDSA", int serialNumberLength = 20) -> (Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter key)
+static SharpSRTP.DTLS.DtlsCertificateUtils.GenerateRSACertificate(string name, System.DateTime notBefore, System.DateTime notAfter, int keyStrength = 2048, string signatureAlgorithm = "SHA256WITHRSA", int serialNumberLength = 20) -> (Org.BouncyCastle.Tls.Certificate Certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter PrivateKey)
+static SharpSRTP.DTLS.DtlsCertificateUtils.IsHashSupported(string algStr) -> bool
+static SharpSRTP.DTLSSRTP.DtlsSrtpProtocol.CreateMasterKeys(int protectionProfile, byte[] mki, byte[] sharedSecret) -> SharpSRTP.DTLSSRTP.DtlsSrtpKeys
+static SharpSRTP.DTLSSRTP.DtlsSrtpProtocol.CreateMasterKeys(int protectionProfile, byte[] mki, Org.BouncyCastle.Tls.SecurityParameters dtlsSecurityParameters, bool requireExtendedMasterSecret = true) -> SharpSRTP.DTLSSRTP.DtlsSrtpKeys
+static SharpSRTP.DTLSSRTP.DtlsSrtpProtocol.CreateMasterKeys(SharpSRTP.DTLS.IDtlsSecurityParameters dtlsSecurityParameters, bool requireExtendedMasterSecret = true) -> SharpSRTP.DTLSSRTP.DtlsSrtpKeys
+static SharpSRTP.DTLSSRTP.DtlsSrtpProtocol.CreateSrtpClientSessionContext(SharpSRTP.DTLSSRTP.DtlsSrtpKeys keys) -> SharpSRTP.SRTP.SrtpSessionContext
+static SharpSRTP.DTLSSRTP.DtlsSrtpProtocol.CreateSrtpServerSessionContext(SharpSRTP.DTLSSRTP.DtlsSrtpKeys keys) -> SharpSRTP.SRTP.SrtpSessionContext
+static SharpSRTP.DTLSSRTP.DtlsSrtpProtocol.GenerateMki(int length) -> byte[]
+static SharpSRTP.Log.Debug(string message, System.Exception ex = null) -> void
+static SharpSRTP.Log.DebugEnabled.get -> bool
+static SharpSRTP.Log.DebugEnabled.set -> void
+static SharpSRTP.Log.Error(string message, System.Exception ex = null) -> void
+static SharpSRTP.Log.ErrorEnabled.get -> bool
+static SharpSRTP.Log.ErrorEnabled.set -> void
+static SharpSRTP.Log.Info(string message, System.Exception ex = null) -> void
+static SharpSRTP.Log.InfoEnabled.get -> bool
+static SharpSRTP.Log.InfoEnabled.set -> void
+static SharpSRTP.Log.SinkDebug -> System.Action<string, System.Exception>
+static SharpSRTP.Log.SinkError -> System.Action<string, System.Exception>
+static SharpSRTP.Log.SinkInfo -> System.Action<string, System.Exception>
+static SharpSRTP.Log.SinkTrace -> System.Action<string, System.Exception>
+static SharpSRTP.Log.SinkWarn -> System.Action<string, System.Exception>
+static SharpSRTP.Log.Trace(string message, System.Exception ex = null) -> void
+static SharpSRTP.Log.TraceEnabled.get -> bool
+static SharpSRTP.Log.TraceEnabled.set -> void
+static SharpSRTP.Log.Warn(string message, System.Exception ex = null) -> void
+static SharpSRTP.Log.WarnEnabled.get -> bool
+static SharpSRTP.Log.WarnEnabled.set -> void
+static SharpSRTP.SRTP.Encryption.AEAD.GenerateMessageKeyIV(System.ReadOnlySpan<byte> k_s, uint ssrc, ulong index, System.Span<byte> iv) -> void
+static SharpSRTP.SRTP.Encryption.CTR.GenerateMessageKeyIV(System.ReadOnlySpan<byte> salt, uint ssrc, ulong index, System.Span<byte> iv) -> void
+static SharpSRTP.SRTP.Encryption.CTR.GenerateSessionKeyIV(System.ReadOnlyMemory<byte> masterSalt, ulong index, ulong kdr, byte label, System.Span<byte> iv) -> void
+static SharpSRTP.SRTP.Encryption.F8.Encrypt(Org.BouncyCastle.Crypto.IBlockCipher aes, System.ReadOnlySpan<byte> input, System.Span<byte> output, System.ReadOnlySpan<byte> iv) -> void
+static SharpSRTP.SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] k_e, byte[] k_s, System.ReadOnlySpan<byte> rtcpPacket, uint index) -> byte[]
+static SharpSRTP.SRTP.Readers.RtcpReader.GetHeaderLen() -> int
+static SharpSRTP.SRTP.Readers.RtcpReader.ReadSsrc(System.ReadOnlySpan<byte> rtcpPacket) -> uint
+static SharpSRTP.SRTP.Readers.RtcpReader.SrtcpReadIndex(System.ReadOnlySpan<byte> srtcpPacket, int authTagLen) -> uint
+static SharpSRTP.SRTP.Readers.RtpReader.ReadExtensionsLength(System.ReadOnlySpan<byte> payload) -> int
+static SharpSRTP.SRTP.Readers.RtpReader.ReadHeaderExtensions(System.ReadOnlySpan<byte> payload) -> System.ReadOnlySpan<byte>
+static SharpSRTP.SRTP.Readers.RtpReader.ReadHeaderLen(System.ReadOnlySpan<byte> payload) -> int
+static SharpSRTP.SRTP.Readers.RtpReader.ReadHeaderLenWithoutExtensions(System.ReadOnlySpan<byte> payload) -> int
+static SharpSRTP.SRTP.Readers.RtpReader.ReadSequenceNumber(System.ReadOnlySpan<byte> rtpPacket) -> ushort
+static SharpSRTP.SRTP.Readers.RtpReader.ReadSsrc(System.ReadOnlySpan<byte> rtpPacket) -> uint
+static SharpSRTP.SRTP.SrtpContext.DetermineRtpIndex(uint s_l, ushort SEQ, ulong ROC) -> uint
+static SharpSRTP.SRTP.SrtpContext.GenerateRtpIndex(uint ROC, ushort SEQ) -> ulong
+static SharpSRTP.SRTP.SrtpContext.GenerateSessionKey(Org.BouncyCastle.Crypto.IBlockCipher engineKeys, SharpSRTP.SRTP.SrtpCiphers cipher, System.ReadOnlyMemory<byte> masterKey, System.ReadOnlyMemory<byte> masterSalt, int length, int label, ulong index, ulong kdr, byte[] iv) -> byte[]
+static SharpSRTP.SRTP.SrtpProtocol.CreateMasterKeys(string cryptoSuite, byte[] mki = null, byte[] useMasterKeySalt = null) -> SharpSRTP.SRTP.SrtpKeys
+static SharpSRTP.SRTP.SrtpProtocol.CreateSrtpSessionContext(SharpSRTP.SRTP.SrtpKeys keys) -> SharpSRTP.SRTP.SrtpSessionContext
+static SharpSRTP.SRTP.SrtpProtocol.GenerateMki(int length) -> byte[]
+static SharpSRTP.UDP.IPEndPointExtensions.Parse(string s) -> System.Net.IPEndPoint
+static SharpSRTP.UDP.IPEndPointExtensions.TryParse(string s, out System.Net.IPEndPoint result) -> bool
+virtual SharpSRTP.DTLS.BcDtlsClient.AutogenerateClientCertificate(bool isRsa) -> void
+virtual SharpSRTP.DTLS.BcDtlsClient.DoHandshake(out string handshakeError, Org.BouncyCastle.Tls.DatagramTransport datagramTransport, SharpSRTP.DTLS.IDtlsRequest request = null) -> SharpSRTP.DTLS.IDtlsTransport
+virtual SharpSRTP.DTLS.BcDtlsClient.GetCertificateCommonName() -> string
+virtual SharpSRTP.DTLS.BcDtlsClient.GetNegotiatedSrtpData() -> Org.BouncyCastle.Tls.UseSrtpData
+virtual SharpSRTP.DTLS.BcDtlsClient.SetCertificate(Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm) -> void
+virtual SharpSRTP.DTLS.BcDtlsClient.ToHexString(byte[] data) -> string
+virtual SharpSRTP.DTLS.BcDtlsServer.AutogenerateClientCertificate(bool isRsa) -> void
+virtual SharpSRTP.DTLS.BcDtlsServer.DoHandshake(out string handshakeError, Org.BouncyCastle.Tls.DatagramTransport datagramTransport, SharpSRTP.DTLS.IDtlsRequest request = null) -> SharpSRTP.DTLS.IDtlsTransport
+virtual SharpSRTP.DTLS.BcDtlsServer.GetCertificateCommonName() -> string
+virtual SharpSRTP.DTLS.BcDtlsServer.GetNegotiatedSrtpData() -> Org.BouncyCastle.Tls.UseSrtpData
+virtual SharpSRTP.DTLS.BcDtlsServer.SetCertificate(Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm) -> void
+virtual SharpSRTP.DTLS.BcDtlsServer.ToHexString(byte[] data) -> string
+virtual SharpSRTP.DTLS.BcDtlsServer.VerifyRequest(System.Net.EndPoint remoteEndpoint, byte[] data, int offset, int length, Org.BouncyCastle.Tls.DatagramSender sender) -> SharpSRTP.DTLS.IDtlsRequest
+virtual SharpSRTP.DTLS.DtlsClient.AutogenerateClientCertificate(bool isRsa) -> void
+virtual SharpSRTP.DTLS.DtlsClient.ConfigureClient(SharpDTLS.DtlsClient client) -> void
+virtual SharpSRTP.DTLS.DtlsClient.DoHandshake(out string handshakeError, Org.BouncyCastle.Tls.DatagramTransport datagramTransport, SharpSRTP.DTLS.IDtlsRequest request = null) -> SharpSRTP.DTLS.IDtlsTransport
+virtual SharpSRTP.DTLS.DtlsClient.GetCertificateCommonName() -> string
+virtual SharpSRTP.DTLS.DtlsClient.OnHandshakeFinished(SharpSRTP.DTLS.IDtlsSecurityParameters securityParameters, Org.BouncyCastle.Tls.DatagramTransport datagramTransport) -> void
+virtual SharpSRTP.DTLS.DtlsClient.SetCertificate(Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm) -> void
+virtual SharpSRTP.DTLS.DtlsServer.AutogenerateClientCertificate(bool isRsa) -> void
+virtual SharpSRTP.DTLS.DtlsServer.ConfigureServer(SharpDTLS.DtlsServer server) -> void
+virtual SharpSRTP.DTLS.DtlsServer.DoHandshake(out string handshakeError, Org.BouncyCastle.Tls.DatagramTransport datagramTransport, SharpSRTP.DTLS.IDtlsRequest request = null) -> SharpSRTP.DTLS.IDtlsTransport
+virtual SharpSRTP.DTLS.DtlsServer.GetCertificateCommonName() -> string
+virtual SharpSRTP.DTLS.DtlsServer.OnHandshakeFinished(SharpSRTP.DTLS.IDtlsSecurityParameters securityParameters, Org.BouncyCastle.Tls.DatagramTransport datagramTransport) -> void
+virtual SharpSRTP.DTLS.DtlsServer.SetCertificate(Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm) -> void
+virtual SharpSRTP.DTLS.DtlsServer.VerifyRequest(System.Net.EndPoint remoteEndpoint, byte[] data, int offset, int length, Org.BouncyCastle.Tls.DatagramSender sender) -> SharpSRTP.DTLS.IDtlsRequest
+virtual SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.CreateSessionContext(SharpSRTP.DTLS.IDtlsSecurityParameters securityParameters) -> SharpSRTP.SRTP.SrtpSessionContext
+virtual SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.GetSupportedProtectionProfiles() -> int[]
+virtual SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.CreateSessionContext(SharpSRTP.DTLS.IDtlsSecurityParameters securityParameters) -> SharpSRTP.SRTP.SrtpSessionContext
+virtual SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.GetSupportedProtectionProfiles() -> int[]
+virtual SharpSRTP.DTLSSRTP.DtlsSrtpClient.CreateSessionContext(SharpSRTP.DTLS.IDtlsSecurityParameters securityParameters) -> SharpSRTP.SRTP.SrtpSessionContext
+virtual SharpSRTP.DTLSSRTP.DtlsSrtpClient.GetSupportedProtectionProfiles() -> ushort[]
+virtual SharpSRTP.DTLSSRTP.DtlsSrtpServer.CreateSessionContext(SharpSRTP.DTLS.IDtlsSecurityParameters securityParameters) -> SharpSRTP.SRTP.SrtpSessionContext
+virtual SharpSRTP.DTLSSRTP.DtlsSrtpServer.GetSupportedProtectionProfiles() -> ushort[]
+virtual SharpSRTP.SRTP.SrtpContext.CalculateRequiredSrtcpPayloadLength(int rtcpLen) -> int
+virtual SharpSRTP.SRTP.SrtpContext.CalculateRequiredSrtpPayloadLength(int rtpLen) -> int
+virtual SharpSRTP.SRTP.SrtpContext.DeriveSessionKeys(ulong index = 0) -> void
+virtual SharpSRTP.SRTP.SrtpContext.IncrementMasterKeyUseCounter() -> bool
+virtual SharpSRTP.UDP.UdpTransport.Close() -> void
+virtual SharpSRTP.UDP.UdpTransport.GetReceiveLimit() -> int
+virtual SharpSRTP.UDP.UdpTransport.GetSendLimit() -> int
+virtual SharpSRTP.UDP.UdpTransport.Receive(byte[] buf, int off, int len, int waitMillis) -> int
+virtual SharpSRTP.UDP.UdpTransport.Receive(System.Span<byte> buffer, int waitMillis) -> int
+virtual SharpSRTP.UDP.UdpTransport.Send(byte[] buf, int off, int len) -> void
+virtual SharpSRTP.UDP.UdpTransport.Send(System.ReadOnlySpan<byte> buffer) -> void

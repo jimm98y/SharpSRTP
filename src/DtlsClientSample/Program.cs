@@ -1,5 +1,4 @@
-﻿using Org.BouncyCastle.Tls;
-using SharpSRTP.DTLS;
+﻿using SharpSRTP.DTLS;
 using SharpSRTP.UDP;
 using System;
 using System.Net;
@@ -17,7 +16,7 @@ bool isShutdown = false;
 while (!isShutdown)
 {
     Console.WriteLine($"Beginning handshake with {remoteEndpoint}");
-    DtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
+    IDtlsTransport dtlsTransport = client.DoHandshake(out string error, udpClientTransport);
     byte counter = 0;
 
     if (dtlsTransport != null)

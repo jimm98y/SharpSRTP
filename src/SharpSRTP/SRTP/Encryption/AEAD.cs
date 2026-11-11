@@ -37,6 +37,15 @@ namespace SharpSRTP.SRTP.Encryption
     {
         public const int BLOCK_SIZE = 12;
 
+#if NET8_0_OR_GREATER
+        // What netstandard2.0 offers as well, so that a library built against it runs here too.
+        public static void Encrypt(IAeadBlockCipher engine, bool encrypt, System.ArraySegment<byte> input, System.ArraySegment<byte> output, byte[] iv, byte[] K_e, int N_tag, System.ArraySegment<byte> associatedData)
+            => Encrypt(engine, encrypt, (ReadOnlyBytes)input, (Bytes)output, iv, K_e, N_tag, (ReadOnlyBytes)associatedData);
+
+        public static void Encrypt(IAeadBlockCipher engine, bool encrypt, System.ArraySegment<byte> input, System.ArraySegment<byte> output, byte[] iv, KeyParameter K_e, int N_tag, System.ArraySegment<byte> associatedData)
+            => Encrypt(engine, encrypt, (ReadOnlyBytes)input, (Bytes)output, iv, K_e, N_tag, (ReadOnlyBytes)associatedData);
+
+#endif
         public static void Encrypt(IAeadBlockCipher engine, bool encrypt, ReadOnlyBytes input, Bytes output, byte[] iv, byte[] K_e, int N_tag, ReadOnlyBytes associatedData)
         {
             Encrypt(engine, encrypt, input, output, iv, new KeyParameter(K_e), N_tag, associatedData);
