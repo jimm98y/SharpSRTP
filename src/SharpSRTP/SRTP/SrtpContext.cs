@@ -1204,6 +1204,11 @@ namespace SharpSRTP.SRTP
 
             ReadOnlySpan<byte> inputSpan = input;
             var mki = context.Mki;
+            if (length < RtcpReader.GetHeaderLen() + 4 + (context.Auth != SrtpAuth.NONE ? context.N_tag : 0) + mki.Length)
+            {
+                outputBufferLength = 0;
+                return ERROR_GENERIC;
+            }
 
             for (var i = 0; i < mki.Length; i++)
             {
@@ -1363,6 +1368,12 @@ namespace SharpSRTP.SRTP
                     outputBufferLength = 0;
                     return ERROR_HMAC_CHECK_FAILED;
                 }
+            }
+            else if (context.Auth == SrtpAuth.NONE && context.Cipher != SrtpCiphers.NULL)
+            {
+                // of an AEAD profile, of no HMAC: unencrypted SRTCP (RFC 7714 9.4) is not taken, as nothing here authenticates it
+                outputBufferLength = 0;
+                return ERROR_HMAC_CHECK_FAILED;
             }
             else
             {
