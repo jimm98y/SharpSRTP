@@ -223,5 +223,16 @@ namespace SharpSRTP.Tests
 
             Assert.IsTrue(Convert.FromHexString(expectedSrtp).AsSpan().SequenceEqual(rtpBytes));
         }
+
+        [TestMethod]
+        public void EachTagIsOfAnArrayOfItsOwn()
+        {
+            // of two tags compared, not one buffer of the thread's compared to itself
+            var hmac = new HMac(new Sha1Digest());
+            hmac.Init(new Org.BouncyCastle.Crypto.Parameters.KeyParameter(new byte[20]));
+            var first = HMAC.GenerateAuthTag(hmac, new ArraySegment<byte>(new byte[] { 1 }));
+            var second = HMAC.GenerateAuthTag(hmac, new ArraySegment<byte>(new byte[] { 2 }));
+            CollectionAssert.AreNotEqual(first, second);
+        }
     }
 }

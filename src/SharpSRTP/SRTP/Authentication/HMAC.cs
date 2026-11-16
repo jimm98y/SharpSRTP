@@ -40,8 +40,12 @@ namespace SharpSRTP.SRTP.Authentication
             => GenerateAuthTag(hmac, (ReadOnlyBytes)payload);
 
 #endif
-        /// <summary>The tag, of a buffer of the thread's own: to be used before the next call of the thread, not kept.</summary>
+        /// <summary>The tag, of an array of its own.</summary>
         public static byte[] GenerateAuthTag(HMac hmac, ReadOnlyBytes payload)
+            => (byte[])GenerateAuthTagOfThread(hmac, payload).Clone();
+
+        // the tag of a buffer of the thread's own: to be used before the next call of the thread, not kept
+        internal static byte[] GenerateAuthTagOfThread(HMac hmac, ReadOnlyBytes payload)
         {
 #if NET8_0_OR_GREATER
             hmac.BlockUpdate(payload);

@@ -736,7 +736,7 @@ namespace SharpSRTP.SRTP
             {
                 BinaryPrimitives.WriteUInt32BigEndian(output.Slice(length, 4), roc);
 
-                auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, output.Slice(0, length + 4));
+                auth = SRTP.Authentication.HMAC.GenerateAuthTagOfThread(context.HMAC, output.Slice(0, length + 4));
             }
 
             var mki = context.Mki;
@@ -892,7 +892,7 @@ namespace SharpSRTP.SRTP
                     input.Slice(0, authenticatedLen).CopyTo(msgAuth.AsSpan(0, authenticatedLen));
                     BinaryPrimitives.WriteUInt32BigEndian(msgAuth.AsSpan(authenticatedLen, 4), roc);
 
-                    var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, msgAuth.Slice(0, authenticatedLen + 4));
+                    var auth = SRTP.Authentication.HMAC.GenerateAuthTagOfThread(context.HMAC, msgAuth.Slice(0, authenticatedLen + 4));
                     // of every byte compared, of no time told of where the tag differs
                     int difference = 0;
                     for (var i = 0; i < context.N_tag; i++)
@@ -1281,7 +1281,7 @@ namespace SharpSRTP.SRTP
 
             if (context.Auth != SrtpAuth.NONE)
             {
-                var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, output.Slice(0, length - mki.Length));
+                var auth = SRTP.Authentication.HMAC.GenerateAuthTagOfThread(context.HMAC, output.Slice(0, length - mki.Length));
                 auth.AsSpan(0, context.N_tag).CopyTo(output.Slice(length, context.N_tag));
                 length += context.N_tag;
             }
@@ -1346,7 +1346,7 @@ namespace SharpSRTP.SRTP
 
             if (context.Auth != SrtpAuth.NONE)
             {
-                var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, input.Slice(0, length - context.N_tag - mki.Length));
+                var auth = SRTP.Authentication.HMAC.GenerateAuthTagOfThread(context.HMAC, input.Slice(0, length - context.N_tag - mki.Length));
                 int difference = 0;
                 for (var i = 0; i < context.N_tag; i++)
                     difference |= inputSpan[length - context.N_tag + i] ^ auth[i];
