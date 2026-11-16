@@ -15,3 +15,6 @@
 SharpSRTP.SRTP.SrtpContext.PayloadAeadOuter.get -> Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher
 SharpSRTP.SRTP.SrtpSessionContext.Dispose() -> void
 virtual SharpSRTP.SRTP.SrtpContext.Dispose() -> void
+static SharpSRTP.SRTP.Encryption.F8.Init(Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] k_e, byte[] k_s) -> void
+static SharpSRTP.SRTP.Encryption.F8.GenerateRtpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, System.ReadOnlySpan<byte> rtpPacket, uint ROC, byte[] iv) -> void
+static SharpSRTP.SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, System.ReadOnlySpan<byte> rtcpPacket, uint index, byte[] iv) -> void

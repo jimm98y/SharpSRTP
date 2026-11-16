@@ -212,6 +212,12 @@ namespace SharpSRTP.Tests
             byte[] iv = new byte[F8.BLOCK_SIZE];
             F8.GenerateRtpMessageKeyIV(aes, k_e, k_s, rtpBytes, roc, iv);
 
+            // of the engine keyed once, the same IV'
+            byte[] kept = new byte[F8.BLOCK_SIZE];
+            F8.Init(aes, k_e, k_s);
+            F8.GenerateRtpMessageKeyIV(aes, rtpBytes, roc, kept);
+            CollectionAssert.AreEqual(iv, kept);
+
             aes.Init(true, new Org.BouncyCastle.Crypto.Parameters.KeyParameter(k_e));
             F8.Encrypt(aes, rtpBytes.AsSpan(offset, rtpBytes.Length - offset), rtpBytes.AsSpan(offset, rtpBytes.Length - offset), iv);
 

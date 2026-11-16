@@ -57,6 +57,31 @@ namespace SharpSRTP.SRTP.Encryption
             GenerateIV2(engine, k_e, k_s, rtpIV, iv);
         }
 
+        /// <summary>Keys the engine of IV' once of the session: k_e XOR (k_s || 0x55..55). Of no key schedule of each packet.</summary>
+        public static void Init(IBlockCipher engine, byte[] k_e, byte[] k_s)
+        {
+            byte[] key = (byte[])k_e.Clone();
+            Span<byte> m = stackalloc byte[BLOCK_SIZE];
+            m.Fill(0x55);
+            k_s.CopyTo(m);
+            BinaryExtensions.Xor128(key, m);
+            engine.Init(true, new KeyParameter(key));
+        }
+
+        /// <summary>IV' of an RTP packet, of an engine keyed of <see cref="Init"/>: of no allocation.</summary>
+        public static void GenerateRtpMessageKeyIV(IBlockCipher engine, ReadOnlySpan<byte> rtpPacket, uint ROC, byte[] iv)
+        {
+            GenerateRtpIV(iv, rtpPacket, ROC);
+            engine.ProcessBlock(iv, 0, iv, 0);
+        }
+
+        /// <summary>IV' of an RTCP packet, of an engine keyed of <see cref="Init"/>: of no allocation.</summary>
+        public static void GenerateRtcpMessageKeyIV(IBlockCipher engine, ReadOnlySpan<byte> rtcpPacket, uint index, byte[] iv)
+        {
+            GenerateRtcpIV(iv, rtcpPacket, index);
+            engine.ProcessBlock(iv, 0, iv, 0);
+        }
+
         private static void GenerateRtpIV(Span<byte> iv, ReadOnlySpan<byte> rtpPacket, uint ROC)
         {
             iv[0] = 0;
@@ -99,16 +124,7 @@ namespace SharpSRTP.SRTP.Encryption
         private static void GenerateIV2(IBlockCipher engine, byte[] k_e, byte[] k_s, ReadOnlyBytes iv, Bytes iv2)
         {
             // IV' = E(k_e XOR m, IV)
-            k_e.CopyTo(iv2);
-
-            // m = k_s || 0x555..5
-            Span<byte> k_s_temp = stackalloc byte[BLOCK_SIZE];
-            k_s_temp.Fill(0x55);
-            k_s.CopyTo(k_s_temp);
-
-            BinaryExtensions.Xor128(iv2, k_s_temp);
-
-            engine.Init(true, new KeyParameter(iv2));
+            Init(engine, k_e, k_s);
             engine.ProcessBlock(iv, iv2);
         }
 
@@ -121,22 +137,23 @@ namespace SharpSRTP.SRTP.Encryption
             try
             {
                 int blockNo = 0;
-                byte[] iv2 = GC.AllocateUninitializedArray<byte>(iv.Length);
                 for (uint j = 0; j < blockCount; j++)
                 {
-                    iv.CopyTo(iv2);
+                    // of each block, its input of its own place in the buffer rented, encrypted there
+                    var block = cipher.AsSpan(BLOCK_SIZE * blockNo, BLOCK_SIZE);
+                    iv.CopyTo(block);
 
                     // IV' xor j
-                    BinaryExtensions.Xor32(iv2.AsSpan(12, 4), j);
+                    BinaryExtensions.Xor32(block.Slice(12, 4), j);
 
                     // IV' xor S(-1) xor j
                     if (blockNo > 0)
                     {
                         var previousBlockIndex = BLOCK_SIZE * (blockNo - 1);
-                        BinaryExtensions.Xor128(iv2, cipher.AsSpan(previousBlockIndex + 0));
+                        BinaryExtensions.Xor128(block, cipher.AsSpan(previousBlockIndex + 0));
                     }
 
-                    aes.ProcessBlock(iv2, 0, cipher, BLOCK_SIZE * blockNo);
+                    aes.ProcessBlock(cipher, BLOCK_SIZE * blockNo, cipher, BLOCK_SIZE * blockNo);
                     blockNo++;
                 }
 

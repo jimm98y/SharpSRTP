@@ -24,6 +24,7 @@ namespace SharpSRTP.Tests
         [TestMethod]
         [DataRow(SrtpCryptoSuites.SEED_128_CCM_80)]
         [DataRow(SrtpCryptoSuites.SEED_128_GCM_96)]
+        [DataRow(SrtpCryptoSuites.F8_128_HMAC_SHA1_80)]
         public void OfASuite(string suite)
         {
             var keys = SrtpProtocol.CreateMasterKeys(suite);

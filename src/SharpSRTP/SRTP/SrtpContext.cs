@@ -381,6 +381,8 @@ namespace SharpSRTP.SRTP
                         {
                             this.PayloadF8 = AesUtilities.CreateEngine();
                             this.HeaderF8 = AesUtilities.CreateEngine();
+                            SRTP.Encryption.F8.Init(PayloadF8, K_e, K_s);
+                            SRTP.Encryption.F8.Init(HeaderF8, K_he, K_hs);
                         }
                         else if (Cipher == SrtpCiphers.AEAD_AES_128_GCM || Cipher == SrtpCiphers.AEAD_AES_256_GCM)
                         {
@@ -623,7 +625,7 @@ namespace SharpSRTP.SRTP
 
                 case SrtpCiphers.AES_128_F8:
                     {
-                        SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, roc, context.Iv16);
+                        SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.PayloadF8, input, roc, context.Iv16);
                         SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, length - offset), output.Slice(offset, length - offset), context.Iv16);
                     }
                     break;
@@ -775,7 +777,7 @@ namespace SharpSRTP.SRTP
 
                     case SrtpCiphers.AES_128_F8:
                         {
-                            SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.HeaderF8, context.K_he, context.K_hs, payload, roc, context.Iv16);
+                            SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.HeaderF8, payload, roc, context.Iv16);
                             SRTP.Encryption.F8.Encrypt(context.HeaderCTR, rtpExtensions, rtpExtensionsEncrypted.AsSpan(0, rtpExtensions.Length), context.Iv16);
                         }
                         break;
@@ -935,7 +937,7 @@ namespace SharpSRTP.SRTP
 
                     case SrtpCiphers.AES_128_F8:
                         {
-                            SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, roc, context.Iv16);
+                            SRTP.Encryption.F8.GenerateRtpMessageKeyIV(context.PayloadF8, input, roc, context.Iv16);
                             var decLen = length - mki.Length - context.N_tag;
                             input.Slice(0, offset).CopyTo(output.Slice(0, offset));
                             SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), context.Iv16);
@@ -1179,7 +1181,8 @@ namespace SharpSRTP.SRTP
 
                 case SrtpCiphers.AES_128_F8:
                     {
-                        var iv = SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, index);
+                        var iv = context.Iv16;
+                        SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, input, index, iv);
                         input.Slice(0, offset).CopyTo(output.Slice(0, offset));
                         SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, length - offset), output.Slice(offset, length - offset), iv);
                     }
@@ -1373,7 +1376,8 @@ namespace SharpSRTP.SRTP
                         case SrtpCiphers.AES_128_F8:
                             {
                                 var decLen = length - 4 - context.N_tag - mki.Length;
-                                var iv = SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, context.K_e, context.K_s, input, originalIndex);
+                                var iv = context.Iv16;
+                                SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(context.PayloadF8, input, originalIndex, iv);
                                 input.Slice(0, offset).CopyTo(output.Slice(0, offset));
                                 SRTP.Encryption.F8.Encrypt(context.PayloadCTR, input.Slice(offset, decLen - offset), output.Slice(offset, decLen - offset), iv);
                                 outputBufferLength = decLen;
