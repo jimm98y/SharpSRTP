@@ -44,6 +44,37 @@ namespace SharpSRTP.Tests
             Assert.ThrowsExactly<ArgumentException>(() => context.ProtectRtp(rtp.ToArray(), 32, out _));
         }
 
+        [TestMethod]
+        [DataRow(ExtendedSrtpProtectionProfile.SRTP_AEAD_ARIA_128_GCM)]
+        [DataRow(ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM)]
+        [DataRow(ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM)]
+        public void OfATagFailedNoPlaintextIsLeft(int profile)
+        {
+            var keys = DtlsSrtpProtocol.CreateMasterKeys(profile, null, Enumerable.Range(0, 256).Select(i => (byte)i).ToArray());
+            var encode = DtlsSrtpProtocol.CreateSrtpClientSessionContext(keys);
+            var decode = DtlsSrtpProtocol.CreateSrtpServerSessionContext(keys);
+
+            byte[] rtp = new byte[100];
+            rtp[0] = 0x80;
+            rtp.AsSpan(12, 20).Fill(7);
+            Assert.AreEqual(0, encode.ProtectRtp(rtp, 32, out int length));
+            rtp[length - 1] ^= 1;
+            byte[] output = new byte[100];
+            Assert.AreNotEqual(0, decode.UnprotectRtp(new ArraySegment<byte>(rtp, 0, length), output, out _));
+            Assert.IsFalse(output.Contains((byte)7), "RTP");
+
+            byte[] rtcp = new byte[100];
+            rtcp[0] = 0x80;
+            rtcp[1] = 200;
+            rtcp[3] = 6;
+            rtcp.AsSpan(8, 20).Fill(7);
+            Assert.AreEqual(0, encode.ProtectRtcp(rtcp, 28, out length));
+            rtcp[length - 5] ^= 1; // of its tag, before the E flag and index
+            output = new byte[100];
+            Assert.AreNotEqual(0, decode.UnprotectRtcp(new ArraySegment<byte>(rtcp, 0, length), output, out _));
+            Assert.IsFalse(output.Contains((byte)7), "RTCP");
+        }
+
 #if NET
         [TestMethod]
         public void OfDoubleAeadEachLayerOfAnAesGcmOfItsOwn()

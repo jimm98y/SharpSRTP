@@ -1075,7 +1075,8 @@ namespace SharpSRTP.SRTP
                             }
                             finally
                             {
-                                ArrayPool<byte>.Shared.Return(syntheticRtpPacket);
+                                // of the inner layer's plaintext, of a tag failed or not, nothing left in the pool
+                                ArrayPool<byte>.Shared.Return(syntheticRtpPacket, clearArray: true);
                             }
                         }
                         break;
@@ -1092,6 +1093,8 @@ namespace SharpSRTP.SRTP
                 // AEAD (GCM/CCM) authentication failed. Drop the packet WITHOUT advancing the replay
                 // window / ROC, so a single unauthenticated, corrupted or reordered packet cannot desync
                 // the ROC and cause every subsequent packet to fail to decrypt. RFC 3711 section 3.3.
+                // Of BouncyCastle's GCM, the plaintext written before its tag is checked: cleared, as .NET's AesGcm clears it.
+                ((Span<byte>)output).Slice(0, Math.Min(length, output.Length)).Clear();
                 outputBufferLength = 0;
                 return ERROR_HMAC_CHECK_FAILED;
             }
@@ -1466,6 +1469,8 @@ namespace SharpSRTP.SRTP
                     // AEAD (GCM/CCM) authentication failed. Drop the packet WITHOUT advancing the replay
                     // window / ROC, so a single unauthenticated, corrupted or reordered packet cannot desync
                     // the ROC and cause every subsequent packet to fail to decrypt. RFC 3711 section 3.3.
+                    // Of BouncyCastle's GCM, the plaintext written before its tag is checked: cleared, as .NET's AesGcm clears it.
+                    ((Span<byte>)output).Slice(0, Math.Min(length, output.Length)).Clear();
                     outputBufferLength = 0;
                     return ERROR_HMAC_CHECK_FAILED;
                 }
