@@ -35,7 +35,7 @@
 		<!-- overloads with optional parameters are a style choice here, not a break -->
 		<NoWarn>$(NoWarn);RS0026;RS0027</NoWarn>
 		<EnablePackageValidation>true</EnablePackageValidation>
-		<PackageValidationBaselineVersion>0.5.8</PackageValidationBaselineVersion>
+		<PackageValidationBaselineVersion>0.6.0</PackageValidationBaselineVersion>
 	</PropertyGroup>
 
 </Project>
