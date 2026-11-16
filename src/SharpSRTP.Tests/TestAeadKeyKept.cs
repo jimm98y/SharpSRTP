@@ -49,17 +49,34 @@ namespace SharpSRTP.Tests
         public void OfDoubleAeadEachLayerOfAnAesGcmOfItsOwn()
         {
             var keys = DtlsSrtpProtocol.CreateMasterKeys(ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM, null, Enumerable.Range(0, 256).Select(i => (byte)i).ToArray());
-            var context = DtlsSrtpProtocol.CreateSrtpClientSessionContext(keys).EncodeRtpContext;
+            var session = DtlsSrtpProtocol.CreateSrtpClientSessionContext(keys);
+            var context = session.EncodeRtpContext;
             Assert.IsNotNull(context.PayloadAesGcm);
             Assert.IsNotNull(context.PayloadAesGcmOuter);
-            context.Dispose();
+            byte[] rtp = new byte[100];
+            rtp[0] = 0x80;
+            Assert.AreEqual(0, session.ProtectRtp(rtp.ToArray(), 32, out _));
+            session.Dispose();
             Assert.IsNull(context.PayloadAesGcmOuter);
+
+            // of BouncyCastle's then, its keys not taken of .NET's before
+            rtp[3] = 1;
+            Assert.AreEqual(0, session.ProtectRtp(rtp, 32, out _));
         }
 #endif
 
         private static void ProtectsEachPacketAsANewContext(Func<SrtpSessionContext> create, SrtpSessionContext decode)
         {
             var context = create();
+
+            // of a forged packet first, the key BouncyCastle is given of it kept, of the packets after
+            byte[] forged = new byte[100];
+            forged[0] = 0x80;
+            forged[1] = 96;
+            BinaryPrimitives.WriteUInt32BigEndian(forged.AsSpan(8), 0x12345678);
+            Assert.AreEqual(0, create().ProtectRtp(forged, 32, out int forgedLength));
+            forged[forgedLength - 1] ^= 1;
+            Assert.AreNotEqual(0, decode.UnprotectRtp(forged, forgedLength, out _));
             for (int i = 0; i < 3; i++)
             {
                 byte[] rtp = new byte[12 + 20];
