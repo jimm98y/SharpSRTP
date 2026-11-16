@@ -118,6 +118,14 @@ namespace SharpSRTP.Tests
             context.Dispose();
             Assert.IsNull(context.PayloadAesGcm);
         }
+
+        [TestMethod]
+        public void TheThreadSafeWrapperDisposesTheContextItWraps()
+        {
+            var session = Context(SrtpCryptoSuites.AEAD_AES_128_GCM);
+            new ThreadSafeSrtpSessionContext(session).Dispose();
+            Assert.IsNull(session.EncodeRtpContext.PayloadAesGcm);
+        }
 #endif
     }
 }

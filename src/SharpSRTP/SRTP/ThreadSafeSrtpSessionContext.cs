@@ -35,7 +35,7 @@ namespace SharpSRTP.SRTP
     /// This class ensures that the underlying SRTP session context is accessed in a thread-safe manner by using locks for each of the 
     /// protect/unprotect operations.
     /// </summary>
-    public class ThreadSafeSrtpSessionContext : ISrtpContext
+    public class ThreadSafeSrtpSessionContext : ISrtpContext, IDisposable
     {
         private object _syncEncodeRtpContext = new object();
         private object _syncDecodeRtpContext = new object();
@@ -47,6 +47,16 @@ namespace SharpSRTP.SRTP
         public ThreadSafeSrtpSessionContext(ISrtpContext srtpSessionContext)
         {
             _srtpSessionContext = srtpSessionContext ?? throw new ArgumentNullException(nameof(srtpSessionContext));
+        }
+
+        /// <summary>Disposes the context it wraps, of no packet in its protection then.</summary>
+        public void Dispose()
+        {
+            lock (_syncEncodeRtpContext)
+            lock (_syncDecodeRtpContext)
+            lock (_syncEncodeRtcpContext)
+            lock (_syncDecodeRtcpContext)
+                (_srtpSessionContext as IDisposable)?.Dispose();
         }
 
         public int CalculateRequiredSrtpPayloadLength(int rtpLen)
