@@ -28,4 +28,5 @@ virtual SharpSRTP.SRTP.SrtpContext.ProtectRtp(System.ArraySegment<byte> input, b
 virtual SharpSRTP.SRTP.SrtpContext.UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
 virtual SharpSRTP.SRTP.SrtpContext.UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
 SharpSRTP.SRTP.SrtpContext.PayloadAesGcm.get -> System.Security.Cryptography.AesGcm
+SharpSRTP.SRTP.SrtpContext.PayloadAesGcmOuter.get -> System.Security.Cryptography.AesGcm
 static SharpSRTP.SRTP.Encryption.AEAD.Encrypt(System.Security.Cryptography.AesGcm aes, bool encrypt, System.ReadOnlySpan<byte> input, System.Span<byte> output, byte[] iv, int N_tag, System.ReadOnlySpan<byte> associatedData) -> void

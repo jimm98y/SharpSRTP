@@ -30,6 +30,19 @@ namespace SharpSRTP.Tests
             ProtectsEachPacketAsANewContext(() => SrtpProtocol.CreateSrtpSessionContext(keys), SrtpProtocol.CreateSrtpSessionContext(keys));
         }
 
+#if NET
+        [TestMethod]
+        public void OfDoubleAeadEachLayerOfAnAesGcmOfItsOwn()
+        {
+            var keys = DtlsSrtpProtocol.CreateMasterKeys(ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM, null, Enumerable.Range(0, 256).Select(i => (byte)i).ToArray());
+            var context = DtlsSrtpProtocol.CreateSrtpClientSessionContext(keys).EncodeRtpContext;
+            Assert.IsNotNull(context.PayloadAesGcm);
+            Assert.IsNotNull(context.PayloadAesGcmOuter);
+            context.Dispose();
+            Assert.IsNull(context.PayloadAesGcmOuter);
+        }
+#endif
+
         private static void ProtectsEachPacketAsANewContext(Func<SrtpSessionContext> create, SrtpSessionContext decode)
         {
             var context = create();

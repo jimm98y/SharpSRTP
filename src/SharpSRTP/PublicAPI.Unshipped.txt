@@ -12,5 +12,6 @@
 *REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_80 = 13 -> int
 *REMOVED*static BouncyCastleExtensions.Create(System.ArraySegment<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
 *REMOVED*static BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter).Create(System.ArraySegment<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
+SharpSRTP.SRTP.SrtpContext.PayloadAeadOuter.get -> Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher
 SharpSRTP.SRTP.SrtpSessionContext.Dispose() -> void
 virtual SharpSRTP.SRTP.SrtpContext.Dispose() -> void
