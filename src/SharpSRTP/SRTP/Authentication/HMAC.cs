@@ -31,12 +31,16 @@ namespace SharpSRTP.SRTP.Authentication
 {
     public static class HMAC
     {
+        [System.ThreadStatic]
+        private static byte[] _tag;
+
 #if NET8_0_OR_GREATER
         // What netstandard2.0 offers as well, so that a library built against it runs here too.
         public static byte[] GenerateAuthTag(HMac hmac, System.ArraySegment<byte> payload)
             => GenerateAuthTag(hmac, (ReadOnlyBytes)payload);
 
 #endif
+        /// <summary>The tag, of a buffer of the thread's own: to be used before the next call of the thread, not kept.</summary>
         public static byte[] GenerateAuthTag(HMac hmac, ReadOnlyBytes payload)
         {
 #if NET8_0_OR_GREATER
@@ -45,7 +49,7 @@ namespace SharpSRTP.SRTP.Authentication
             hmac.BlockUpdate(payload.Array, payload.Offset, payload.Count);
 #endif
 
-            byte[] output = new byte[hmac.GetMacSize()];
+            byte[] output = _tag != null && _tag.Length == hmac.GetMacSize() ? _tag : (_tag = new byte[hmac.GetMacSize()]);
             hmac.DoFinal(output, 0);
 
             return output;
