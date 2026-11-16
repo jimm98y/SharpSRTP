@@ -48,8 +48,34 @@ namespace SharpSRTP.SRTP.Encryption
 #endif
         public static void Encrypt(IAeadBlockCipher engine, bool encrypt, ReadOnlyBytes input, Bytes output, byte[] iv, byte[] K_e, int N_tag, ReadOnlyBytes associatedData)
         {
+#if NET8_0_OR_GREATER
+            // AES-GCM of .NET, of no allocation: BouncyCastle's is of a key schedule and its tables of each packet
+            if (N_tag == 16 && engine is GcmBlockCipher && engine.UnderlyingCipher.AlgorithmName == "AES" && System.Security.Cryptography.AesGcm.IsSupported)
+            {
+                var aes = AesGcms.GetValue(K_e, static key => new System.Security.Cryptography.AesGcm(key, 16));
+                int length = encrypt ? input.Length : input.Length - N_tag;
+                if (length < 0)
+                    throw new Org.BouncyCastle.Crypto.InvalidCipherTextException("data too short");
+                try
+                {
+                    if (encrypt)
+                        aes.Encrypt(iv, input, output.Slice(0, length), output.Slice(length, N_tag), associatedData);
+                    else
+                        aes.Decrypt(iv, input.Slice(0, length), input.Slice(length, N_tag), output.Slice(0, length), associatedData);
+                }
+                catch (System.Security.Cryptography.AuthenticationTagMismatchException)
+                {
+                    throw new Org.BouncyCastle.Crypto.InvalidCipherTextException("mac check in GCM failed");
+                }
+                return;
+            }
+#endif
             Encrypt(engine, encrypt, input, output, iv, new KeyParameter(K_e), N_tag, associatedData);
         }
+
+#if NET8_0_OR_GREATER
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<byte[], System.Security.Cryptography.AesGcm> AesGcms = new();
+#endif
 
         public static void Encrypt(IAeadBlockCipher engine, bool encrypt, ReadOnlyBytes input, Bytes output, byte[] iv, KeyParameter K_e, int N_tag, ReadOnlyBytes associatedData)
         {
