@@ -29,7 +29,7 @@ using Bytes = byte[];
 
 namespace SharpSRTP.SRTP
 {
-    public class SrtpSessionContext : ISrtpContext
+    public class SrtpSessionContext : ISrtpContext, System.IDisposable
     {
         public SrtpContext EncodeRtpContext { get; private set; }
         public SrtpContext EncodeRtcpContext { get; private set; }
@@ -42,6 +42,15 @@ namespace SharpSRTP.SRTP
             this.DecodeRtpContext = decodeRtpContext;
             this.EncodeRtcpContext = encodeRtcpContext;
             this.DecodeRtcpContext = decodeRtcpContext;
+        }
+
+        /// <summary>Disposes its four contexts.</summary>
+        public void Dispose()
+        {
+            EncodeRtpContext?.Dispose();
+            DecodeRtpContext?.Dispose();
+            EncodeRtcpContext?.Dispose();
+            DecodeRtcpContext?.Dispose();
         }
 
         public int CalculateRequiredSrtpPayloadLength(int rtpLen)

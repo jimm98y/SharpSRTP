@@ -102,5 +102,22 @@ namespace SharpSRTP.Tests
                 Assert.AreNotEqual(0, context.UnprotectRtcp(packet, length, out _), $"of {length} bytes");
             }
         }
+
+#if NET
+        [TestMethod]
+        public void TheAesGcmOfTheSessionKeyIsReplacedOfTheNextAndDisposed()
+        {
+            var context = Context(SrtpCryptoSuites.AEAD_AES_128_GCM).EncodeRtpContext;
+            var first = context.PayloadAesGcm;
+            Assert.IsNotNull(first);
+
+            context.DeriveSessionKeys(1);
+            Assert.AreNotSame(first, context.PayloadAesGcm);
+            Assert.ThrowsExactly<ObjectDisposedException>(() => first.Encrypt(new byte[12], new byte[0], new byte[0], new byte[16]));
+
+            context.Dispose();
+            Assert.IsNull(context.PayloadAesGcm);
+        }
+#endif
     }
 }
