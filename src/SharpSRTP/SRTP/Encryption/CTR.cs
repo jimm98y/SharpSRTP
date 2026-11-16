@@ -101,7 +101,8 @@ namespace SharpSRTP.SRTP.Encryption
         public static void Encrypt(IBlockCipher engine, ReadOnlySpan<byte> input, Span<byte> output, Bytes iv)
         {
             var payloadSize = input.Length;
-            var cipher = ArrayPool<byte>.Shared.Rent(payloadSize);
+            // of a block more, for the last of it, whole
+            var cipher = ArrayPool<byte>.Shared.Rent(payloadSize + BLOCK_SIZE);
 
             try
             {
@@ -116,9 +117,7 @@ namespace SharpSRTP.SRTP.Encryption
                 if (payloadSize % BLOCK_SIZE != 0)
                 {
                     BinaryPrimitives.WriteUInt16BigEndian(iv.Slice(14, 2), (ushort)blockNo);
-                    var lastBlock = GC.AllocateUninitializedArray<byte>(BLOCK_SIZE);
-                    engine.ProcessBlock(iv, lastBlock);
-                    Buffer.BlockCopy(lastBlock, 0, cipher, BLOCK_SIZE * blockNo, payloadSize % BLOCK_SIZE);
+                    engine.ProcessBlock(iv, cipher.Slice(BLOCK_SIZE * blockNo, BLOCK_SIZE));
                 }
 
                 BinaryExtensions.Xor(
