@@ -798,12 +798,6 @@ namespace SharpSRTP.SRTP
                 }
             }
 
-            if (!context.IncrementMasterKeyUseCounter())
-            {
-                outputBufferLength = 0;
-                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
-            }
-
             var ssrc = RtpReader.ReadSsrc(input);
             var sequenceNumber = RtpReader.ReadSequenceNumber(input);
 
@@ -1030,6 +1024,11 @@ namespace SharpSRTP.SRTP
             // The packet has now been authenticated (HMAC above for HMAC profiles, or the AEAD decrypt
             // for GCM/CCM profiles). Only now is it safe to advance the replay window / ROC.
             // RFC 3711 section 3.3.
+            if (!context.IncrementMasterKeyUseCounter())
+            {
+                outputBufferLength = 0;
+                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
+            }
             ssrcContext.UpdateReplayWindow(index);
             if (isNewSsrc)
                 context.ReplayProtection[ssrc] = ssrcContext;
@@ -1232,12 +1231,6 @@ namespace SharpSRTP.SRTP
                 }
             }
 
-            if (!context.IncrementMasterKeyUseCounter())
-            {
-                outputBufferLength = 0;
-                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
-            }
-
             var ssrc = RtcpReader.ReadSsrc(input);
             var offset = RtcpReader.GetHeaderLen();
 
@@ -1397,6 +1390,11 @@ namespace SharpSRTP.SRTP
 
             // The packet has now been authenticated (HMAC above for HMAC profiles, or the AEAD decrypt
             // for GCM/CCM profiles). Only now is it safe to advance the replay window.
+            if (!context.IncrementMasterKeyUseCounter())
+            {
+                outputBufferLength = 0;
+                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
+            }
             ssrcContext.UpdateReplayWindow(index);
             if (isNewSsrc)
                 context.ReplayProtection[ssrc] = ssrcContext;

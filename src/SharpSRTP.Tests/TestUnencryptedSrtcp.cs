@@ -42,6 +42,24 @@ namespace SharpSRTP.Tests
         }
 
         [TestMethod]
+        [DataRow(SrtpCryptoSuites.AEAD_AES_128_GCM)]
+        [DataRow(SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_80)]
+        public void CountsNoForgedPacketOfTheMasterKey(string suite)
+        {
+            var context = Context(suite);
+            byte[] rtp = new byte[12 + 16 + 10];
+            rtp[0] = 0x80;
+            byte[] rtcp = Forged(0x12345678, 0x80000001);
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.AreNotEqual(0, context.UnprotectRtp(rtp, rtp.Length, out _));
+                Assert.AreNotEqual(0, context.UnprotectRtcp(rtcp, rtcp.Length, out _));
+            }
+            Assert.AreEqual(0, context.DecodeRtpContext.MasterKeySentCounter);
+            Assert.AreEqual(0, context.DecodeRtcpContext.MasterKeySentCounter);
+        }
+
+        [TestMethod]
         public void RefusesAnSrtpOfAHeaderPastItsEndOfNoException()
         {
             var context = Context(SrtpCryptoSuites.AEAD_AES_128_GCM);
