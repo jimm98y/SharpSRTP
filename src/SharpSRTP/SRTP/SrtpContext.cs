@@ -1197,7 +1197,7 @@ namespace SharpSRTP.SRTP
                 length += context.N_tag;
             }
 
-            ssrcContext.SetSequence((ushort)((ssrcContext.S_l + 1) % 0x80000000));
+            ssrcContext.SetSequence((ssrcContext.S_l + 1) % 0x80000000);
             outputBufferLength = length;
 
             return 0;

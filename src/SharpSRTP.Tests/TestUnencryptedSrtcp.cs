@@ -60,6 +60,21 @@ namespace SharpSRTP.Tests
         }
 
         [TestMethod]
+        public void NumbersSrtcpPast65535()
+        {
+            var context = Context(SrtpCryptoSuites.AEAD_AES_128_GCM);
+            byte[] packet = new byte[28 + 16 + 4];
+            uint index = 0;
+            for (int i = 0; i <= 65536; i++)
+            {
+                Forged(0x12345678, 0).AsSpan(0, 28).CopyTo(packet);
+                Assert.AreEqual(0, context.ProtectRtcp(packet, 28, out int length));
+                index = BinaryPrimitives.ReadUInt32BigEndian(packet.AsSpan(length - 4)) & 0x7FFFFFFF;
+            }
+            Assert.AreEqual(65536u, index, "of its 31 bits (RFC 3711 3.4), not of 16: of a wrap, its IV again");
+        }
+
+        [TestMethod]
         public void RefusesAnSrtpOfAHeaderPastItsEndOfNoException()
         {
             var context = Context(SrtpCryptoSuites.AEAD_AES_128_GCM);
