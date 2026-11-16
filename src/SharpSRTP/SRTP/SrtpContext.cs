@@ -195,6 +195,10 @@ namespace SharpSRTP.SRTP
 
         /// <summary>Of Double AEAD, the outer layer's AES-GCM of .NET; <see cref="PayloadAesGcm"/> the inner's.</summary>
         public System.Security.Cryptography.AesGcm PayloadAesGcmOuter { get; private set; }
+
+        // the nonces each encrypted of last, of the same refused
+        private readonly byte[] _lastIv = new byte[Encryption.AEAD.BLOCK_SIZE];
+        private readonly byte[] _lastIvOuter = new byte[Encryption.AEAD.BLOCK_SIZE];
 #endif
 
         public byte[] Iv12 { get; } = new byte[Encryption.AEAD.BLOCK_SIZE];
@@ -652,7 +656,7 @@ namespace SharpSRTP.SRTP
                         SRTP.Encryption.AEAD.GenerateMessageKeyIV(context.K_s, ssrc, index, context.Iv12);
 #if NET8_0_OR_GREATER
                         if (context.PayloadAesGcm != null)
-                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, true, input.Slice(offset, length - offset), output.Slice(offset), context.Iv12, context.N_tag, output.Slice(0, offset));
+                            SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, true, input.Slice(offset, length - offset), output.Slice(offset), context.Iv12, context._lastIv, context.N_tag, output.Slice(0, offset));
                         else
 #endif
                         SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, input.Slice(offset, length - offset), output.Slice(offset), context.Iv12, Interlocked.Exchange(ref context._payloadKey, null), context.N_tag, output.Slice(0, offset));
@@ -686,7 +690,7 @@ namespace SharpSRTP.SRTP
                             SRTP.Encryption.AEAD.GenerateMessageKeyIV(innerK_s, ssrc, index, context.Iv12);
 #if NET8_0_OR_GREATER
                             if (context.PayloadAesGcm != null)
-                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, true, syntheticRtpPacket.Slice(rtpHeaderLength, length - rtpExtensionsLength - rtpHeaderLength), syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), context.Iv12, context.N_tag / 2, syntheticRtpPacket.Slice(0, rtpHeaderLength));
+                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, true, syntheticRtpPacket.Slice(rtpHeaderLength, length - rtpExtensionsLength - rtpHeaderLength), syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), context.Iv12, context._lastIv, context.N_tag / 2, syntheticRtpPacket.Slice(0, rtpHeaderLength));
                             else
 #endif
                             SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, syntheticRtpPacket.Slice(rtpHeaderLength, length - rtpExtensionsLength - rtpHeaderLength), syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), context.Iv12, innerK_e, context.N_tag / 2, syntheticRtpPacket.Slice(0, rtpHeaderLength));
@@ -707,7 +711,7 @@ namespace SharpSRTP.SRTP
 
 #if NET8_0_OR_GREATER
                             if (context.PayloadAesGcmOuter != null)
-                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcmOuter, true, output.Slice(offset, length - offset), output.Slice(offset), context.Iv12, context.N_tag / 2, output.Slice(0, offset));
+                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcmOuter, true, output.Slice(offset, length - offset), output.Slice(offset), context.Iv12, context._lastIvOuter, context.N_tag / 2, output.Slice(0, offset));
                             else
 #endif
                             SRTP.Encryption.AEAD.Encrypt(context.PayloadAeadOuter, true, output.Slice(offset, length - offset), output.Slice(offset), context.Iv12, outerK_e, context.N_tag / 2, output.Slice(0, offset));
@@ -971,7 +975,7 @@ namespace SharpSRTP.SRTP
                             input.Slice(0, offset).CopyTo(output.Slice(0, offset));
 #if NET8_0_OR_GREATER
                             if (context.PayloadAesGcm != null)
-                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, false, input.Slice(offset, length - mki.Length - offset), output.Slice(offset), context.Iv12, context.N_tag, input.Slice(0, offset));
+                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, false, input.Slice(offset, length - mki.Length - offset), output.Slice(offset), context.Iv12, null, context.N_tag, input.Slice(0, offset));
                             else
 #endif
                             SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - mki.Length - offset), output.Slice(offset), context.Iv12, Interlocked.Exchange(ref context._payloadKey, null), context.N_tag, input.Slice(0, offset));
@@ -988,7 +992,7 @@ namespace SharpSRTP.SRTP
                             SRTP.Encryption.AEAD.GenerateMessageKeyIV(outerK_s, ssrc, index, context.Iv12);
 #if NET8_0_OR_GREATER
                             if (context.PayloadAesGcmOuter != null)
-                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcmOuter, false, input.Slice(offset, length - mki.Length - offset), output.Slice(offset), context.Iv12, context.N_tag / 2, input.Slice(0, offset));
+                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcmOuter, false, input.Slice(offset, length - mki.Length - offset), output.Slice(offset), context.Iv12, null, context.N_tag / 2, input.Slice(0, offset));
                             else
 #endif
                             SRTP.Encryption.AEAD.Encrypt(context.PayloadAeadOuter, false, input.Slice(offset, length - mki.Length - offset), output.Slice(offset), context.Iv12, outerK_e, context.N_tag / 2, input.Slice(0, offset));
@@ -1056,7 +1060,7 @@ namespace SharpSRTP.SRTP
                                 SRTP.Encryption.AEAD.GenerateMessageKeyIV(innerK_s, innerSsrc, innerIndex, context.Iv12);
 #if NET8_0_OR_GREATER
                                 if (context.PayloadAesGcm != null)
-                                    SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, false, syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), context.Iv12, context.N_tag / 2, syntheticRtpPacket.Slice(0, rtpHeaderLength));
+                                    SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, false, syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), context.Iv12, null, context.N_tag / 2, syntheticRtpPacket.Slice(0, rtpHeaderLength));
                                 else
 #endif
                                 SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), syntheticRtpPacket.Slice(rtpHeaderLength, syntheticRtpPacketLen - rtpHeaderLength), context.Iv12, innerK_e, context.N_tag / 2, syntheticRtpPacket.Slice(0, rtpHeaderLength));
@@ -1217,7 +1221,7 @@ namespace SharpSRTP.SRTP
                             input.Slice(0, offset).CopyTo(output.Slice(0, offset));
 #if NET8_0_OR_GREATER
                             if (context.PayloadAesGcm != null)
-                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, true, input.Slice(offset, length - offset), output.Slice(offset), context.Iv12, context.N_tag, associatedDataRented.Slice(0, offset + 4));
+                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, true, input.Slice(offset, length - offset), output.Slice(offset), context.Iv12, context._lastIv, context.N_tag, associatedDataRented.Slice(0, offset + 4));
                             else
 #endif
                             SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, true, input.Slice(offset, length - offset), output.Slice(offset), context.Iv12, Interlocked.Exchange(ref context._payloadKey, null), context.N_tag, associatedDataRented.Slice(0, offset + 4));
@@ -1245,7 +1249,7 @@ namespace SharpSRTP.SRTP
                             input.Slice(0, offset).CopyTo(output.Slice(0, offset));
 #if NET8_0_OR_GREATER
                             if (context.PayloadAesGcmOuter != null)
-                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcmOuter, true, input.Slice(offset, length - offset), output.Slice(offset), context.Iv12, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));
+                                SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcmOuter, true, input.Slice(offset, length - offset), output.Slice(offset), context.Iv12, context._lastIvOuter, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));
                             else
 #endif
                             SRTP.Encryption.AEAD.Encrypt(context.PayloadAeadOuter, true, input.Slice(offset, length - offset), output.Slice(offset), context.Iv12, outerK_e, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));
@@ -1415,7 +1419,7 @@ namespace SharpSRTP.SRTP
                                     input.Slice(0, offset).CopyTo(output.Slice(0, offset));
 #if NET8_0_OR_GREATER
                                     if (context.PayloadAesGcm != null)
-                                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), context.Iv12, context.N_tag, associatedDataRented.Slice(0, offset + 4));
+                                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcm, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), context.Iv12, null, context.N_tag, associatedDataRented.Slice(0, offset + 4));
                                     else
 #endif
                                     SRTP.Encryption.AEAD.Encrypt(context.PayloadAEAD, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), context.Iv12, Interlocked.Exchange(ref context._payloadKey, null), context.N_tag, associatedDataRented.Slice(0, offset + 4));
@@ -1443,7 +1447,7 @@ namespace SharpSRTP.SRTP
                                     input.Slice(0, offset).CopyTo(output.Slice(0, offset));
 #if NET8_0_OR_GREATER
                                     if (context.PayloadAesGcmOuter != null)
-                                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcmOuter, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), context.Iv12, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));
+                                        SRTP.Encryption.AEAD.Encrypt(context.PayloadAesGcmOuter, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), context.Iv12, null, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));
                                     else
 #endif
                                     SRTP.Encryption.AEAD.Encrypt(context.PayloadAeadOuter, false, input.Slice(offset, length - 4 - mki.Length - offset), output.Slice(offset), context.Iv12, outerK_e, context.N_tag / 2, associatedDataRented.Slice(0, offset + 4));

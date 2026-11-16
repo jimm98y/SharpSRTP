@@ -31,6 +31,19 @@ namespace SharpSRTP.Tests
             ProtectsEachPacketAsANewContext(() => SrtpProtocol.CreateSrtpSessionContext(keys), SrtpProtocol.CreateSrtpSessionContext(keys));
         }
 
+        [TestMethod]
+        [DataRow(ExtendedSrtpProtectionProfile.SRTP_AEAD_AES_128_GCM)]
+        [DataRow(ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM)]
+        public void TheSameIndexProtectedAgainIsRefused(int profile)
+        {
+            // of GCM, a nonce of two packets tells its key of authentication: of .NET's AesGcm as of BouncyCastle's, refused
+            var context = DtlsSrtpProtocol.CreateSrtpClientSessionContext(DtlsSrtpProtocol.CreateMasterKeys(profile, null, Enumerable.Range(0, 256).Select(i => (byte)i).ToArray()));
+            byte[] rtp = new byte[100];
+            rtp[0] = 0x80;
+            Assert.AreEqual(0, context.ProtectRtp(rtp.ToArray(), 32, out _));
+            Assert.ThrowsExactly<ArgumentException>(() => context.ProtectRtp(rtp.ToArray(), 32, out _));
+        }
+
 #if NET
         [TestMethod]
         public void OfDoubleAeadEachLayerOfAnAesGcmOfItsOwn()

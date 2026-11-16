@@ -52,9 +52,18 @@ namespace SharpSRTP.SRTP.Encryption
         }
 
 #if NET8_0_OR_GREATER
-        /// <summary>AES-GCM of .NET, of its key schedule made once: of no allocation. Of a tag of 16 bytes.</summary>
-        public static void Encrypt(System.Security.Cryptography.AesGcm aes, bool encrypt, ReadOnlyBytes input, Bytes output, byte[] iv, int N_tag, ReadOnlyBytes associatedData)
+        /// <summary>
+        /// AES-GCM of .NET, of its key schedule made once: of no allocation. Of a tag of 16 bytes. Of encryption, the nonce of
+        /// the last kept in <paramref name="lastIv"/>, and the same refused, as BouncyCastle's GCM refuses it.
+        /// </summary>
+        public static void Encrypt(System.Security.Cryptography.AesGcm aes, bool encrypt, ReadOnlyBytes input, Bytes output, byte[] iv, byte[] lastIv, int N_tag, ReadOnlyBytes associatedData)
         {
+            if (encrypt && lastIv != null)
+            {
+                if (iv.AsSpan().SequenceEqual(lastIv))
+                    throw new ArgumentException("cannot reuse nonce for GCM encryption");
+                iv.CopyTo(lastIv, 0);
+            }
             int length = encrypt ? input.Length : input.Length - N_tag;
             if (length < 0)
                 throw new Org.BouncyCastle.Crypto.InvalidCipherTextException("data too short");
