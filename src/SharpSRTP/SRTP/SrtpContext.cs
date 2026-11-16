@@ -830,13 +830,14 @@ namespace SharpSRTP.SRTP
                     BinaryPrimitives.WriteUInt32BigEndian(msgAuth.AsSpan(authenticatedLen, 4), roc);
 
                     var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, msgAuth.Slice(0, authenticatedLen + 4));
+                    // of every byte compared, of no time told of where the tag differs
+                    int difference = 0;
                     for (var i = 0; i < context.N_tag; i++)
+                        difference |= inputSpan[authenticatedLen + mki.Length + i] ^ auth[i];
+                    if (difference != 0)
                     {
-                        if (inputSpan[authenticatedLen + mki.Length + i] != auth[i])
-                        {
-                            outputBufferLength = 0;
-                            return ERROR_HMAC_CHECK_FAILED;
-                        }
+                        outputBufferLength = 0;
+                        return ERROR_HMAC_CHECK_FAILED;
                     }
                 }
                 finally
@@ -1257,13 +1258,13 @@ namespace SharpSRTP.SRTP
             if (context.Auth != SrtpAuth.NONE)
             {
                 var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, input.Slice(0, length - context.N_tag - mki.Length));
+                int difference = 0;
                 for (var i = 0; i < context.N_tag; i++)
+                    difference |= inputSpan[length - context.N_tag + i] ^ auth[i];
+                if (difference != 0)
                 {
-                    if (inputSpan[length - context.N_tag + i] != auth[i])
-                    {
-                        outputBufferLength = 0;
-                        return ERROR_HMAC_CHECK_FAILED;
-                    }
+                    outputBufferLength = 0;
+                    return ERROR_HMAC_CHECK_FAILED;
                 }
             }
 
