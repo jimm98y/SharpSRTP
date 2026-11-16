@@ -782,6 +782,11 @@ namespace SharpSRTP.SRTP
 
             ReadOnlySpan<byte> inputSpan = input;
             var mki = context.Mki;
+            if (length < 12 + context.N_tag + mki.Length)
+            {
+                outputBufferLength = 0;
+                return ERROR_GENERIC;
+            }
 
             var mkiSpan = mki.Span;
             for (var i = 0; i < mki.Length; i++)
@@ -791,12 +796,6 @@ namespace SharpSRTP.SRTP
                     outputBufferLength = 0;
                     return ERROR_MKI_CHECK_FAILED;
                 }
-            }
-
-            if (!context.IncrementMasterKeyUseCounter())
-            {
-                outputBufferLength = 0;
-                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
             }
 
             var ssrc = RtpReader.ReadSsrc(input);
@@ -831,13 +830,14 @@ namespace SharpSRTP.SRTP
                     BinaryPrimitives.WriteUInt32BigEndian(msgAuth.AsSpan(authenticatedLen, 4), roc);
 
                     var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, msgAuth.Slice(0, authenticatedLen + 4));
+                    // of every byte compared, of no time told of where the tag differs
+                    int difference = 0;
                     for (var i = 0; i < context.N_tag; i++)
+                        difference |= inputSpan[authenticatedLen + mki.Length + i] ^ auth[i];
+                    if (difference != 0)
                     {
-                        if (inputSpan[authenticatedLen + mki.Length + i] != auth[i])
-                        {
-                            outputBufferLength = 0;
-                            return ERROR_HMAC_CHECK_FAILED;
-                        }
+                        outputBufferLength = 0;
+                        return ERROR_HMAC_CHECK_FAILED;
                     }
                 }
                 finally
@@ -846,7 +846,15 @@ namespace SharpSRTP.SRTP
                 }
             }
 
-            var offset = RtpReader.ReadHeaderLen(input);
+            // of an AEAD profile not authenticated yet: its CSRCs and extension within the packet, else dropped
+            int offset = 12 + 4 * (inputSpan[0] & 0x0F);
+            if ((inputSpan[0] & 0x10) != 0)
+                offset = offset + 4 <= length ? offset + 4 + 4 * BinaryPrimitives.ReadUInt16BigEndian(inputSpan.Slice(offset + 2)) : int.MaxValue;
+            if (offset > length - mki.Length - context.N_tag)
+            {
+                outputBufferLength = 0;
+                return ERROR_GENERIC;
+            }
 
             // Read-only replay check. The window/ROC state is NOT advanced here; that only happens once
             // the packet has authenticated (UpdateReplayWindow below). RFC 3711 section 3.3.
@@ -1017,6 +1025,11 @@ namespace SharpSRTP.SRTP
             // The packet has now been authenticated (HMAC above for HMAC profiles, or the AEAD decrypt
             // for GCM/CCM profiles). Only now is it safe to advance the replay window / ROC.
             // RFC 3711 section 3.3.
+            if (!context.IncrementMasterKeyUseCounter())
+            {
+                outputBufferLength = 0;
+                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
+            }
             ssrcContext.UpdateReplayWindow(index);
             if (isNewSsrc)
                 context.ReplayProtection[ssrc] = ssrcContext;
@@ -1184,7 +1197,7 @@ namespace SharpSRTP.SRTP
                 length += context.N_tag;
             }
 
-            ssrcContext.SetSequence((ushort)((ssrcContext.S_l + 1) % 0x80000000));
+            ssrcContext.SetSequence((ssrcContext.S_l + 1) % 0x80000000);
             outputBufferLength = length;
 
             return 0;
@@ -1204,6 +1217,11 @@ namespace SharpSRTP.SRTP
 
             ReadOnlySpan<byte> inputSpan = input;
             var mki = context.Mki;
+            if (length < RtcpReader.GetHeaderLen() + 4 + (context.Auth != SrtpAuth.NONE ? context.N_tag : 0) + mki.Length)
+            {
+                outputBufferLength = 0;
+                return ERROR_GENERIC;
+            }
 
             for (var i = 0; i < mki.Length; i++)
             {
@@ -1212,12 +1230,6 @@ namespace SharpSRTP.SRTP
                     outputBufferLength = 0;
                     return ERROR_MKI_CHECK_FAILED;
                 }
-            }
-
-            if (!context.IncrementMasterKeyUseCounter())
-            {
-                outputBufferLength = 0;
-                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
             }
 
             var ssrc = RtcpReader.ReadSsrc(input);
@@ -1246,13 +1258,13 @@ namespace SharpSRTP.SRTP
             if (context.Auth != SrtpAuth.NONE)
             {
                 var auth = SRTP.Authentication.HMAC.GenerateAuthTag(context.HMAC, input.Slice(0, length - context.N_tag - mki.Length));
+                int difference = 0;
                 for (var i = 0; i < context.N_tag; i++)
+                    difference |= inputSpan[length - context.N_tag + i] ^ auth[i];
+                if (difference != 0)
                 {
-                    if (inputSpan[length - context.N_tag + i] != auth[i])
-                    {
-                        outputBufferLength = 0;
-                        return ERROR_HMAC_CHECK_FAILED;
-                    }
+                    outputBufferLength = 0;
+                    return ERROR_HMAC_CHECK_FAILED;
                 }
             }
 
@@ -1364,6 +1376,12 @@ namespace SharpSRTP.SRTP
                     return ERROR_HMAC_CHECK_FAILED;
                 }
             }
+            else if (context.Auth == SrtpAuth.NONE && context.Cipher != SrtpCiphers.NULL)
+            {
+                // of an AEAD profile, of no HMAC: unencrypted SRTCP (RFC 7714 9.4) is not taken, as nothing here authenticates it
+                outputBufferLength = 0;
+                return ERROR_HMAC_CHECK_FAILED;
+            }
             else
             {
                 var dataLen = length - 4 - context.N_tag - mki.Length;
@@ -1373,6 +1391,11 @@ namespace SharpSRTP.SRTP
 
             // The packet has now been authenticated (HMAC above for HMAC profiles, or the AEAD decrypt
             // for GCM/CCM profiles). Only now is it safe to advance the replay window.
+            if (!context.IncrementMasterKeyUseCounter())
+            {
+                outputBufferLength = 0;
+                return ERROR_MASTER_KEY_ROTATION_REQUIRED;
+            }
             ssrcContext.UpdateReplayWindow(index);
             if (isNewSsrc)
                 context.ReplayProtection[ssrc] = ssrcContext;
