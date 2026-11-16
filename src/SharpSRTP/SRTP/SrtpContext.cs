@@ -456,7 +456,7 @@ namespace SharpSRTP.SRTP
                         seedPayload.Init(true, new KeyParameter(K_e));
                         this.PayloadCTR = seedPayload;
 
-                        var seedHeader = new AriaEngine();
+                        var seedHeader = new SeedEngine();
                         seedHeader.Init(true, new KeyParameter(K_he));
                         this.HeaderCTR = seedHeader;
 
