@@ -782,6 +782,11 @@ namespace SharpSRTP.SRTP
 
             ReadOnlySpan<byte> inputSpan = input;
             var mki = context.Mki;
+            if (length < 12 + context.N_tag + mki.Length)
+            {
+                outputBufferLength = 0;
+                return ERROR_GENERIC;
+            }
 
             var mkiSpan = mki.Span;
             for (var i = 0; i < mki.Length; i++)
@@ -846,7 +851,15 @@ namespace SharpSRTP.SRTP
                 }
             }
 
-            var offset = RtpReader.ReadHeaderLen(input);
+            // of an AEAD profile not authenticated yet: its CSRCs and extension within the packet, else dropped
+            int offset = 12 + 4 * (inputSpan[0] & 0x0F);
+            if ((inputSpan[0] & 0x10) != 0)
+                offset = offset + 4 <= length ? offset + 4 + 4 * BinaryPrimitives.ReadUInt16BigEndian(inputSpan.Slice(offset + 2)) : int.MaxValue;
+            if (offset > length - mki.Length - context.N_tag)
+            {
+                outputBufferLength = 0;
+                return ERROR_GENERIC;
+            }
 
             // Read-only replay check. The window/ROC state is NOT advanced here; that only happens once
             // the packet has authenticated (UpdateReplayWindow below). RFC 3711 section 3.3.

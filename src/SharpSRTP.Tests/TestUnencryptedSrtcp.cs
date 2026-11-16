@@ -42,6 +42,19 @@ namespace SharpSRTP.Tests
         }
 
         [TestMethod]
+        public void RefusesAnSrtpOfAHeaderPastItsEndOfNoException()
+        {
+            var context = Context(SrtpCryptoSuites.AEAD_AES_128_GCM);
+            byte[] packet = new byte[12 + 16];
+            packet[0] = 0x8F; // 15 CSRCs
+            Assert.AreEqual(SrtpContext.ERROR_GENERIC, context.UnprotectRtp(packet, packet.Length, out _));
+            packet[0] = 0x90; // an extension of 65535 words
+            packet[14] = packet[15] = 0xFF;
+            Assert.AreEqual(SrtpContext.ERROR_GENERIC, context.UnprotectRtp(packet, packet.Length, out _));
+            Assert.AreEqual(SrtpContext.ERROR_GENERIC, context.UnprotectRtp(packet, 11, out _));
+        }
+
+        [TestMethod]
         [DataRow(SrtpCryptoSuites.AEAD_AES_128_GCM)]
         [DataRow(SrtpCryptoSuites.AES_CM_128_HMAC_SHA1_80)]
         public void RefusesAnSrtcpTooShortOfNoException(string suite)
