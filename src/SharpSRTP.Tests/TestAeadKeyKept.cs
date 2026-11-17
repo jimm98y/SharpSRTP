@@ -82,13 +82,13 @@ namespace SharpSRTP.Tests
             var keys = DtlsSrtpProtocol.CreateMasterKeys(ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM, null, Enumerable.Range(0, 256).Select(i => (byte)i).ToArray());
             var session = DtlsSrtpProtocol.CreateSrtpClientSessionContext(keys);
             var context = session.EncodeRtpContext;
-            Assert.IsNotNull(context.PayloadAesGcm);
-            Assert.IsNotNull(context.PayloadAesGcmOuter);
+            Assert.IsNotNull(context._payloadAesGcm);
+            Assert.IsNotNull(context._payloadAesGcmOuter);
             byte[] rtp = new byte[100];
             rtp[0] = 0x80;
             Assert.AreEqual(0, session.ProtectRtp(rtp.ToArray(), 32, out _));
             session.Dispose();
-            Assert.IsNull(context.PayloadAesGcmOuter);
+            Assert.IsNull(context._payloadAesGcmOuter);
 
             // of BouncyCastle's then, its keys not taken of .NET's before
             rtp[3] = 1;

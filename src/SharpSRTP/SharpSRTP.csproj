@@ -22,6 +22,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- the helpers of its crypto, of the RFC vectors tested and benchmarked -->
+		<InternalsVisibleTo Include="SharpSRTP.Tests" />
+		<InternalsVisibleTo Include="SharpSRTP.Benchmarks" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" PrivateAssets="all" />
 	</ItemGroup>
 

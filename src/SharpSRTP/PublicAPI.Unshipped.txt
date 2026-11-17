@@ -12,10 +12,25 @@
 *REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.SRTP_ARIA_256_CTR_HMAC_SHA1_80 = 13 -> int
 *REMOVED*static BouncyCastleExtensions.Create(System.ArraySegment<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
 *REMOVED*static BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter).Create(System.ArraySegment<byte> key) -> Org.BouncyCastle.Crypto.Parameters.KeyParameter
-SharpSRTP.SRTP.SrtpContext.PayloadAeadOuter.get -> Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher
 SharpSRTP.SRTP.SrtpSessionContext.Dispose() -> void
 virtual SharpSRTP.SRTP.SrtpContext.Dispose() -> void
-static SharpSRTP.SRTP.Encryption.F8.Init(Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] k_e, byte[] k_s) -> void
-static SharpSRTP.SRTP.Encryption.F8.GenerateRtpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, System.ReadOnlySpan<byte> rtpPacket, uint ROC, byte[] iv) -> void
-static SharpSRTP.SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, System.ReadOnlySpan<byte> rtcpPacket, uint index, byte[] iv) -> void
 SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.Dispose() -> void
+*REMOVED*SharpSRTP.SRTP.Authentication.HMAC
+*REMOVED*SharpSRTP.SRTP.Encryption.AEAD
+*REMOVED*SharpSRTP.SRTP.Encryption.CTR
+*REMOVED*SharpSRTP.SRTP.Encryption.F8
+*REMOVED*SharpSRTP.SRTP.SrtpContext.HMAC.get -> Org.BouncyCastle.Crypto.Macs.HMac
+*REMOVED*SharpSRTP.SRTP.SrtpContext.HeaderCTR.get -> Org.BouncyCastle.Crypto.IBlockCipher
+*REMOVED*SharpSRTP.SRTP.SrtpContext.HeaderF8.get -> Org.BouncyCastle.Crypto.IBlockCipher
+*REMOVED*SharpSRTP.SRTP.SrtpContext.PayloadAEAD.get -> Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher
+*REMOVED*SharpSRTP.SRTP.SrtpContext.PayloadCTR.get -> Org.BouncyCastle.Crypto.IBlockCipher
+*REMOVED*SharpSRTP.SRTP.SrtpContext.PayloadF8.get -> Org.BouncyCastle.Crypto.IBlockCipher
+*REMOVED*const SharpSRTP.SRTP.Encryption.AEAD.BLOCK_SIZE = 12 -> int
+*REMOVED*const SharpSRTP.SRTP.Encryption.CTR.BLOCK_SIZE = 16 -> int
+*REMOVED*const SharpSRTP.SRTP.Encryption.F8.BLOCK_SIZE = 16 -> int
+*REMOVED*static SharpSRTP.SRTP.Encryption.AEAD.GenerateMessageKeyIV(System.ReadOnlySpan<byte> k_s, uint ssrc, ulong index, System.Span<byte> iv) -> void
+*REMOVED*static SharpSRTP.SRTP.Encryption.CTR.GenerateMessageKeyIV(System.ReadOnlySpan<byte> salt, uint ssrc, ulong index, System.Span<byte> iv) -> void
+*REMOVED*static SharpSRTP.SRTP.Encryption.CTR.GenerateSessionKeyIV(System.ReadOnlyMemory<byte> masterSalt, ulong index, ulong kdr, byte label, System.Span<byte> iv) -> void
+*REMOVED*static SharpSRTP.SRTP.Encryption.F8.Encrypt(Org.BouncyCastle.Crypto.IBlockCipher aes, System.ReadOnlySpan<byte> input, System.Span<byte> output, System.ReadOnlySpan<byte> iv) -> void
+*REMOVED*static SharpSRTP.SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] k_e, byte[] k_s, System.ReadOnlySpan<byte> rtcpPacket, uint index) -> byte[]
+*REMOVED*static SharpSRTP.SRTP.SrtpContext.GenerateSessionKey(Org.BouncyCastle.Crypto.IBlockCipher engineKeys, SharpSRTP.SRTP.SrtpCiphers cipher, System.ReadOnlyMemory<byte> masterKey, System.ReadOnlyMemory<byte> masterSalt, int length, int label, ulong index, ulong kdr, byte[] iv) -> byte[]

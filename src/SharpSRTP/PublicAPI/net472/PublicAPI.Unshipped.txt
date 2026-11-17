@@ -14,3 +14,8 @@
 *REMOVED*static BouncyCastleExtensions.ProcessBlock(this Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] input, System.ArraySegment<byte> output) -> int
 *REMOVED*static BouncyCastleExtensions.ProcessBlock(this Org.BouncyCastle.Crypto.IBlockCipher engine, System.ArraySegment<byte> input, System.ArraySegment<byte> output) -> int
 *REMOVED*static BouncyCastleExtensions.ProcessBytes(this Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, System.ArraySegment<byte> input, System.ArraySegment<byte> output) -> int
+*REMOVED*static SharpSRTP.SRTP.Authentication.HMAC.GenerateAuthTag(Org.BouncyCastle.Crypto.Macs.HMac hmac, System.ArraySegment<byte> payload) -> byte[]
+*REMOVED*static SharpSRTP.SRTP.Encryption.AEAD.Encrypt(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, bool encrypt, System.ArraySegment<byte> input, System.ArraySegment<byte> output, byte[] iv, Org.BouncyCastle.Crypto.Parameters.KeyParameter K_e, int N_tag, System.ArraySegment<byte> associatedData) -> void
+*REMOVED*static SharpSRTP.SRTP.Encryption.AEAD.Encrypt(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, bool encrypt, System.ArraySegment<byte> input, System.ArraySegment<byte> output, byte[] iv, byte[] K_e, int N_tag, System.ArraySegment<byte> associatedData) -> void
+*REMOVED*static SharpSRTP.SRTP.Encryption.CTR.Encrypt(Org.BouncyCastle.Crypto.IBlockCipher engine, System.ReadOnlySpan<byte> input, System.Span<byte> output, byte[] iv) -> void
+*REMOVED*static SharpSRTP.SRTP.Encryption.F8.GenerateRtpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] k_e, byte[] k_s, System.ReadOnlySpan<byte> rtpPacket, uint ROC, byte[] iv) -> void

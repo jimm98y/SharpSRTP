@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-internal static partial class PolyfillExtensions
+internal static partial class TestPolyfillExtensions
 {
 #if !NET5_0_OR_GREATER
     extension(Convert)

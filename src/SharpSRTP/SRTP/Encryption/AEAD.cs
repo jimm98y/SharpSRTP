@@ -33,7 +33,7 @@ using Bytes = System.ArraySegment<byte>;
 
 namespace SharpSRTP.SRTP.Encryption
 {
-    public static class AEAD
+    internal static class AEAD
     {
         public const int BLOCK_SIZE = 12;
 

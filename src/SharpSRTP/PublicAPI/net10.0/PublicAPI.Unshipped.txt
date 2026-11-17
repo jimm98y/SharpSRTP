@@ -15,11 +15,6 @@ SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.ProtectRtcp(System.ArraySegment<byte
 SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.ProtectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
 SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
 SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
-static SharpSRTP.SRTP.Authentication.HMAC.GenerateAuthTag(Org.BouncyCastle.Crypto.Macs.HMac hmac, System.ArraySegment<byte> payload) -> byte[]
-static SharpSRTP.SRTP.Encryption.AEAD.Encrypt(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, bool encrypt, System.ArraySegment<byte> input, System.ArraySegment<byte> output, byte[] iv, Org.BouncyCastle.Crypto.Parameters.KeyParameter K_e, int N_tag, System.ArraySegment<byte> associatedData) -> void
-static SharpSRTP.SRTP.Encryption.AEAD.Encrypt(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, bool encrypt, System.ArraySegment<byte> input, System.ArraySegment<byte> output, byte[] iv, byte[] K_e, int N_tag, System.ArraySegment<byte> associatedData) -> void
-static SharpSRTP.SRTP.Encryption.CTR.Encrypt(Org.BouncyCastle.Crypto.IBlockCipher engine, System.ReadOnlySpan<byte> input, System.Span<byte> output, byte[] iv) -> void
-static SharpSRTP.SRTP.Encryption.F8.GenerateRtpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] k_e, byte[] k_s, System.ReadOnlySpan<byte> rtpPacket, uint ROC, byte[] iv) -> void
 static SharpSRTP.SRTP.SrtpContextExtensions.ProtectRtcp(this SharpSRTP.SRTP.ISrtpContext context, byte[] payload, int length, out int outputBufferLength) -> int
 static SharpSRTP.SRTP.SrtpContextExtensions.ProtectRtp(this SharpSRTP.SRTP.ISrtpContext context, byte[] payload, int length, out int outputBufferLength) -> int
 static SharpSRTP.SRTP.SrtpContextExtensions.UnprotectRtcp(this SharpSRTP.SRTP.ISrtpContext context, byte[] payload, int length, out int outputBufferLength) -> int
@@ -27,6 +22,8 @@ static SharpSRTP.SRTP.SrtpContextExtensions.UnprotectRtp(this SharpSRTP.SRTP.ISr
 virtual SharpSRTP.SRTP.SrtpContext.ProtectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
 virtual SharpSRTP.SRTP.SrtpContext.UnprotectRtcp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
 virtual SharpSRTP.SRTP.SrtpContext.UnprotectRtp(System.ArraySegment<byte> input, byte[] output, out int outputBufferLength) -> int
-SharpSRTP.SRTP.SrtpContext.PayloadAesGcm.get -> System.Security.Cryptography.AesGcm
-SharpSRTP.SRTP.SrtpContext.PayloadAesGcmOuter.get -> System.Security.Cryptography.AesGcm
-static SharpSRTP.SRTP.Encryption.AEAD.Encrypt(System.Security.Cryptography.AesGcm aes, bool encrypt, System.ReadOnlySpan<byte> input, System.Span<byte> output, byte[] iv, byte[] lastIv, int N_tag, System.ReadOnlySpan<byte> associatedData) -> void
+*REMOVED*static SharpSRTP.SRTP.Authentication.HMAC.GenerateAuthTag(Org.BouncyCastle.Crypto.Macs.HMac hmac, System.ReadOnlySpan<byte> payload) -> byte[]
+*REMOVED*static SharpSRTP.SRTP.Encryption.AEAD.Encrypt(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, bool encrypt, System.ReadOnlySpan<byte> input, System.Span<byte> output, byte[] iv, Org.BouncyCastle.Crypto.Parameters.KeyParameter K_e, int N_tag, System.ReadOnlySpan<byte> associatedData) -> void
+*REMOVED*static SharpSRTP.SRTP.Encryption.AEAD.Encrypt(Org.BouncyCastle.Crypto.Modes.IAeadBlockCipher engine, bool encrypt, System.ReadOnlySpan<byte> input, System.Span<byte> output, byte[] iv, byte[] K_e, int N_tag, System.ReadOnlySpan<byte> associatedData) -> void
+*REMOVED*static SharpSRTP.SRTP.Encryption.CTR.Encrypt(Org.BouncyCastle.Crypto.IBlockCipher engine, System.ReadOnlySpan<byte> input, System.Span<byte> output, System.Span<byte> iv) -> void
+*REMOVED*static SharpSRTP.SRTP.Encryption.F8.GenerateRtpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] k_e, byte[] k_s, System.ReadOnlySpan<byte> rtpPacket, uint ROC, System.Span<byte> iv) -> void

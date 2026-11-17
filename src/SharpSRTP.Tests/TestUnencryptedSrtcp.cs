@@ -108,15 +108,15 @@ namespace SharpSRTP.Tests
         public void TheAesGcmOfTheSessionKeyIsReplacedOfTheNextAndDisposed()
         {
             var context = Context(SrtpCryptoSuites.AEAD_AES_128_GCM).EncodeRtpContext;
-            var first = context.PayloadAesGcm;
+            var first = context._payloadAesGcm;
             Assert.IsNotNull(first);
 
             context.DeriveSessionKeys(1);
-            Assert.AreNotSame(first, context.PayloadAesGcm);
+            Assert.AreNotSame(first, context._payloadAesGcm);
             Assert.ThrowsExactly<ObjectDisposedException>(() => first.Encrypt(new byte[12], new byte[0], new byte[0], new byte[16]));
 
             context.Dispose();
-            Assert.IsNull(context.PayloadAesGcm);
+            Assert.IsNull(context._payloadAesGcm);
         }
 
         [TestMethod]
@@ -124,7 +124,7 @@ namespace SharpSRTP.Tests
         {
             var session = Context(SrtpCryptoSuites.AEAD_AES_128_GCM);
             new ThreadSafeSrtpSessionContext(session).Dispose();
-            Assert.IsNull(session.EncodeRtpContext.PayloadAesGcm);
+            Assert.IsNull(session.EncodeRtpContext._payloadAesGcm);
         }
 #endif
     }
