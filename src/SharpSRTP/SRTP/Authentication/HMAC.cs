@@ -29,7 +29,7 @@ using ReadOnlyBytes = System.ArraySegment<byte>;
 
 namespace SharpSRTP.SRTP.Authentication
 {
-    public static class HMAC
+    internal static class HMAC
     {
         [System.ThreadStatic]
         private static byte[] _tag;
