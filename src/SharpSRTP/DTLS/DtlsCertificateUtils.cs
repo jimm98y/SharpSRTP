@@ -28,20 +28,23 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Prng;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.Tls.Crypto.Impl.BC;
-using Org.BouncyCastle.Tls.Crypto;
-using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Utilities.Encoders;
 using Org.BouncyCastle.X509;
+using SharpDTLS;
 using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System;
 
 namespace SharpSRTP.DTLS
 {
+    /// <summary>
+    /// Self-signed certificates for DTLS(-SRTP), whose peers check them by fingerprint: credentials of a server and of a
+    /// client, the key held as PKCS#8.
+    /// </summary>
     public class DtlsCertificateUtils
     {
-        public static (Certificate Certificate, AsymmetricKeyParameter PrivateKey) GenerateCertificate(
+        public static TransportCertificate GenerateCertificate(
             string name,
             DateTime notBefore,
             DateTime notAfter,
@@ -57,7 +60,7 @@ namespace SharpSRTP.DTLS
             }
         }
 
-        public static (Certificate Certificate, AsymmetricKeyParameter PrivateKey) GenerateRSACertificate(
+        public static TransportCertificate GenerateRSACertificate(
             string name,
             DateTime notBefore,
             DateTime notAfter,
@@ -102,19 +105,11 @@ namespace SharpSRTP.DTLS
             serial[0] = 1;
             certificateGenerator.SetSerialNumber(new Org.BouncyCastle.Math.BigInteger(serial));
 
-            X509Certificate x509Certificate = certificateGenerator.Generate(signatureFactory);
-            AsymmetricKeyParameter privateKey = issuerKeyPair.Private;
-
-            var crypto = new BcTlsCrypto();
-            var tlsCertificate = crypto.CreateCertificate(x509Certificate.GetEncoded());
-
-            // certificateRequestContext = TlsUtilities.EmptyBytes for TLS/DTLS 1.3, null for TLS/DTLS 1.2
-            var certificate = new Certificate(null, new[] { new CertificateEntry(tlsCertificate, null) });
-
-            return (certificate, privateKey);
+            var x509Certificate = certificateGenerator.Generate(signatureFactory);
+            return Conversions.ToCredentials(x509Certificate.GetEncoded(), issuerKeyPair.Private);
         }
 
-        public static (Certificate certificate, AsymmetricKeyParameter key) GenerateECDSACertificate(
+        public static TransportCertificate GenerateECDSACertificate(
             string name,
             DateTime notBefore,
             DateTime notAfter,
@@ -163,21 +158,16 @@ namespace SharpSRTP.DTLS
             serial[0] = 1;
             certificateGenerator.SetSerialNumber(new Org.BouncyCastle.Math.BigInteger(serial));
 
-            X509Certificate x509Certificate = certificateGenerator.Generate(signatureFactory);
-            AsymmetricKeyParameter privateKey = issuerKeyPair.Private;
-
-            var crypto = new BcTlsCrypto();
-            var tlsCertificate = crypto.CreateCertificate(x509Certificate.GetEncoded());
-
-            // certificateRequestContext = TlsUtilities.EmptyBytes for TLS/DTLS 1.3, null for TLS/DTLS 1.2
-            var certificate = new Certificate(null, new[] { new CertificateEntry(tlsCertificate, null) });
-
-            return (certificate, privateKey);
+            var x509Certificate = certificateGenerator.Generate(signatureFactory);
+            return Conversions.ToCredentials(x509Certificate.GetEncoded(), issuerKeyPair.Private);
         }
 
-        public static string Fingerprint(X509CertificateStructure c, string algorithm = "SHA256")
+        /// <summary>The fingerprint of <paramref name="certificate"/> as SDP's a=fingerprint has it: hex pairs and colons.</summary>
+        public static string Fingerprint(X509Certificate2 certificate, string algorithm = "SHA256")
+            => Fingerprint((certificate ?? throw new ArgumentNullException(nameof(certificate))).RawData, algorithm);
+
+        internal static string Fingerprint(byte[] der, string algorithm = "SHA256")
         {
-            byte[] der = c.GetEncoded();
             byte[] hash = DigestUtilities.CalculateDigest(algorithm, der);
             byte[] hexBytes = Hex.Encode(hash);
             string hex = Encoding.ASCII.GetString(hexBytes).ToUpperInvariant();

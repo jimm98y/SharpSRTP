@@ -28,6 +28,8 @@ using Org.BouncyCastle.Utilities;
 using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
+using TransportCertificate = SharpDTLS.TransportCertificate;
+using X509Certificate2 = System.Security.Cryptography.X509Certificates.X509Certificate2;
 
 namespace SharpSRTP.DTLS
 {
@@ -41,40 +43,46 @@ namespace SharpSRTP.DTLS
         public bool AutogenerateCertificate { get; set; } = true;
 
         public int TimeoutMilliseconds { get; set; } = 20000;
-        public Certificate Certificate { get; private set; }
-        public AsymmetricKeyParameter CertificatePrivateKey { get; private set; }
-        public short CertificateSignatureAlgorithm { get; private set; }
-        public short CertificateHashAlgorithm { get; private set; }
+        public TransportCertificate Credentials { get; private set; }
+
+        /// <summary>The TLS 1.2 signature algorithm of the key of <see cref="Credentials"/> (ECDSA without credentials).</summary>
+        public short CertificateSignatureAlgorithm { get; private set; } = SignatureAlgorithm.ecdsa;
+
+        /// <summary>The TLS 1.2 hash algorithm it signs with: SHA-256, or for ECDSA the hash of its curve's size.</summary>
+        public short CertificateHashAlgorithm { get; private set; } = HashAlgorithm.sha256;
+
+        // the credentials as BouncyCastle's DTLS takes them
+        private Certificate _bcCertificate;
+        private AsymmetricKeyParameter _bcPrivateKey;
 
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
         public TlsServerCertificate RemoteCertificate { get; private set; }
-        public Certificate PeerCertificate { get { return RemoteCertificate?.Certificate; } }
+        public X509Certificate2 PeerCertificate => Conversions.ToX509(RemoteCertificate?.Certificate);
 
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
-        public BcDtlsClient(TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) 
-            : this(new BcTlsCrypto(), session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
+        public BcDtlsClient(TlsSession session = null, TransportCertificate credentials = null)
+            : this(new BcTlsCrypto(), session, credentials)
         { }
 
-        public BcDtlsClient(TlsCrypto crypto, TlsSession session = null, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
+        public BcDtlsClient(TlsCrypto crypto, TlsSession session = null, TransportCertificate credentials = null) : base(crypto)
         {
             this._session = session;
-            SetCertificate(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm);
+            SetCertificate(credentials);
         }
 
-        public virtual void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
+        /// <summary>The certificate and key; the key must be exportable (or given as PKCS#8), as BouncyCastle signs with it.</summary>
+        public virtual void SetCertificate(TransportCertificate credentials)
         {
-            Certificate = certificate;
-            CertificatePrivateKey = privateKey;
-            CertificateSignatureAlgorithm = signatureAlgorithm;
-            CertificateHashAlgorithm = hashAlgorithm;
+            Credentials = credentials;
+            (_bcCertificate, _bcPrivateKey) = Conversions.ToBc(credentials);
+            (CertificateSignatureAlgorithm, CertificateHashAlgorithm) = Conversions.AlgorithmsOf(_bcPrivateKey);
         }
 
         public virtual void AutogenerateClientCertificate(bool isRsa)
         {
-            var cert = DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRsa);
-            SetCertificate(cert.Certificate, cert.PrivateKey, isRsa ? SignatureAlgorithm.rsa : SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
+            SetCertificate(DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRsa));
         }
 
         protected virtual string GetCertificateCommonName()
@@ -342,7 +350,7 @@ namespace SharpSRTP.DTLS
                     X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
                     if (Log.DebugEnabled)
                     {
-                        Log.Debug("DTLS client fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
+                        Log.Debug("DTLS client fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(chain[i].GetEncoded()) + " (" + entry.Subject + ")");
                     }
                 }
 
@@ -369,7 +377,7 @@ namespace SharpSRTP.DTLS
                     return null;
                 }
 
-                if(_client.Certificate == null || _client.CertificatePrivateKey == null)
+                if(_client._bcCertificate == null)
                 {
                     if (_client.AutogenerateCertificate)
                     {
@@ -401,7 +409,7 @@ namespace SharpSRTP.DTLS
                     throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
                 }
 
-                return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(_context), (BcTlsCrypto)_context.Crypto, _client.CertificatePrivateKey, _client.Certificate, signatureAndHashAlgorithm);
+                return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(_context), (BcTlsCrypto)_context.Crypto, _client._bcPrivateKey, _client._bcCertificate, signatureAndHashAlgorithm);
             }
         }
 

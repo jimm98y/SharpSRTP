@@ -27,6 +27,7 @@ using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
 using System;
 using System.Collections.Generic;
+using TransportCertificate = SharpDTLS.TransportCertificate;
 
 namespace SharpSRTP.DTLSSRTP
 {
@@ -38,12 +39,12 @@ namespace SharpSRTP.DTLSSRTP
         public event EventHandler<DtlsSessionStartedEventArgs> OnSessionStarted;
         public int MkiLength { get; private set; } = 0;
 
-        public BcDtlsSrtpClient(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256, TlsSession session = null) :
-           this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm, session)
+        public BcDtlsSrtpClient(TransportCertificate credentials = null, TlsSession session = null) :
+           this(new BcTlsCrypto(), credentials, session)
         { }
 
-        public BcDtlsSrtpClient(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256, TlsSession session = null) :
-            base(crypto, session, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
+        public BcDtlsSrtpClient(TlsCrypto crypto, TransportCertificate credentials = null, TlsSession session = null) :
+            base(crypto, session, credentials)
         {
             int[] protectionProfiles = GetSupportedProtectionProfiles();
 
@@ -56,7 +57,7 @@ namespace SharpSRTP.DTLSSRTP
         private void DtlsSrtpClient_OnHandshakeCompleted(object sender, DtlsHandshakeCompletedEventArgs e)
         {
             SrtpSessionContext context = CreateSessionContext(e.SecurityParameters);
-            Certificate peerCertificate = e.SecurityParameters.PeerCertificate;
+            var peerCertificate = e.SecurityParameters.PeerCertificate;
             OnSessionStarted?.Invoke(this, new DtlsSessionStartedEventArgs(context, peerCertificate, base._clientDatagramTransport));
         }
 

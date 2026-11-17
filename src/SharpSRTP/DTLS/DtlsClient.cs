@@ -19,12 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Tls;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Security.Cryptography.X509Certificates;
+using TransportCertificate = SharpDTLS.TransportCertificate;
 using DtlsVersion = SharpDTLS.DtlsVersion;
 
 namespace SharpSRTP.DTLS
@@ -39,18 +40,14 @@ namespace SharpSRTP.DTLS
         private const int PumpIntervalMilliseconds = 100;
 
         private readonly object _syncRoot = new object();
-        private SharpDTLS.ServerCredentials _credentials;
 
         public bool AutogenerateCertificate { get; set; } = true;
 
         public int TimeoutMilliseconds { get; set; } = 20000;
-        public Certificate Certificate { get; private set; }
-        public AsymmetricKeyParameter CertificatePrivateKey { get; private set; }
-        public short CertificateSignatureAlgorithm { get; private set; }
-        public short CertificateHashAlgorithm { get; private set; }
+        public TransportCertificate Credentials { get; private set; }
 
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
-        public Certificate PeerCertificate { get; private set; }
+        public X509Certificate2 PeerCertificate { get; private set; }
 
         private ushort _minimumVersion = DtlsVersion.Dtls12;
         private ushort _maximumVersion = DtlsVersion.Dtls13;
@@ -73,28 +70,21 @@ namespace SharpSRTP.DTLS
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
-        public DtlsClient(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256)
+        /// <param name="credentials">The certificate and key; null to generate one when the server asks for it.</param>
+        public DtlsClient(TransportCertificate credentials = null)
         {
-            SetCertificate(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm);
+            SetCertificate(credentials);
         }
 
-        /// <remarks>
-        /// SharpDTLS picks the signature scheme from the key, so <paramref name="signatureAlgorithm"/> and
-        /// <paramref name="hashAlgorithm"/> are informational.
-        /// </remarks>
-        public virtual void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
+        /// <remarks>SharpDTLS picks the signature scheme from the key.</remarks>
+        public virtual void SetCertificate(TransportCertificate credentials)
         {
-            Certificate = certificate;
-            CertificatePrivateKey = privateKey;
-            CertificateSignatureAlgorithm = signatureAlgorithm;
-            CertificateHashAlgorithm = hashAlgorithm;
-            _credentials = Conversions.ToCredentials(certificate, privateKey);
+            Credentials = credentials;
         }
 
         public virtual void AutogenerateClientCertificate(bool isRsa)
         {
-            var cert = DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRsa);
-            SetCertificate(cert.Certificate, cert.PrivateKey, isRsa ? SignatureAlgorithm.rsa : SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
+            SetCertificate(DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRsa));
         }
 
         protected virtual string GetCertificateCommonName()
@@ -120,7 +110,7 @@ namespace SharpSRTP.DTLS
             lock (_syncRoot)
             {
                 // SharpDTLS needs the certificate before the ClientHello, while BouncyCastle creates it on CertificateRequest.
-                if ((Certificate == null || CertificatePrivateKey == null) && AutogenerateCertificate)
+                if (Credentials == null && AutogenerateCertificate)
                 {
                     AutogenerateClientCertificate(false);
                 }
@@ -134,7 +124,7 @@ namespace SharpSRTP.DTLS
                     SupportedGroups = SupportedGroups,
                     // Accept any certificate, as the BouncyCastle client does: the caller validates PeerCertificate (e.g. its fingerprint).
                     ServerCertificateValidator = (certificate, chain) => true,
-                    ClientCredentials = _credentials,
+                    ClientCredentials = Credentials,
                 };
 
                 var received = new ConcurrentQueue<byte[]>();

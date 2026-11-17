@@ -61,8 +61,13 @@ var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.U
 ```
 Create the DTLS server:
 ```cs
-DtlsServer server = new DtlsServer(rsaCertificate.Certificate, rsaCertificate.PrivateKey, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
+DtlsServer server = new DtlsServer(rsaCertificate);
 ```
+The certificate is a SharpDTLS `TransportCertificate`: an `X509Certificate2` and its key. Your own certificate works the same way, for example one of the Windows store whose key cannot be exported:
+```cs
+var server = new DtlsServer(new SharpDTLS.TransportCertificate(x509Certificate2));
+```
+The BouncyCastle based `BcDtls*` peers need an exportable key, as BouncyCastle signs with it.
 Create the DTLS transport. Here we will use UDP on localhost, port 8888:
 ```cs
 EndPoint localEndpoint = new IPEndPoint(IPAddress.Any, 8888);
@@ -127,7 +132,7 @@ var rsaCertificate = DtlsCertificateUtils.GenerateCertificate("DTLS", DateTime.U
 ```
 Create the DTLS client:
 ```cs
-DtlsClient client = new DtlsClient(rsaCertificate.Certificate, rsaCertificate.PrivateKey, SignatureAlgorithm.rsa, HashAlgorithm.sha256);
+DtlsClient client = new DtlsClient(rsaCertificate);
 ```
 Optionally, you can let the client auto-generate the matching certificate:
 ```cs
@@ -226,7 +231,7 @@ var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("WebRTC", DateTi
 ```
 Create the DTLS-SRTP server:
 ```cs
-var server = new DtlsSrtpServer(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
+var server = new DtlsSrtpServer(ecdsaCertificate);
 ```
 Subscribe for `OnSessionStarted`:
 ```cs
@@ -246,7 +251,7 @@ var ecdsaCertificate = DtlsCertificateUtils.GenerateCertificate("WebRTC", DateTi
 ```
 Create the DTLS-SRTP client:
 ```cs
-var client = new DtlsSrtpClient(ecdsaCertificate.Certificate, ecdsaCertificate.PrivateKey, SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
+var client = new DtlsSrtpClient(ecdsaCertificate);
 ```
 Subscribe for `OnSessionStarted`:
 ```cs

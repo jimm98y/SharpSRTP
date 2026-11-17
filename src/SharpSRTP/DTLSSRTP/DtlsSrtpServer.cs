@@ -45,8 +45,8 @@ namespace SharpSRTP.DTLSSRTP
 
         public event EventHandler<DtlsSessionStartedEventArgs> OnSessionStarted;
 
-        public DtlsSrtpServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256)
-            : base(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
+        public DtlsSrtpServer(SharpDTLS.TransportCertificate credentials = null)
+            : base(credentials)
         { }
 
         protected virtual ushort[] GetSupportedProtectionProfiles()

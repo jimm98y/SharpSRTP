@@ -19,13 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Tls;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
+using TransportCertificate = SharpDTLS.TransportCertificate;
 using DtlsVersion = SharpDTLS.DtlsVersion;
 using IServerTransport = SharpDTLS.UDP.IServerTransport;
 using SessionTicketKeys = SharpDTLS.SessionTicketKeys;
@@ -53,14 +53,10 @@ namespace SharpSRTP.DTLS
         private readonly TlsSessionCache _sessionCache = new TlsSessionCache();
         private readonly VerifierServerTransport _verifierTransport = new VerifierServerTransport();
         private SharpDTLS.DtlsServer _verifier;
-        private SharpDTLS.ServerCredentials _credentials;
 
         public int TimeoutMilliseconds { get; set; } = 20000;
 
-        public Certificate Certificate { get; private set; }
-        public AsymmetricKeyParameter CertificatePrivateKey { get; private set; }
-        public short CertificateSignatureAlgorithm { get; private set; }
-        public short CertificateHashAlgorithm { get; private set; }
+        public TransportCertificate Credentials { get; private set; }
 
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
 
@@ -88,36 +84,29 @@ namespace SharpSRTP.DTLS
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
-        public DtlsServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256)
+        /// <param name="credentials">The certificate and key; null for a self-signed ECDSA one.</param>
+        public DtlsServer(TransportCertificate credentials = null)
         {
-            if (certificate == null || privateKey == null)
+            if (credentials == null)
             {
                 // generate default self-signed certificate - SRTP_AEAD_AES_256_GCM requires ECDsa
                 AutogenerateClientCertificate(false);
             }
             else
             {
-                SetCertificate(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm);
+                SetCertificate(credentials);
             }
         }
 
-        /// <remarks>
-        /// SharpDTLS picks the signature scheme from the key, so <paramref name="signatureAlgorithm"/> and
-        /// <paramref name="hashAlgorithm"/> are informational.
-        /// </remarks>
-        public virtual void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
+        /// <remarks>SharpDTLS picks the signature scheme from the key.</remarks>
+        public virtual void SetCertificate(TransportCertificate credentials)
         {
-            Certificate = certificate;
-            CertificatePrivateKey = privateKey;
-            CertificateSignatureAlgorithm = signatureAlgorithm;
-            CertificateHashAlgorithm = hashAlgorithm;
-            _credentials = Conversions.ToCredentials(certificate, privateKey);
+            Credentials = credentials;
         }
 
         public virtual void AutogenerateClientCertificate(bool isRsa)
         {
-            var cert = DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRsa);
-            SetCertificate(cert.Certificate, cert.PrivateKey, isRsa ? SignatureAlgorithm.rsa : SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
+            SetCertificate(DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRsa));
         }
 
         protected virtual string GetCertificateCommonName()
@@ -219,7 +208,7 @@ namespace SharpSRTP.DTLS
 
         private SharpDTLS.DtlsServer CreateServer(IServerTransport transport)
         {
-            var server = new SharpDTLS.DtlsServer(transport, _credentials)
+            var server = new SharpDTLS.DtlsServer(transport, Credentials)
             {
                 MinimumVersion = MinimumVersion,
                 MaximumVersion = MaximumVersion,

@@ -19,11 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Org.BouncyCastle.Tls;
-using Org.BouncyCastle.Tls.Crypto;
-using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using System;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using TlsConnectionBase = SharpDTLS.TlsConnectionBase;
 
 namespace SharpSRTP.DTLS
@@ -33,15 +31,13 @@ namespace SharpSRTP.DTLS
     /// </summary>
     public sealed class SharpDtlsSecurityParameters : IDtlsSecurityParameters
     {
-        private static readonly BcTlsCrypto Crypto = new BcTlsCrypto();
-
         public TlsConnectionBase Connection { get; }
 
         public SharpDtlsSecurityParameters(TlsConnectionBase connection)
         {
             this.Connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            this.LocalCertificate = ToCertificate(connection.LocalCertificate);
-            this.PeerCertificate = ToCertificate(connection.PeerCertificate);
+            this.LocalCertificate = connection.LocalCertificate;
+            this.PeerCertificate = connection.PeerCertificate;
         }
 
         public int NegotiatedVersion => Connection.NegotiatedVersion;
@@ -51,17 +47,12 @@ namespace SharpSRTP.DTLS
         public byte[] ClientRandom => Connection.ClientRandom;
         public byte[] ServerRandom => Connection.ServerRandom;
         public string ApplicationProtocol => Connection.ApplicationProtocol;
-        public Certificate LocalCertificate { get; }
-        public Certificate PeerCertificate { get; }
+        public X509Certificate2 LocalCertificate { get; }
+        public X509Certificate2 PeerCertificate { get; }
         public int? SrtpProtectionProfile => Connection.SelectedSrtpProtectionProfile;
         public byte[] SrtpMki => Connection.SelectedSrtpMki;
 
         public byte[] ExportKeyingMaterial(string label, byte[] context, int length) => Connection.ExportKeyingMaterial(label, context, length);
-
-        internal static Certificate ToCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate)
-        {
-            return certificate == null ? null : new Certificate(new TlsCertificate[] { new BcTlsCertificate(Crypto, certificate.RawData) });
-        }
     }
 
     internal sealed class SharpDtlsRequest : IDtlsRequest

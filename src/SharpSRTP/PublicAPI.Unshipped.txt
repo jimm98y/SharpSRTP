@@ -1,3 +1,39 @@
+SharpSRTP.DTLS.BcDtlsClient.BcDtlsClient(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, Org.BouncyCastle.Tls.TlsSession session = null, SharpDTLS.TransportCertificate credentials = null) -> void
+SharpSRTP.DTLS.BcDtlsClient.BcDtlsClient(Org.BouncyCastle.Tls.TlsSession session = null, SharpDTLS.TransportCertificate credentials = null) -> void
+SharpSRTP.DTLS.BcDtlsClient.Credentials.get -> SharpDTLS.TransportCertificate
+SharpSRTP.DTLS.BcDtlsClient.PeerCertificate.get -> System.Security.Cryptography.X509Certificates.X509Certificate2
+SharpSRTP.DTLS.BcDtlsSecurityParameters.LocalCertificate.get -> System.Security.Cryptography.X509Certificates.X509Certificate2
+SharpSRTP.DTLS.BcDtlsSecurityParameters.PeerCertificate.get -> System.Security.Cryptography.X509Certificates.X509Certificate2
+SharpSRTP.DTLS.BcDtlsServer.BcDtlsServer(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, SharpDTLS.TransportCertificate credentials = null) -> void
+SharpSRTP.DTLS.BcDtlsServer.BcDtlsServer(SharpDTLS.TransportCertificate credentials = null) -> void
+SharpSRTP.DTLS.BcDtlsServer.Credentials.get -> SharpDTLS.TransportCertificate
+SharpSRTP.DTLS.DtlsClient.Credentials.get -> SharpDTLS.TransportCertificate
+SharpSRTP.DTLS.DtlsClient.DtlsClient(SharpDTLS.TransportCertificate credentials = null) -> void
+SharpSRTP.DTLS.DtlsClient.PeerCertificate.get -> System.Security.Cryptography.X509Certificates.X509Certificate2
+SharpSRTP.DTLS.DtlsServer.Credentials.get -> SharpDTLS.TransportCertificate
+SharpSRTP.DTLS.DtlsServer.DtlsServer(SharpDTLS.TransportCertificate credentials = null) -> void
+SharpSRTP.DTLS.IDtlsPeer.Credentials.get -> SharpDTLS.TransportCertificate
+SharpSRTP.DTLS.IDtlsPeer.SetCertificate(SharpDTLS.TransportCertificate credentials) -> void
+SharpSRTP.DTLS.IDtlsSecurityParameters.LocalCertificate.get -> System.Security.Cryptography.X509Certificates.X509Certificate2
+SharpSRTP.DTLS.IDtlsSecurityParameters.PeerCertificate.get -> System.Security.Cryptography.X509Certificates.X509Certificate2
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.LocalCertificate.get -> System.Security.Cryptography.X509Certificates.X509Certificate2
+SharpSRTP.DTLS.SharpDtlsSecurityParameters.PeerCertificate.get -> System.Security.Cryptography.X509Certificates.X509Certificate2
+SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.BcDtlsSrtpClient(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, SharpDTLS.TransportCertificate credentials = null, Org.BouncyCastle.Tls.TlsSession session = null) -> void
+SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.BcDtlsSrtpClient(SharpDTLS.TransportCertificate credentials = null, Org.BouncyCastle.Tls.TlsSession session = null) -> void
+SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.BcDtlsSrtpServer(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, SharpDTLS.TransportCertificate credentials = null) -> void
+SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.BcDtlsSrtpServer(SharpDTLS.TransportCertificate credentials = null) -> void
+SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs.DtlsSessionStartedEventArgs(SharpSRTP.SRTP.SrtpSessionContext context, System.Security.Cryptography.X509Certificates.X509Certificate2 peerCertificate, Org.BouncyCastle.Tls.DatagramTransport clientDatagramTransport) -> void
+SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs.PeerCertificate.get -> System.Security.Cryptography.X509Certificates.X509Certificate2
+SharpSRTP.DTLSSRTP.DtlsSrtpClient.DtlsSrtpClient(SharpDTLS.TransportCertificate credentials = null) -> void
+SharpSRTP.DTLSSRTP.DtlsSrtpServer.DtlsSrtpServer(SharpDTLS.TransportCertificate credentials = null) -> void
+static SharpSRTP.DTLS.DtlsCertificateUtils.Fingerprint(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, string algorithm = "SHA256") -> string
+static SharpSRTP.DTLS.DtlsCertificateUtils.GenerateCertificate(string name, System.DateTime notBefore, System.DateTime notAfter, bool useRSA) -> SharpDTLS.TransportCertificate
+static SharpSRTP.DTLS.DtlsCertificateUtils.GenerateECDSACertificate(string name, System.DateTime notBefore, System.DateTime notAfter, string curve = "secp256r1", string signatureAlgorithm = "SHA256WITHECDSA", int serialNumberLength = 20) -> SharpDTLS.TransportCertificate
+static SharpSRTP.DTLS.DtlsCertificateUtils.GenerateRSACertificate(string name, System.DateTime notBefore, System.DateTime notAfter, int keyStrength = 2048, string signatureAlgorithm = "SHA256WITHRSA", int serialNumberLength = 20) -> SharpDTLS.TransportCertificate
+virtual SharpSRTP.DTLS.BcDtlsClient.SetCertificate(SharpDTLS.TransportCertificate credentials) -> void
+virtual SharpSRTP.DTLS.BcDtlsServer.SetCertificate(SharpDTLS.TransportCertificate credentials) -> void
+virtual SharpSRTP.DTLS.DtlsClient.SetCertificate(SharpDTLS.TransportCertificate credentials) -> void
+virtual SharpSRTP.DTLS.DtlsServer.SetCertificate(SharpDTLS.TransportCertificate credentials) -> void
 *REMOVED*BouncyCastleExtensions
 *REMOVED*BouncyCastleExtensions.extension(Org.BouncyCastle.Crypto.Parameters.KeyParameter)
 *REMOVED*const SharpSRTP.DTLSSRTP.ExtendedSrtpProtectionProfile.DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM = 9 -> int
@@ -34,3 +70,50 @@ SharpSRTP.SRTP.ThreadSafeSrtpSessionContext.Dispose() -> void
 *REMOVED*static SharpSRTP.SRTP.Encryption.F8.Encrypt(Org.BouncyCastle.Crypto.IBlockCipher aes, System.ReadOnlySpan<byte> input, System.Span<byte> output, System.ReadOnlySpan<byte> iv) -> void
 *REMOVED*static SharpSRTP.SRTP.Encryption.F8.GenerateRtcpMessageKeyIV(Org.BouncyCastle.Crypto.IBlockCipher engine, byte[] k_e, byte[] k_s, System.ReadOnlySpan<byte> rtcpPacket, uint index) -> byte[]
 *REMOVED*static SharpSRTP.SRTP.SrtpContext.GenerateSessionKey(Org.BouncyCastle.Crypto.IBlockCipher engineKeys, SharpSRTP.SRTP.SrtpCiphers cipher, System.ReadOnlyMemory<byte> masterKey, System.ReadOnlyMemory<byte> masterSalt, int length, int label, ulong index, ulong kdr, byte[] iv) -> byte[]
+*REMOVED*SharpSRTP.DTLS.BcDtlsClient.BcDtlsClient(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, Org.BouncyCastle.Tls.TlsSession session = null, Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+*REMOVED*SharpSRTP.DTLS.BcDtlsClient.BcDtlsClient(Org.BouncyCastle.Tls.TlsSession session = null, Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+*REMOVED*SharpSRTP.DTLS.BcDtlsClient.Certificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.BcDtlsClient.CertificatePrivateKey.get -> Org.BouncyCastle.Crypto.AsymmetricKeyParameter
+*REMOVED*SharpSRTP.DTLS.BcDtlsClient.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.BcDtlsSecurityParameters.LocalCertificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.BcDtlsSecurityParameters.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.BcDtlsServer.BcDtlsServer(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+*REMOVED*SharpSRTP.DTLS.BcDtlsServer.BcDtlsServer(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+*REMOVED*SharpSRTP.DTLS.BcDtlsServer.Certificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.BcDtlsServer.CertificatePrivateKey.get -> Org.BouncyCastle.Crypto.AsymmetricKeyParameter
+*REMOVED*SharpSRTP.DTLS.DtlsClient.Certificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.DtlsClient.CertificateHashAlgorithm.get -> short
+*REMOVED*SharpSRTP.DTLS.DtlsClient.CertificatePrivateKey.get -> Org.BouncyCastle.Crypto.AsymmetricKeyParameter
+*REMOVED*SharpSRTP.DTLS.DtlsClient.CertificateSignatureAlgorithm.get -> short
+*REMOVED*SharpSRTP.DTLS.DtlsClient.DtlsClient(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+*REMOVED*SharpSRTP.DTLS.DtlsClient.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.DtlsServer.Certificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.DtlsServer.CertificateHashAlgorithm.get -> short
+*REMOVED*SharpSRTP.DTLS.DtlsServer.CertificatePrivateKey.get -> Org.BouncyCastle.Crypto.AsymmetricKeyParameter
+*REMOVED*SharpSRTP.DTLS.DtlsServer.CertificateSignatureAlgorithm.get -> short
+*REMOVED*SharpSRTP.DTLS.DtlsServer.DtlsServer(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+*REMOVED*SharpSRTP.DTLS.IDtlsPeer.Certificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.IDtlsPeer.CertificateHashAlgorithm.get -> short
+*REMOVED*SharpSRTP.DTLS.IDtlsPeer.CertificatePrivateKey.get -> Org.BouncyCastle.Crypto.AsymmetricKeyParameter
+*REMOVED*SharpSRTP.DTLS.IDtlsPeer.CertificateSignatureAlgorithm.get -> short
+*REMOVED*SharpSRTP.DTLS.IDtlsPeer.SetCertificate(Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm) -> void
+*REMOVED*SharpSRTP.DTLS.IDtlsSecurityParameters.LocalCertificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.IDtlsSecurityParameters.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.SharpDtlsSecurityParameters.LocalCertificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLS.SharpDtlsSecurityParameters.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.BcDtlsSrtpClient(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4, Org.BouncyCastle.Tls.TlsSession session = null) -> void
+*REMOVED*SharpSRTP.DTLSSRTP.BcDtlsSrtpClient.BcDtlsSrtpClient(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4, Org.BouncyCastle.Tls.TlsSession session = null) -> void
+*REMOVED*SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.BcDtlsSrtpServer(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+*REMOVED*SharpSRTP.DTLSSRTP.BcDtlsSrtpServer.BcDtlsSrtpServer(Org.BouncyCastle.Tls.Crypto.TlsCrypto crypto, Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+*REMOVED*SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs.DtlsSessionStartedEventArgs(SharpSRTP.SRTP.SrtpSessionContext context, Org.BouncyCastle.Tls.Certificate peerCertificate, Org.BouncyCastle.Tls.DatagramTransport clientDatagramTransport) -> void
+*REMOVED*SharpSRTP.DTLSSRTP.DtlsSessionStartedEventArgs.PeerCertificate.get -> Org.BouncyCastle.Tls.Certificate
+*REMOVED*SharpSRTP.DTLSSRTP.DtlsSrtpClient.DtlsSrtpClient(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+*REMOVED*SharpSRTP.DTLSSRTP.DtlsSrtpServer.DtlsSrtpServer(Org.BouncyCastle.Tls.Certificate certificate = null, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = 3, short certificateHashAlgorithm = 4) -> void
+*REMOVED*static SharpSRTP.DTLS.DtlsCertificateUtils.Fingerprint(Org.BouncyCastle.Asn1.X509.X509CertificateStructure c, string algorithm = "SHA256") -> string
+*REMOVED*static SharpSRTP.DTLS.DtlsCertificateUtils.GenerateCertificate(string name, System.DateTime notBefore, System.DateTime notAfter, bool useRSA) -> (Org.BouncyCastle.Tls.Certificate Certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter PrivateKey)
+*REMOVED*static SharpSRTP.DTLS.DtlsCertificateUtils.GenerateECDSACertificate(string name, System.DateTime notBefore, System.DateTime notAfter, string curve = "secp256r1", string signatureAlgorithm = "SHA256WITHECDSA", int serialNumberLength = 20) -> (Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter key)
+*REMOVED*static SharpSRTP.DTLS.DtlsCertificateUtils.GenerateRSACertificate(string name, System.DateTime notBefore, System.DateTime notAfter, int keyStrength = 2048, string signatureAlgorithm = "SHA256WITHRSA", int serialNumberLength = 20) -> (Org.BouncyCastle.Tls.Certificate Certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter PrivateKey)
+*REMOVED*virtual SharpSRTP.DTLS.BcDtlsClient.SetCertificate(Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm) -> void
+*REMOVED*virtual SharpSRTP.DTLS.BcDtlsServer.SetCertificate(Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm) -> void
+*REMOVED*virtual SharpSRTP.DTLS.DtlsClient.SetCertificate(Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm) -> void
+*REMOVED*virtual SharpSRTP.DTLS.DtlsServer.SetCertificate(Org.BouncyCastle.Tls.Certificate certificate, Org.BouncyCastle.Crypto.AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm) -> void

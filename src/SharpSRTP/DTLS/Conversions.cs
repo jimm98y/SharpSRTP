@@ -20,35 +20,65 @@
 // SOFTWARE.
 
 using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Tls;
+using Org.BouncyCastle.Tls.Crypto.Impl.BC;
+using SharpDTLS;
 using System;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using SharpDtlsAlert = SharpDTLS.AlertDescription;
 
 namespace SharpSRTP.DTLS
 {
+    /// <summary>The .NET certificates of the public API, to and from BouncyCastle's and SharpDTLS's.</summary>
     internal static class Conversions
     {
-        /// <summary>
-        /// The end-entity certificate and key SharpDTLS authenticates with, as a server or a client: the certificate's DER,
-        /// the key as PKCS#8. Null without either.
-        /// </summary>
-        public static SharpDTLS.ServerCredentials ToCredentials(Certificate certificate, AsymmetricKeyParameter privateKey)
+        private static readonly BcTlsCrypto Crypto = new BcTlsCrypto();
+
+        public static X509Certificate2 Load(byte[] der)
         {
-            if (certificate == null || certificate.IsEmpty || privateKey == null)
+#if NET9_0_OR_GREATER
+            return X509CertificateLoader.LoadCertificate(der);
+#else
+            return new X509Certificate2(der);
+#endif
+        }
+
+        /// <summary>Credentials of a certificate made here: its DER, the key as PKCS#8; a server's or a client's.</summary>
+        public static TransportCertificate ToCredentials(byte[] certificateDer, AsymmetricKeyParameter privateKey)
+            => new TransportCertificate(Load(certificateDer), PrivateKeyInfoFactory.CreatePrivateKeyInfo(privateKey).GetEncoded());
+
+        /// <summary>
+        /// The chain and key BouncyCastle's DTLS authenticates with; the key must be exportable (or given as PKCS#8).
+        /// </summary>
+        public static (Certificate Certificate, AsymmetricKeyParameter PrivateKey) ToBc(TransportCertificate credentials)
+        {
+            if (credentials == null)
             {
-                return null;
+                return (null, null);
             }
 
-            byte[] der = certificate.GetCertificateAt(0).GetEncoded();
-#if NET9_0_OR_GREATER
-            var x509 = X509CertificateLoader.LoadCertificate(der);
-#else
-            var x509 = new X509Certificate2(der);
-#endif
-            return new SharpDTLS.ServerCredentials(x509, PrivateKeyInfoFactory.CreatePrivateKeyInfo(privateKey).GetEncoded());
+            var entries = new[] { credentials.Certificate }.Concat(credentials.IntermediateCertificates)
+                .Select(c => new CertificateEntry(Crypto.CreateCertificate(c.RawData), null)).ToArray();
+            // certificateRequestContext = null for DTLS 1.2
+            return (new Certificate(null, entries), PrivateKeyFactory.CreateKey(credentials.ExportPkcs8PrivateKey()));
         }
+
+        /// <summary>The end-entity certificate of a BouncyCastle chain, or null.</summary>
+        public static X509Certificate2 ToX509(Certificate certificate)
+            => certificate == null || certificate.IsEmpty ? null : Load(certificate.GetCertificateAt(0).GetEncoded());
+
+        /// <summary>The TLS 1.2 signature and hash algorithms of a key: ECDSA's hash of its curve's size, RSA's SHA-256.</summary>
+        public static (short Signature, short Hash) AlgorithmsOf(AsymmetricKeyParameter privateKey) => privateKey switch
+        {
+            null => (SignatureAlgorithm.ecdsa, HashAlgorithm.sha256),
+            RsaKeyParameters => (SignatureAlgorithm.rsa, HashAlgorithm.sha256),
+            ECPrivateKeyParameters ec => (SignatureAlgorithm.ecdsa, ec.Parameters.Curve.FieldSize > 384 ? HashAlgorithm.sha512 : ec.Parameters.Curve.FieldSize > 256 ? HashAlgorithm.sha384 : HashAlgorithm.sha256),
+            _ => throw new NotSupportedException("BouncyCastle's DTLS signs with RSA or ECDSA keys."),
+        };
 
         public static DtlsAlertEventArgs ToAlert(SharpDtlsAlert description)
         {

@@ -19,8 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 // SOFTWARE.
 
-using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Tls;
+using SharpDTLS;
 using System;
 
 namespace SharpSRTP.DTLS
@@ -131,11 +131,14 @@ namespace SharpSRTP.DTLS
         int TimeoutMilliseconds { get; set; }
         bool ForceUseExtendedMasterSecret { get; set; }
 
-        Certificate Certificate { get; }
-        AsymmetricKeyParameter CertificatePrivateKey { get; }
-        short CertificateSignatureAlgorithm { get; }
-        short CertificateHashAlgorithm { get; }
-        void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm);
+        /// <summary>The certificate and key this peer authenticates with, or null before one is set or generated.</summary>
+        TransportCertificate Credentials { get; }
+
+        /// <summary>
+        /// The certificate and key to authenticate with: an <see cref="System.Security.Cryptography.X509Certificates.X509Certificate2"/>
+        /// with its key, or with the key as PKCS#8 (see <see cref="DtlsCertificateUtils"/>).
+        /// </summary>
+        void SetCertificate(TransportCertificate credentials);
 
         IDtlsTransport DoHandshake(out string handshakeError, DatagramTransport datagramTransport, IDtlsRequest request = null);
     }

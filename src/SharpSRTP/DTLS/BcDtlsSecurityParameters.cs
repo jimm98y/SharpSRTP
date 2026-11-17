@@ -22,6 +22,7 @@
 using Org.BouncyCastle.Tls;
 using System;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SharpSRTP.DTLS
 {
@@ -51,8 +52,8 @@ namespace SharpSRTP.DTLS
             ClientRandom = securityParameters.ClientRandom;
             ServerRandom = securityParameters.ServerRandom;
             ApplicationProtocol = securityParameters.ApplicationProtocol?.GetUtf8Decoding();
-            LocalCertificate = securityParameters.LocalCertificate;
-            PeerCertificate = securityParameters.PeerCertificate;
+            LocalCertificate = Conversions.ToX509(securityParameters.LocalCertificate);
+            PeerCertificate = Conversions.ToX509(securityParameters.PeerCertificate);
             SrtpProtectionProfile = srtpData?.ProtectionProfiles[0];
             SrtpMki = srtpData == null ? null : srtpData.Mki ?? Array.Empty<byte>();
         }
@@ -64,8 +65,8 @@ namespace SharpSRTP.DTLS
         public byte[] ClientRandom { get; }
         public byte[] ServerRandom { get; }
         public string ApplicationProtocol { get; }
-        public Certificate LocalCertificate { get; }
-        public Certificate PeerCertificate { get; }
+        public X509Certificate2 LocalCertificate { get; }
+        public X509Certificate2 PeerCertificate { get; }
         public int? SrtpProtectionProfile { get; }
         public byte[] SrtpMki { get; }
 

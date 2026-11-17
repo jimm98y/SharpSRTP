@@ -27,6 +27,7 @@ using SharpSRTP.DTLS;
 using SharpSRTP.SRTP;
 using System;
 using System.Collections.Generic;
+using TransportCertificate = SharpDTLS.TransportCertificate;
 
 namespace SharpSRTP.DTLSSRTP
 {
@@ -46,12 +47,12 @@ namespace SharpSRTP.DTLSSRTP
 
         public event EventHandler<DtlsSessionStartedEventArgs> OnSessionStarted;
 
-        public BcDtlsSrtpServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256)
-            : this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
+        public BcDtlsSrtpServer(TransportCertificate credentials = null)
+            : this(new BcTlsCrypto(), credentials)
         { }
 
-        public BcDtlsSrtpServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256)
-            : base(crypto, certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
+        public BcDtlsSrtpServer(TlsCrypto crypto, TransportCertificate credentials = null)
+            : base(crypto, credentials)
         {
             this.OnHandshakeCompleted += DtlsSrtpServer_OnHandshakeCompleted;
         }
@@ -59,7 +60,7 @@ namespace SharpSRTP.DTLSSRTP
         private void DtlsSrtpServer_OnHandshakeCompleted(object sender, DtlsHandshakeCompletedEventArgs e)
         {
             SrtpSessionContext context = CreateSessionContext(e.SecurityParameters);
-            Certificate peerCertificate = e.SecurityParameters.PeerCertificate;
+            var peerCertificate = e.SecurityParameters.PeerCertificate;
             OnSessionStarted?.Invoke(this, new DtlsSessionStartedEventArgs(context, peerCertificate, base._clientDatagramTransport));
         }
 

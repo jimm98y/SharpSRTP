@@ -6,6 +6,8 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -77,6 +79,34 @@ namespace SharpSRTP.Tests
                 Assert.AreEqual(0, serverContext.ProtectRtp(buffer, rtp.Length, out int protectedLength));
                 Assert.AreEqual(0, clientContext.UnprotectRtp(buffer, protectedLength, out int length));
                 CollectionAssert.AreEqual(rtp, buffer.Take(length).ToArray());
+            }
+        }
+
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        [TestMethod]
+        public void DtlsSrtp_NetCertificates_EachSideSeesThePeersByFingerprint(bool bouncyCastleClient, bool bouncyCastleServer)
+        {
+            // the server's of .NET with its own key, the client's of DtlsCertificateUtils (PKCS#8)
+            var request = new CertificateRequest("CN=server.test", ECDsa.Create(ECCurve.NamedCurves.nistP256), HashAlgorithmName.SHA256);
+            var serverCertificate = new SharpDTLS.TransportCertificate(request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1)));
+            var clientCertificate = DtlsCertificateUtils.GenerateCertificate("client.test", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(1), useRSA: false);
+
+            IDtlsSrtpPeer client = bouncyCastleClient ? new BcDtlsSrtpClient(clientCertificate) : new DtlsSrtpClient(clientCertificate);
+            IDtlsSrtpPeer server = bouncyCastleServer ? new BcDtlsSrtpServer(serverCertificate) : new DtlsSrtpServer(serverCertificate);
+            X509Certificate2 seenByClient = null, seenByServer = null;
+            client.OnSessionStarted += (_, e) => seenByClient = e.PeerCertificate;
+            server.OnSessionStarted += (_, e) => seenByServer = e.PeerCertificate;
+
+            var (clientSocket, serverSocket) = ConnectedPair();
+            using (clientSocket)
+            using (serverSocket)
+            {
+                Handshake(client, (IDtlsServerPeer)server, clientSocket, serverSocket);
+                Assert.AreEqual(DtlsCertificateUtils.Fingerprint(serverCertificate.Certificate), DtlsCertificateUtils.Fingerprint(seenByClient));
+                Assert.AreEqual(DtlsCertificateUtils.Fingerprint(clientCertificate.Certificate), DtlsCertificateUtils.Fingerprint(seenByServer));
             }
         }
 

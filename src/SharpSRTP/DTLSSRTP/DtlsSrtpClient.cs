@@ -38,8 +38,8 @@ namespace SharpSRTP.DTLSSRTP
         public event EventHandler<DtlsSessionStartedEventArgs> OnSessionStarted;
         public int MkiLength { get; private set; } = 0;
 
-        public DtlsSrtpClient(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256)
-            : base(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
+        public DtlsSrtpClient(SharpDTLS.TransportCertificate credentials = null)
+            : base(credentials)
         { }
 
         public void SetMKI(byte[] mki)

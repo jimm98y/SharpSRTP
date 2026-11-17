@@ -28,6 +28,8 @@ using Org.BouncyCastle.Utilities.Encoders;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using TransportCertificate = SharpDTLS.TransportCertificate;
+using X509Certificate2 = System.Security.Cryptography.X509Certificates.X509Certificate2;
 
 namespace SharpSRTP.DTLS
 {
@@ -40,44 +42,50 @@ namespace SharpSRTP.DTLS
 
         public int TimeoutMilliseconds { get; set; } = 20000;
 
-        public Certificate Certificate { get; private set; }
-        public AsymmetricKeyParameter CertificatePrivateKey { get; private set; }
-        public short CertificateSignatureAlgorithm { get; private set; }
-        public short CertificateHashAlgorithm { get; private set; }
+        public TransportCertificate Credentials { get; private set; }
+
+        /// <summary>The TLS 1.2 signature algorithm of the key of <see cref="Credentials"/> (ECDSA without credentials).</summary>
+        public short CertificateSignatureAlgorithm { get; private set; } = SignatureAlgorithm.ecdsa;
+
+        /// <summary>The TLS 1.2 hash algorithm it signs with: SHA-256, or for ECDSA the hash of its curve's size.</summary>
+        public short CertificateHashAlgorithm { get; private set; } = HashAlgorithm.sha256;
+
+        // the credentials as BouncyCastle's DTLS takes them
+        private Certificate _bcCertificate;
+        private AsymmetricKeyParameter _bcPrivateKey;
 
         public bool ForceUseExtendedMasterSecret { get; set; } = true;
         public event EventHandler<DtlsHandshakeCompletedEventArgs> OnHandshakeCompleted;
         public event EventHandler<DtlsAlertEventArgs> OnAlert;
 
-        public BcDtlsServer(Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : 
-            this(new BcTlsCrypto(), certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm)
+        public BcDtlsServer(TransportCertificate credentials = null) :
+            this(new BcTlsCrypto(), credentials)
         {  }
 
-        public BcDtlsServer(TlsCrypto crypto, Certificate certificate = null, AsymmetricKeyParameter privateKey = null, short certificateSignatureAlgorithm = SignatureAlgorithm.ecdsa, short certificateHashAlgorithm = HashAlgorithm.sha256) : base(crypto)
+        public BcDtlsServer(TlsCrypto crypto, TransportCertificate credentials = null) : base(crypto)
         {
-            if (certificate == null || privateKey == null)
+            if (credentials == null)
             {
                 // generate default self-signed certificate - SRTP_AEAD_AES_256_GCM requires ECDsa
                 AutogenerateClientCertificate(false);
             }
             else
             {
-                SetCertificate(certificate, privateKey, certificateSignatureAlgorithm, certificateHashAlgorithm);
+                SetCertificate(credentials);
             }
         }
 
-        public virtual void SetCertificate(Certificate certificate, AsymmetricKeyParameter privateKey, short signatureAlgorithm, short hashAlgorithm)
+        /// <summary>The certificate and key; the key must be exportable (or given as PKCS#8), as BouncyCastle signs with it.</summary>
+        public virtual void SetCertificate(TransportCertificate credentials)
         {
-            Certificate = certificate;
-            CertificatePrivateKey = privateKey;
-            CertificateSignatureAlgorithm = signatureAlgorithm;
-            CertificateHashAlgorithm = hashAlgorithm;
+            Credentials = credentials;
+            (_bcCertificate, _bcPrivateKey) = Conversions.ToBc(credentials);
+            (CertificateSignatureAlgorithm, CertificateHashAlgorithm) = Conversions.AlgorithmsOf(_bcPrivateKey);
         }
 
         public virtual void AutogenerateClientCertificate(bool isRsa)
         {
-            var cert = DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRsa);
-            SetCertificate(cert.Certificate, cert.PrivateKey, isRsa ? SignatureAlgorithm.rsa : SignatureAlgorithm.ecdsa, HashAlgorithm.sha256);
+            SetCertificate(DtlsCertificateUtils.GenerateCertificate(GetCertificateCommonName(), DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(30), isRsa));
         }
 
         protected virtual string GetCertificateCommonName()
@@ -282,7 +290,7 @@ namespace SharpSRTP.DTLS
                 X509CertificateStructure entry = X509CertificateStructure.GetInstance(chain[i].GetEncoded());
                 if (Log.DebugEnabled)
                 {
-                    Log.Debug("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(entry) + " (" + entry.Subject + ")");
+                    Log.Debug("    fingerprint:SHA-256 " + DtlsCertificateUtils.Fingerprint(chain[i].GetEncoded()) + " (" + entry.Subject + ")");
                 }
             }
         }
@@ -360,7 +368,7 @@ namespace SharpSRTP.DTLS
             IList<SignatureAndHashAlgorithm> clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
 
-            if (Certificate == null || CertificatePrivateKey == null)
+            if (_bcCertificate == null)
             {
                 throw new InvalidOperationException("DTLS server ECDsa certificate not set!");
             }
@@ -379,7 +387,7 @@ namespace SharpSRTP.DTLS
                 throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
             }
 
-            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, CertificatePrivateKey, Certificate, signatureAndHashAlgorithm);
+            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _bcPrivateKey, _bcCertificate, signatureAndHashAlgorithm);
         }
 
         protected override TlsCredentialedSigner GetRsaSignerCredentials()
@@ -387,7 +395,7 @@ namespace SharpSRTP.DTLS
             IList<SignatureAndHashAlgorithm> clientSigAlgs = m_context.SecurityParameters.ClientSigAlgs;
             SignatureAndHashAlgorithm signatureAndHashAlgorithm = null;
 
-            if (Certificate == null || CertificatePrivateKey == null)
+            if (_bcCertificate == null)
             {
                 throw new InvalidOperationException("DTLS server RSA certificate not set!");
             }
@@ -406,7 +414,7 @@ namespace SharpSRTP.DTLS
                 throw new InvalidOperationException("DTLS Client does not support the selected certificate algorithm!");
             }
 
-            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, CertificatePrivateKey, Certificate, signatureAndHashAlgorithm);
+            return new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(m_context), (BcTlsCrypto)m_context.Crypto, _bcPrivateKey, _bcCertificate, signatureAndHashAlgorithm);
         }
     }
 }

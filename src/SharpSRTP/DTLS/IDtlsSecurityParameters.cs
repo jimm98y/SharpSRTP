@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Org.BouncyCastle.Tls;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SharpSRTP.DTLS
 {
@@ -47,10 +47,10 @@ namespace SharpSRTP.DTLS
         string ApplicationProtocol { get; }
 
         /// <summary>The certificate this side authenticated with, or null.</summary>
-        Certificate LocalCertificate { get; }
+        X509Certificate2 LocalCertificate { get; }
 
         /// <summary>The certificate the peer authenticated with, or null.</summary>
-        Certificate PeerCertificate { get; }
+        X509Certificate2 PeerCertificate { get; }
 
         /// <summary>SRTP protection profile negotiated with use_srtp, or null when use_srtp was not negotiated.</summary>
         int? SrtpProtectionProfile { get; }
