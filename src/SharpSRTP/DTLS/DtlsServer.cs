@@ -21,7 +21,6 @@
 
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Tls;
-using Org.BouncyCastle.X509;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -54,8 +53,7 @@ namespace SharpSRTP.DTLS
         private readonly TlsSessionCache _sessionCache = new TlsSessionCache();
         private readonly VerifierServerTransport _verifierTransport = new VerifierServerTransport();
         private SharpDTLS.DtlsServer _verifier;
-        private X509Certificate _x509Certificate;
-        private AsymmetricCipherKeyPair _keyPair;
+        private SharpDTLS.ServerCredentials _credentials;
 
         public int TimeoutMilliseconds { get; set; } = 20000;
 
@@ -113,7 +111,7 @@ namespace SharpSRTP.DTLS
             CertificatePrivateKey = privateKey;
             CertificateSignatureAlgorithm = signatureAlgorithm;
             CertificateHashAlgorithm = hashAlgorithm;
-            (_x509Certificate, _keyPair) = Conversions.ToCredentials(certificate, privateKey);
+            _credentials = Conversions.ToCredentials(certificate, privateKey);
         }
 
         public virtual void AutogenerateClientCertificate(bool isRsa)
@@ -176,7 +174,7 @@ namespace SharpSRTP.DTLS
             var received = new ConcurrentQueue<byte[]>();
             server.HandshakeFinished += (_, connection) => state.Connection = connection;
             server.ConnectionClosed += (_, _) => state.Closed = true;
-            server.ApplicationDataReceived += (_, e) => received.Enqueue(e.Data);
+            server.ApplicationDataReceived += (_, data) => received.Enqueue(data.ToArray());
             server.AlertReceived += (_, e) => OnAlert?.Invoke(this, Conversions.ToAlert(e.Description));
 
             try
@@ -221,7 +219,7 @@ namespace SharpSRTP.DTLS
 
         private SharpDTLS.DtlsServer CreateServer(IServerTransport transport)
         {
-            var server = new SharpDTLS.DtlsServer(transport, _keyPair, _x509Certificate)
+            var server = new SharpDTLS.DtlsServer(transport, _credentials)
             {
                 MinimumVersion = MinimumVersion,
                 MaximumVersion = MaximumVersion,

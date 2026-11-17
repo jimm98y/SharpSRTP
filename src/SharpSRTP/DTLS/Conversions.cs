@@ -20,25 +20,34 @@
 // SOFTWARE.
 
 using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Tls;
-using Org.BouncyCastle.X509;
 using System;
+using System.Security.Cryptography.X509Certificates;
 using SharpDtlsAlert = SharpDTLS.AlertDescription;
 
 namespace SharpSRTP.DTLS
 {
     internal static class Conversions
     {
-        /// <summary>The end-entity certificate and key pair SharpDTLS authenticates with.</summary>
-        public static (X509Certificate Certificate, AsymmetricCipherKeyPair KeyPair) ToCredentials(Certificate certificate, AsymmetricKeyParameter privateKey)
+        /// <summary>
+        /// The end-entity certificate and key SharpDTLS authenticates with, as a server or a client: the certificate's DER,
+        /// the key as PKCS#8. Null without either.
+        /// </summary>
+        public static SharpDTLS.ServerCredentials ToCredentials(Certificate certificate, AsymmetricKeyParameter privateKey)
         {
             if (certificate == null || certificate.IsEmpty || privateKey == null)
             {
-                return (null, null);
+                return null;
             }
 
-            X509Certificate x509 = new X509CertificateParser().ReadCertificate(certificate.GetCertificateAt(0).GetEncoded());
-            return (x509, new AsymmetricCipherKeyPair(x509.GetPublicKey(), privateKey));
+            byte[] der = certificate.GetCertificateAt(0).GetEncoded();
+#if NET9_0_OR_GREATER
+            var x509 = X509CertificateLoader.LoadCertificate(der);
+#else
+            var x509 = new X509Certificate2(der);
+#endif
+            return new SharpDTLS.ServerCredentials(x509, PrivateKeyInfoFactory.CreatePrivateKeyInfo(privateKey).GetEncoded());
         }
 
         public static DtlsAlertEventArgs ToAlert(SharpDtlsAlert description)

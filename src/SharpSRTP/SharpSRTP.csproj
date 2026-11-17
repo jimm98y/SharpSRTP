@@ -32,7 +32,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="SharpDTLS" Version="0.0.2" />
+		<!-- SharpDTLS from its sibling checkout: the span transports and data events of 0.1.0 -->
+		<ProjectReference Include="..\..\..\SharpDTLS\src\SharpDTLS\SharpDTLS.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>

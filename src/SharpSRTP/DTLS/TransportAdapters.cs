@@ -23,6 +23,7 @@ using Org.BouncyCastle.Tls;
 using SharpSRTP.UDP;
 using System;
 using System.Net;
+using DatagramHandler = SharpDTLS.UDP.DatagramHandler;
 using IClientTransport = SharpDTLS.UDP.IClientTransport;
 using IServerTransport = SharpDTLS.UDP.IServerTransport;
 
@@ -37,7 +38,7 @@ namespace SharpSRTP.DTLS
         private readonly DatagramTransport _transport;
         private readonly DatagramReader _reader;
 
-        public event EventHandler<byte[]> OnDataReceived;
+        public event DatagramHandler OnDataReceived;
 
         public ClientTransportAdapter(DatagramTransport transport)
         {
@@ -45,7 +46,15 @@ namespace SharpSRTP.DTLS
             _reader = new DatagramReader(transport);
         }
 
-        public void Send(byte[] buf) => _transport.Send(buf, 0, buf.Length);
+#if NETCOREAPP
+        public void Send(ReadOnlySpan<byte> datagram) => _transport.Send(datagram);
+#else
+        public void Send(ReadOnlySpan<byte> datagram)
+        {
+            byte[] copy = datagram.ToArray();
+            _transport.Send(copy, 0, copy.Length);
+        }
+#endif
 
         /// <summary>Waits up to <paramref name="waitMillis"/> for one datagram and delivers it; false on timeout.</summary>
         public bool Pump(int waitMillis)
@@ -56,7 +65,7 @@ namespace SharpSRTP.DTLS
                 return false;
             }
 
-            OnDataReceived?.Invoke(this, datagram);
+            OnDataReceived?.Invoke(null, datagram);
             return true;
         }
     }
@@ -102,7 +111,7 @@ namespace SharpSRTP.DTLS
         private readonly DatagramTransport _transport;
         private readonly DatagramReader _reader;
 
-        public event EventHandler<byte[]> OnDataReceived;
+        public event DatagramHandler OnDataReceived;
 
         public PeerServerTransport(DatagramTransport transport, EndPoint endpoint)
         {
@@ -113,7 +122,15 @@ namespace SharpSRTP.DTLS
 
         public EndPoint Endpoint { get; }
 
-        public void Send(EndPoint endpoint, byte[] buf) => _transport.Send(buf, 0, buf.Length);
+#if NETCOREAPP
+        public void Send(EndPoint endpoint, ReadOnlySpan<byte> datagram) => _transport.Send(datagram);
+#else
+        public void Send(EndPoint endpoint, ReadOnlySpan<byte> datagram)
+        {
+            byte[] copy = datagram.ToArray();
+            _transport.Send(copy, 0, copy.Length);
+        }
+#endif
 
         /// <summary>Waits up to <paramref name="waitMillis"/> for one datagram and delivers it; false on timeout.</summary>
         public bool Pump(int waitMillis)
@@ -155,11 +172,19 @@ namespace SharpSRTP.DTLS
     internal sealed class VerifierServerTransport : IServerTransport
     {
 #pragma warning disable CS0067 // the verifier is handed datagrams directly, never through the transport
-        public event EventHandler<byte[]> OnDataReceived;
+        public event DatagramHandler OnDataReceived;
 #pragma warning restore CS0067
 
         public DatagramSender Sender { get; set; }
 
-        public void Send(EndPoint endpoint, byte[] buf) => Sender?.Send(buf, 0, buf.Length);
+#if NETCOREAPP
+        public void Send(EndPoint endpoint, ReadOnlySpan<byte> datagram) => Sender?.Send(datagram);
+#else
+        public void Send(EndPoint endpoint, ReadOnlySpan<byte> datagram)
+        {
+            byte[] copy = datagram.ToArray();
+            Sender?.Send(copy, 0, copy.Length);
+        }
+#endif
     }
 }

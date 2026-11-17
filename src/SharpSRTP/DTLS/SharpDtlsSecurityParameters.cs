@@ -22,7 +22,6 @@
 using Org.BouncyCastle.Tls;
 using Org.BouncyCastle.Tls.Crypto;
 using Org.BouncyCastle.Tls.Crypto.Impl.BC;
-using Org.BouncyCastle.X509;
 using System;
 using System.Net;
 using TlsConnectionBase = SharpDTLS.TlsConnectionBase;
@@ -59,9 +58,9 @@ namespace SharpSRTP.DTLS
 
         public byte[] ExportKeyingMaterial(string label, byte[] context, int length) => Connection.ExportKeyingMaterial(label, context, length);
 
-        internal static Certificate ToCertificate(X509Certificate certificate)
+        internal static Certificate ToCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate)
         {
-            return certificate == null ? null : new Certificate(new TlsCertificate[] { new BcTlsCertificate(Crypto, certificate.GetEncoded()) });
+            return certificate == null ? null : new Certificate(new TlsCertificate[] { new BcTlsCertificate(Crypto, certificate.RawData) });
         }
     }
 

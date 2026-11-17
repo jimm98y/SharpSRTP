@@ -21,7 +21,6 @@
 
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Tls;
-using Org.BouncyCastle.X509;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -40,8 +39,7 @@ namespace SharpSRTP.DTLS
         private const int PumpIntervalMilliseconds = 100;
 
         private readonly object _syncRoot = new object();
-        private X509Certificate _x509Certificate;
-        private AsymmetricCipherKeyPair _keyPair;
+        private SharpDTLS.ServerCredentials _credentials;
 
         public bool AutogenerateCertificate { get; set; } = true;
 
@@ -90,7 +88,7 @@ namespace SharpSRTP.DTLS
             CertificatePrivateKey = privateKey;
             CertificateSignatureAlgorithm = signatureAlgorithm;
             CertificateHashAlgorithm = hashAlgorithm;
-            (_x509Certificate, _keyPair) = Conversions.ToCredentials(certificate, privateKey);
+            _credentials = Conversions.ToCredentials(certificate, privateKey);
         }
 
         public virtual void AutogenerateClientCertificate(bool isRsa)
@@ -136,15 +134,14 @@ namespace SharpSRTP.DTLS
                     SupportedGroups = SupportedGroups,
                     // Accept any certificate, as the BouncyCastle client does: the caller validates PeerCertificate (e.g. its fingerprint).
                     ServerCertificateValidator = (certificate, chain) => true,
-                    ClientCertificate = _x509Certificate,
-                    ClientCertificateKeyPair = _keyPair,
+                    ClientCredentials = _credentials,
                 };
 
                 var received = new ConcurrentQueue<byte[]>();
                 var state = new HandshakeState();
                 client.HandshakeFinished += (_, _) => state.Finished = true;
                 client.Failed += (_, ex) => state.Error ??= ex;
-                client.ApplicationDataReceived += (_, data) => received.Enqueue(data);
+                client.ApplicationDataReceived += (_, data) => received.Enqueue(data.ToArray());
                 client.AlertReceived += (_, alert) => OnAlert?.Invoke(this, Conversions.ToAlert(alert));
                 ConfigureClient(client);
 
