@@ -120,7 +120,8 @@ namespace SharpSRTP.DTLS
             var randomGenerator = new CryptoApiRandomGenerator();
             var random = new SecureRandom(randomGenerator);
 
-            var spec = ECNamedCurveTable.GetByName(curve);
+            // the curve's own arithmetic, where BouncyCastle has it: of BigInteger otherwise, of each signature of the key too
+            var spec = Org.BouncyCastle.Crypto.EC.CustomNamedCurves.GetByName(curve) ?? ECNamedCurveTable.GetByName(curve);
             var curveOid = ECNamedCurveTable.GetOid(curve);
             var domainParams = new ECNamedDomainParameters(curveOid, spec.Curve, spec.G, spec.N, spec.H, spec.GetSeed());
 
