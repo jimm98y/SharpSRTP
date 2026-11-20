@@ -59,12 +59,11 @@ namespace SharpSRTP.SRTP
                 (_srtpSessionContext as IDisposable)?.Dispose();
         }
 
+        // not of the lock: a length of the MKI's, the tag's and the cipher's, none of them changed of protecting - of the
+        //  lock, every packet of a connection's audio waited on the encryption of its video's, of another thread
         public int CalculateRequiredSrtpPayloadLength(int rtpLen)
         {
-            lock (_syncEncodeRtpContext)
-            {
-                return _srtpSessionContext.CalculateRequiredSrtpPayloadLength(rtpLen);
-            }
+            return _srtpSessionContext.CalculateRequiredSrtpPayloadLength(rtpLen);
         }
 
         public int ProtectRtp(ReadOnlyBytes input, Bytes output, out int outputBufferLength)
@@ -83,12 +82,10 @@ namespace SharpSRTP.SRTP
             }
         }
 
+        // not of the lock either, as the RTP's
         public int CalculateRequiredSrtcpPayloadLength(int rtpLen)
         {
-            lock (_syncEncodeRtcpContext)
-            {
-                return _srtpSessionContext.CalculateRequiredSrtcpPayloadLength(rtpLen);
-            }
+            return _srtpSessionContext.CalculateRequiredSrtcpPayloadLength(rtpLen);
         }
 
         public int ProtectRtcp(ReadOnlyBytes input, Bytes output, out int outputBufferLength)
